@@ -1,0 +1,19 @@
+<app-navbar></app-navbar>
+
+<main class="app-main">
+  <router-outlet></router-outlet>
+</main>
+
+<app-footer></app-footer>
+
+<!-- Global Modals & Drawers -->
+<app-assessment-modal></app-assessment-modal>
+<app-cart-drawer></app-cart-drawer>
+
+<!-- Global Toast Notification -->
+@if (api.toastMessage(); as msg) {
+  <div class="toast glass" role="alert">
+    <span>🌸</span>
+    <span>{{ msg }}</span>
+  </div>
+}
