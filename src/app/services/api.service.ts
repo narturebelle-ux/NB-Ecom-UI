@@ -247,6 +247,7 @@ export class ApiService {
     lastName?: string;
     phone?: string;
     stage?: string;
+    dueDate?: string;
   }): Observable<any> {
     return this.http.put<any>(`${this.baseUrl}/users/${userId}`, payload).pipe(
       catchError(() => of({ success: false, message: 'Could not reach server. Please try again.' }))

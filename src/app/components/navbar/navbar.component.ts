@@ -23,9 +23,9 @@ import { FeatureDirective } from '../../directives/feature.directive';
       <div class="container header-container">
         <!-- Brand Logo -->
         <a routerLink="/" class="brand-logo">
-          <span class="logo-leaf">🌿</span>
+          <img src="favicon.svg" alt="NartureBelle logo" class="logo-mark">
           <div class="logo-text">
-            <span class="brand-title">NartureBelle</span>
+            <span class="brand-title">NartureBelle<span class="trademark">™</span></span>
             <span class="brand-sub">Nurturing You, Nurturing Life</span>
           </div>
         </a>
@@ -193,7 +193,13 @@ import { FeatureDirective } from '../../directives/feature.directive';
       gap: 0.65rem;
       text-decoration: none;
     }
-    .logo-leaf { font-size: 1.8rem; }
+    .logo-mark {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      object-fit: cover;
+      flex-shrink: 0;
+    }
     .logo-text {
       display: flex;
       flex-direction: column;
@@ -205,6 +211,11 @@ import { FeatureDirective } from '../../directives/feature.directive';
       color: var(--sage-900);
       line-height: 1.1;
       letter-spacing: -0.01em;
+    }
+    .trademark {
+      font-weight: 400;
+      font-size: 0.6em;
+      vertical-align: super;
     }
     .brand-sub {
       font-size: 0.68rem;

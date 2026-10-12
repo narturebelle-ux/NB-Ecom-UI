@@ -86,14 +86,25 @@ import { FirebaseAuthService } from '../../services/firebase-auth.service';
             </div>
           </div>
 
-          <div class="form-group">
-            <label class="form-label">Pregnancy Stage</label>
-            <select class="form-control" [(ngModel)]="form.stage" name="stage">
-              <option value="">— Select your stage —</option>
-              <option value="MONTH_3">Month 3 (1st Trimester)</option>
-              <option value="MONTH_6">Month 6 (2nd Trimester)</option>
-              <option value="MONTH_9">Month 9 (3rd Trimester)</option>
-            </select>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Pregnancy Stage</label>
+              <select class="form-control" [(ngModel)]="form.stage" name="stage">
+                <option value="">— Select your stage —</option>
+                <option value="MONTH_3">Month 3 (1st Trimester)</option>
+                <option value="MONTH_6">Month 6 (2nd Trimester)</option>
+                <option value="MONTH_9">Month 9 (3rd Trimester)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Expected Due Date</label>
+              <input
+                type="date"
+                class="form-control"
+                [(ngModel)]="form.dueDate"
+                name="dueDate"
+              />
+            </div>
           </div>
 
           <div class="form-actions">
@@ -320,7 +331,8 @@ export class MyProfileComponent implements OnInit {
     firstName: '',
     lastName: '',
     phone: '',
-    stage: ''
+    stage: '',
+    dueDate: ''
   };
 
   ngOnInit() {
@@ -333,6 +345,7 @@ export class MyProfileComponent implements OnInit {
     this.form.lastName = user.lastName || (user.name?.split(' ').slice(1).join(' ') ?? '');
     this.form.phone = user.phone || '';
     this.form.stage = user.stage || '';
+    this.form.dueDate = user.dueDate || '';
   }
 
   saveProfile() {
@@ -351,7 +364,8 @@ export class MyProfileComponent implements OnInit {
       firstName: this.form.firstName.trim(),
       lastName: this.form.lastName.trim(),
       phone: this.form.phone.trim() || undefined,
-      stage: this.form.stage || undefined
+      stage: this.form.stage || undefined,
+      dueDate: this.form.dueDate || undefined
     }).subscribe(res => {
       this.saving.set(false);
       if (res?.success && res?.user) {
@@ -368,7 +382,8 @@ export class MyProfileComponent implements OnInit {
           lastName: this.form.lastName.trim(),
           name: `${this.form.firstName.trim()} ${this.form.lastName.trim()}`.trim(),
           phone: this.form.phone.trim() || user.phone,
-          stage: this.form.stage || user.stage
+          stage: this.form.stage || user.stage,
+          dueDate: this.form.dueDate || user.dueDate
         };
         this.api.setUser(updatedUser as any);
         this.showStatus('Profile saved locally (server offline).', false);

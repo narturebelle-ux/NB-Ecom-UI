@@ -11,7 +11,7 @@ import { MyProfileComponent } from './pages/profile/profile.component';
 import { featureGuard } from './guards/feature.guard';
 
 export const routes: Routes = [
-  { path: '', component: HomeComponent, title: 'NartureBelle® | Radical Honesty in Maternal Care' },
+  { path: '', component: HomeComponent, title: 'NartureBelle™ | Radical Honesty in Maternal Care' },
   { path: 'products/month-3', component: Month3Component, title: 'Month 3 Products (1st Trimester) | NartureBelle' },
   { path: 'products/month-6', component: Month6Component, title: 'Month 6 Products (2nd Trimester) | NartureBelle' },
   { path: 'products/month-9', component: Month9Component, title: 'Month 9 Products (3rd Trimester) | NartureBelle' },

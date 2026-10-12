@@ -26,7 +26,7 @@ import { RouterLink } from '@angular/router';
         <div class="footer-col brand-col">
           <div class="footer-brand">
             <span class="brand-leaf">🌿</span>
-            <span class="brand-name">NartureBelle®</span>
+            <span class="brand-name">NartureBelle™</span>
           </div>
           <p class="brand-mission">
             Your partner in conscious motherhood. We provide radical transparency on what pregnant mothers genuinely need vs. what to skip, paired with certified nurse care and doctor guidance.
@@ -87,7 +87,7 @@ import { RouterLink } from '@angular/router';
       <div class="container footer-bottom">
         <div class="disclaimer-box">
           <p>
-            <strong>Medical Disclaimer:</strong> Information and products presented on NartureBelle® are intended for supportive maternal wellness and educational guidance. They do not substitute for emergency medical care or direct clinical instructions from your registered obstetrician. Always consult your personal doctor regarding high-risk medical conditions.
+            <strong>Medical Disclaimer:</strong> Information and products presented on NartureBelle™ are intended for supportive maternal wellness and educational guidance. They do not substitute for emergency medical care or direct clinical instructions from your registered obstetrician. Always consult your personal doctor regarding high-risk medical conditions.
           </p>
         </div>
         <div class="bottom-links">
