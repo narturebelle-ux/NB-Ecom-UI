@@ -10,8 +10,8 @@ import { FeatureDirective } from '../../directives/feature.directive';
   standalone: true,
   imports: [RouterLink, RouterLinkActive, CommonModule, FeatureDirective],
   template: `
-    <!-- Top Announcement Bar -->
-    <div class="announcement-bar">
+    <!-- Top Announcement Bar (legacy lead-gen promo — hidden, not deleted) -->
+    <div *appFeature="'legacyLeadForms'" class="announcement-bar">
       <div class="container announcement-content">
         <span>✨ <strong>Free OB-GYN Live Masterclass:</strong> 1st Trimester Nutrition &amp; Safe Scans this Saturday!</span>
         <a routerLink="/doctors-live" class="announcement-link">Reserve Free Seat &rarr;</a>
@@ -34,8 +34,16 @@ import { FeatureDirective } from '../../directives/feature.directive';
         <nav class="nav-links">
           <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="nav-link">Home</a>
 
-          <!-- Trimester Stage Pills -->
-          <div class="stage-nav-group">
+          @if (api.currentUser()) {
+            <a routerLink="/journey" routerLinkActive="active" class="nav-link">My Journey</a>
+            <a *appFeature="'careBooking'" routerLink="/care" routerLinkActive="active" class="nav-link">Care</a>
+            <a *appFeature="'recordsVault'" routerLink="/records" routerLinkActive="active" class="nav-link">Records</a>
+            <a *appFeature="'childTracker'" routerLink="/child" routerLinkActive="active" class="nav-link">Child</a>
+            <a *appFeature="'aiAssistant'" routerLink="/ai" routerLinkActive="active" class="nav-link">AI</a>
+          }
+
+          <!-- Trimester Stage Pills — hidden behind productRecommendations until roadmap Phase 6 -->
+          <div *appFeature="'productRecommendations'" class="stage-nav-group">
             <a routerLink="/products/month-3" routerLinkActive="active" class="nav-link stage-pill m3">
               <span class="pill-dot"></span>Month 3
             </a>
@@ -51,23 +59,23 @@ import { FeatureDirective } from '../../directives/feature.directive';
             <span>📋</span> Checkup Checklist
           </a>
 
-          <!-- Feature-toggled nav links -->
-          <a *appFeature="'nurseCompanion'" routerLink="/services/nurse-companion" routerLinkActive="active" class="nav-link nurse-link">
+          <!-- Legacy lead-gen nav links — hidden, not deleted -->
+          <a *appFeature="'legacyLeadForms'" routerLink="/services/nurse-companion" routerLinkActive="active" class="nav-link nurse-link">
             <span>👩‍⚕️</span> Nurse Companion
           </a>
-          <a *appFeature="'doctorLiveSessions'" routerLink="/doctors-live" routerLinkActive="active" class="nav-link doctor-link">
+          <a *appFeature="'legacyLeadForms'" routerLink="/doctors-live" routerLinkActive="active" class="nav-link doctor-link">
             <span>🔴</span> Doctor Live
           </a>
         </nav>
 
         <!-- Right Header Actions -->
         <div class="header-actions">
-          <button (click)="openAssessment()" class="btn btn-secondary btn-sm assessment-btn">
+          <button *appFeature="'legacyLeadForms'" (click)="openAssessment()" class="btn btn-secondary btn-sm assessment-btn">
             <span>✨</span> Find My Routine
           </button>
 
           <!-- Cart Drawer Toggle -->
-          <button (click)="toggleCart()" class="cart-btn" aria-label="Shopping Cart">
+          <button *appFeature="'productRecommendations'" (click)="toggleCart()" class="cart-btn" aria-label="Shopping Cart">
             <span class="cart-icon">🛍️</span>
             @if (api.cartCount() > 0) {
               <span class="cart-badge">{{ api.cartCount() }}</span>
@@ -79,13 +87,19 @@ import { FeatureDirective } from '../../directives/feature.directive';
             <div class="user-menu" [class.menu-open]="isUserMenuOpen">
               <button class="user-pill" (click)="toggleUserMenu()" type="button">
                 <span class="user-avatar">🌸</span>
-                <span class="user-name">{{ getFirstName(user) }}</span>
+                <span class="user-name">{{ getDisplayName(user) }}</span>
                 <span class="chevron">{{ isUserMenuOpen ? '▲' : '▼' }}</span>
               </button>
               @if (isUserMenuOpen) {
                 <div class="user-dropdown">
+                  @if (needsName(user)) {
+                    <a routerLink="/profile" class="dropdown-item" (click)="isUserMenuOpen = false">
+                      <span>✏️</span> Add your name
+                    </a>
+                    <hr class="dropdown-divider">
+                  }
                   <a routerLink="/profile" class="dropdown-item" (click)="isUserMenuOpen = false">
-                    <span>👤</span> My Profile
+                    <span>👤</span> Profile &amp; Privacy
                   </a>
                   <hr class="dropdown-divider">
                   <button class="dropdown-item sign-out-item" (click)="signOut()">
@@ -109,32 +123,43 @@ import { FeatureDirective } from '../../directives/feature.directive';
       @if (isMobileOpen) {
         <div class="mobile-menu glass">
           <a routerLink="/" (click)="isMobileOpen = false" class="mobile-nav-link">Home</a>
-          <div class="mobile-stages-title">Browse By Pregnancy Milestone:</div>
-          <div class="mobile-stages-grid">
-            <a routerLink="/products/month-3" (click)="isMobileOpen = false" class="mobile-stage-btn m3">
-              <strong>Month 3</strong><span>1st Trimester</span>
-            </a>
-            <a routerLink="/products/month-6" (click)="isMobileOpen = false" class="mobile-stage-btn m6">
-              <strong>Month 6</strong><span>2nd Trimester</span>
-            </a>
-            <a routerLink="/products/month-9" (click)="isMobileOpen = false" class="mobile-stage-btn m9">
-              <strong>Month 9</strong><span>3rd Trimester</span>
-            </a>
+
+          @if (api.currentUser()) {
+            <a routerLink="/journey" (click)="isMobileOpen = false" class="mobile-nav-link">🌱 My Journey</a>
+            <a *appFeature="'careBooking'" routerLink="/care" (click)="isMobileOpen = false" class="mobile-nav-link">Care</a>
+            <a *appFeature="'recordsVault'" routerLink="/records" (click)="isMobileOpen = false" class="mobile-nav-link">Records</a>
+            <a *appFeature="'childTracker'" routerLink="/child" (click)="isMobileOpen = false" class="mobile-nav-link">Child</a>
+            <a *appFeature="'aiAssistant'" routerLink="/ai" (click)="isMobileOpen = false" class="mobile-nav-link">AI</a>
+          }
+
+          <div *appFeature="'productRecommendations'">
+            <div class="mobile-stages-title">Browse By Pregnancy Milestone:</div>
+            <div class="mobile-stages-grid">
+              <a routerLink="/products/month-3" (click)="isMobileOpen = false" class="mobile-stage-btn m3">
+                <strong>Month 3</strong><span>1st Trimester</span>
+              </a>
+              <a routerLink="/products/month-6" (click)="isMobileOpen = false" class="mobile-stage-btn m6">
+                <strong>Month 6</strong><span>2nd Trimester</span>
+              </a>
+              <a routerLink="/products/month-9" (click)="isMobileOpen = false" class="mobile-stage-btn m9">
+                <strong>Month 9</strong><span>3rd Trimester</span>
+              </a>
+            </div>
           </div>
           <hr class="mobile-divider">
           <a routerLink="/checklists" (click)="isMobileOpen = false" class="mobile-nav-link">
             📋 Prenatal Checkup Checklist &amp; Labs
           </a>
-          <a *appFeature="'nurseCompanion'" routerLink="/services/nurse-companion" (click)="isMobileOpen = false" class="mobile-nav-link">
+          <a *appFeature="'legacyLeadForms'" routerLink="/services/nurse-companion" (click)="isMobileOpen = false" class="mobile-nav-link">
             👩‍⚕️ Dedicated Nurse Care Companion
           </a>
-          <a *appFeature="'doctorLiveSessions'" routerLink="/doctors-live" (click)="isMobileOpen = false" class="mobile-nav-link">
+          <a *appFeature="'legacyLeadForms'" routerLink="/doctors-live" (click)="isMobileOpen = false" class="mobile-nav-link">
             🔴 OB-GYN Live Webinars
           </a>
           <hr class="mobile-divider">
           @if (api.currentUser(); as user) {
             <a routerLink="/profile" (click)="isMobileOpen = false" class="mobile-nav-link profile-link">
-              👤 My Profile ({{ getFirstName(user) }})
+              👤 Profile &amp; Privacy ({{ getDisplayName(user) }})
             </a>
             <button (click)="signOut()" class="btn btn-outline btn-sm mobile-action-btn">
               🚪 Sign Out
@@ -144,7 +169,7 @@ import { FeatureDirective } from '../../directives/feature.directive';
               Sign In
             </a>
           }
-          <button (click)="openAssessment(); isMobileOpen = false" class="btn btn-primary btn-sm mobile-action-btn">
+          <button *appFeature="'legacyLeadForms'" (click)="openAssessment(); isMobileOpen = false" class="btn btn-primary btn-sm mobile-action-btn">
             ✨ Take 60s Pregnancy Checkup
           </button>
         </div>
@@ -475,10 +500,17 @@ export class NavbarComponent {
     this.isUserMenuOpen = false;
   }
 
-  getFirstName(user: any): string {
-    if (user?.firstName) return user.firstName;
-    if (user?.name) return user.name.split(' ')[0];
-    return 'You';
+  /** Full "First Last" per roadmap §0.5, falling back to first name only, then email, then a prompt. */
+  getDisplayName(user: any): string {
+    if (user?.firstName) return [user.firstName, user.lastName].filter(Boolean).join(' ');
+    if (user?.name) return user.name;
+    if (user?.email) return user.email;
+    return 'Add your name';
+  }
+
+  /** Phone-only users with no name on file get prompted to add one. */
+  needsName(user: any): boolean {
+    return !user?.firstName && !user?.name && !user?.email;
   }
 
   signOut() {
