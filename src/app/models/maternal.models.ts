@@ -103,7 +103,14 @@ export interface User {
   authProvider: string;
   stage?: PregnancyStage;
   dueDate?: string;
+  /** @deprecated single-role string from the old model — use `roles` instead. */
   role: string;
+  /** Roadmap Phase 0 §0.6 role model — a user can hold more than one role (defaults to ["MOTHER"]). */
+  roles?: string[];
+  /** Only present on GET/PATCH /api/v1/me — required consent document types not yet granted. */
+  pendingConsents?: string[];
+  /** Only present on GET/PATCH /api/v1/me — whether a non-CLOSED Journey already exists. */
+  hasActiveJourney?: boolean;
   createdAt?: string;
 }
 
@@ -112,7 +119,70 @@ export function isVerifiedUser(user: User | null | undefined): boolean {
   return !!user && (user.emailVerified === true || user.phoneVerified === true);
 }
 
+/** True if the user holds any admin-type role (roadmap §0.6 — any `*_ADMIN` role, not a single "ADMIN" string). */
+export function isAdminUser(user: User | null | undefined): boolean {
+  return !!user?.roles?.some(r => r.endsWith('_ADMIN'));
+}
+
 export interface CartItem {
   product: Product;
   quantity: number;
 }
+
+// --- Phase 1: Consent (roadmap §1.1) ---
+
+export type ConsentDocumentType = 'TERMS' | 'PRIVACY';
+
+export interface ConsentDocument {
+  id: number;
+  type: ConsentDocumentType;
+  version: number;
+  title: string;
+  bodyMarkdown: string;
+  effectiveAt?: string;
+  active: boolean;
+}
+
+export interface Consent {
+  id: number;
+  userId: number;
+  documentType: ConsentDocumentType;
+  documentVersion: number;
+  grantedAt?: string;
+  revokedAt?: string | null;
+}
+
+export interface ConsentStatus {
+  history: Consent[];
+  pending: string[];
+}
+
+// --- Phase 1: Journey (roadmap §1.2) ---
+
+export type JourneyStatus =
+  | 'PREGNANCY'
+  | 'PRE_DELIVERY'
+  | 'DELIVERY_COMPLETED'
+  | 'POSTPARTUM'
+  | 'CHILDCARE_0_7'
+  | 'CLOSED';
+
+export interface Journey {
+  id: number;
+  status: JourneyStatus;
+  expectedDeliveryDate?: string | null;
+  startedAt: string;
+  closedAt?: string | null;
+  /** Computed, never persisted — only present for an active PREGNANCY journey with an EDD on file. */
+  gestationalWeek?: number;
+  trimester?: number;
+}
+
+export const JOURNEY_STATUS_LABELS: Record<JourneyStatus, string> = {
+  PREGNANCY: 'Pregnancy',
+  PRE_DELIVERY: 'Pre-Delivery',
+  DELIVERY_COMPLETED: 'Delivery Completed',
+  POSTPARTUM: 'Postpartum',
+  CHILDCARE_0_7: 'Early Childcare (0–7 years)',
+  CLOSED: 'Closed'
+};

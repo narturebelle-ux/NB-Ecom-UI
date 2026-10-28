@@ -10,7 +10,12 @@ import {
   DoctorSession,
   User,
   CartItem,
-  PregnancyStage
+  PregnancyStage,
+  ConsentDocument,
+  ConsentDocumentType,
+  ConsentStatus,
+  Journey,
+  JourneyStatus
 } from '../models/maternal.models';
 import { environment } from '../../environments/environment';
 
@@ -172,9 +177,63 @@ export class ApiService {
     );
   }
 
-  /** GET /api/v1/users/me — the logged-in user's own profile. */
-  getMyProfile(): Observable<User> {
-    return this.http.get<User>(`${this.baseUrl}/users/me`);
+  /**
+   * GET /api/v1/me — the logged-in user's own profile (roadmap §0.6, switched from the
+   * now-deprecated /users/me). Also returns `roles[]`, `pendingConsents` and
+   * `hasActiveJourney`, used to route straight to the consent screen or journey setup.
+   */
+  getMe(): Observable<User> {
+    return this.http.get<User>(`${this.baseUrl}/me`);
+  }
+
+  /** PATCH /api/v1/me — same body/semantics as the old PUT /users/me; requires a verified user. */
+  updateMe(payload: {
+    firstName?: string;
+    lastName?: string;
+    phone?: string;
+    stage?: string;
+    dueDate?: string;
+  }): Observable<User> {
+    return this.http.patch<User>(`${this.baseUrl}/me`, payload);
+  }
+
+  // --- Phase 1: Consent (roadmap §1.1) ---
+
+  /** GET /api/v1/consent-documents/current — public; the active version of every document type. */
+  getConsentDocuments(): Observable<ConsentDocument[]> {
+    return this.http.get<ConsentDocument[]>(`${this.baseUrl}/consent-documents/current`);
+  }
+
+  /** GET /api/v1/me/consents — this user's grant history plus which types are still pending. */
+  getMyConsents(): Observable<ConsentStatus> {
+    return this.http.get<ConsentStatus>(`${this.baseUrl}/me/consents`);
+  }
+
+  /** POST /api/v1/me/consents — grants the given document type/version for the current user. */
+  grantConsent(documentType: ConsentDocumentType, documentVersion: number): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/me/consents`, { documentType, documentVersion });
+  }
+
+  /** POST /api/v1/me/consents/{type}/revoke */
+  revokeConsent(documentType: ConsentDocumentType): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/me/consents/${documentType}/revoke`, {});
+  }
+
+  // --- Phase 1: Journey (roadmap §1.2) ---
+
+  /** POST /api/v1/me/journeys — fails with 409 JOURNEY_ALREADY_ACTIVE if one already exists. */
+  createJourney(status: JourneyStatus, expectedDeliveryDate?: string | null): Observable<Journey> {
+    return this.http.post<Journey>(`${this.baseUrl}/me/journeys`, { status, expectedDeliveryDate });
+  }
+
+  /** GET /api/v1/me/journeys — all journeys for the current user, most recent first. */
+  getJourneys(): Observable<Journey[]> {
+    return this.http.get<Journey[]>(`${this.baseUrl}/me/journeys`);
+  }
+
+  /** PATCH /api/v1/me/journeys/{id} — both fields optional, only non-null ones are applied. */
+  updateJourney(id: number, patch: { status?: JourneyStatus; expectedDeliveryDate?: string | null }): Observable<Journey> {
+    return this.http.patch<Journey>(`${this.baseUrl}/me/journeys/${id}`, patch);
   }
 
   // --- Cart Operations ---
@@ -232,24 +291,6 @@ export class ApiService {
     this.currentUser.set(null);
     localStorage.removeItem('nb_user');
     this.showToast('You have signed out.');
-  }
-
-  /** PUT /api/v1/users/me — the logged-in user's own profile, per the AUTH CONTRACT. */
-  updateProfile(payload: {
-    firstName?: string;
-    lastName?: string;
-    phone?: string;
-    stage?: string;
-    dueDate?: string;
-  }): Observable<any> {
-    return this.http.put<any>(`${this.baseUrl}/users/me`, payload).pipe(
-      catchError((err: HttpErrorResponse) => {
-        if (err.status !== 0) {
-          return throwError(() => err);
-        }
-        return of({ success: false, message: 'Could not reach server. Please try again.' });
-      })
-    );
   }
 
   // --- Toast ---
