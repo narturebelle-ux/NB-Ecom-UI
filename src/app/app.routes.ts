@@ -40,6 +40,12 @@ export const routes: Routes = [
 
   { path: 'auth/login', component: LoginComponent, title: 'Sign In | NartureBelle' },
   { path: 'auth/verify-email', component: VerifyEmailComponent, title: 'Verify Your Email | NartureBelle', canActivate: [authGuard] },
+  {
+    path: 'auth/consent',
+    title: 'Terms & Privacy | NartureBelle',
+    canActivate: [authGuard],
+    loadComponent: () => import('./pages/consent/consent.component').then(m => m.ConsentComponent)
+  },
 
   // Lazy-loaded feature areas (roadmap §0.1) — /care, /records, /child, /provider,
   // /admin slot in here the same way once their phases ship.

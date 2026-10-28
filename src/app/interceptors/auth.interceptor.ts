@@ -41,6 +41,8 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
       } else if (err.status === 403) {
         if (err.error?.code === 'EMAIL_NOT_VERIFIED') {
           router.navigate(['/auth/verify-email']);
+        } else if (err.error?.code === 'CONSENT_REQUIRED') {
+          router.navigate(['/auth/consent'], { queryParams: { returnUrl: router.url } });
         } else {
           api.showToast(err.error?.message || "You're not allowed to do that.");
         }
