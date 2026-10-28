@@ -1,6 +1,6 @@
 import { Component, inject, OnDestroy, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { RecaptchaVerifier } from 'firebase/auth';
 import { ApiService } from '../../services/api.service';
@@ -10,7 +10,7 @@ import { User, ConsentDocument, ConsentStatus, ConsentDocumentType } from '../..
 @Component({
   selector: 'app-profile',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterLink],
   template: `
     <div class="profile-page">
       <div class="profile-container">
@@ -115,45 +115,9 @@ import { User, ConsentDocument, ConsentStatus, ConsentDocumentType } from '../..
           <!-- Phone verification (Firebase linkWithPhoneNumber) is temporarily hidden —
                not needed right now. Logic stays in the component, just not rendered. -->
 
-          <div class="form-row">
-            <div class="form-group">
-              <label class="form-label">Trimester</label>
-              <select class="form-control" [(ngModel)]="form.stage" name="stage" (ngModelChange)="onStageChange()" [disabled]="!editMode()">
-                <option value="">— Select your trimester —</option>
-                <option value="MONTH_3">1st Trimester</option>
-                <option value="MONTH_6">2nd Trimester</option>
-                <option value="MONTH_9">3rd Trimester</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label class="form-label">Which Month?</label>
-              <select
-                class="form-control"
-                [(ngModel)]="monthInStage"
-                name="monthInStage"
-                (ngModelChange)="onMonthChange()"
-                [disabled]="!editMode() || !form.stage"
-              >
-                <option [ngValue]="null">— Select month —</option>
-                @for (m of monthOptionsForStage(); track m) {
-                  <option [ngValue]="m">Month {{ m }}</option>
-                }
-              </select>
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">Expected Due Date</label>
-            <input
-              type="date"
-              class="form-control"
-              [(ngModel)]="form.dueDate"
-              name="dueDate"
-              [disabled]="!editMode()"
-            />
-            <span class="field-hint">
-              {{ monthInStage ? 'Estimated from your selected month — adjust if your doctor gave you an exact date.' : 'Pick your trimester and month above for an estimate, or enter an exact date here.' }}
-            </span>
+          <div class="journey-pointer">
+            <span>🌱</span>
+            <span>Your pregnancy stage and due date now live in <a routerLink="/journey">My Journey</a>, not here.</span>
           </div>
 
           <div class="form-actions">
@@ -405,6 +369,20 @@ import { User, ConsentDocument, ConsentStatus, ConsentDocumentType } from '../..
       margin: 0;
     }
 
+    .journey-pointer {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      background: #f0f5f1;
+      border: 1px solid #d5e0d8;
+      border-radius: 10px;
+      padding: 0.75rem 1rem;
+      font-size: 0.85rem;
+      color: #4a6355;
+      margin-bottom: 1.25rem;
+    }
+    .journey-pointer a { color: #2e4f3e; font-weight: 700; text-decoration: underline; }
+
     .consent-center {
       background: #fff;
       border-radius: 16px;
@@ -501,9 +479,7 @@ export class MyProfileComponent implements OnInit, OnDestroy {
   form = {
     firstName: '',
     lastName: '',
-    phone: '',
-    stage: '',
-    dueDate: ''
+    phone: ''
   };
 
   // Fields stay read-only (and Update Profile disabled) until the user flips this on —
@@ -512,35 +488,6 @@ export class MyProfileComponent implements OnInit, OnDestroy {
 
   toggleEditMode() {
     this.editMode.set(!this.editMode());
-  }
-
-  // Which month (1-9) within the selected trimester — UI-only, not sent to the backend
-  // directly. Used purely to estimate form.dueDate; the user can still edit that field
-  // by hand afterward (e.g. to enter an exact date from their doctor).
-  monthInStage: number | null = null;
-
-  private static readonly MONTHS_BY_STAGE: Record<string, number[]> = {
-    MONTH_3: [1, 2, 3],
-    MONTH_6: [4, 5, 6],
-    MONTH_9: [7, 8, 9]
-  };
-
-  monthOptionsForStage(): number[] {
-    return MyProfileComponent.MONTHS_BY_STAGE[this.form.stage] || [];
-  }
-
-  onStageChange() {
-    // Changing trimester invalidates whichever month was picked for the old one.
-    this.monthInStage = null;
-  }
-
-  onMonthChange() {
-    if (!this.monthInStage) return;
-    // Pregnancy is ~9 months total; a simple calendar-month estimate is accurate enough
-    // for "approximate" — exact dates come from the user's doctor, not this app.
-    const due = new Date();
-    due.setMonth(due.getMonth() + (9 - this.monthInStage));
-    this.form.dueDate = due.toISOString().slice(0, 10);
   }
 
   // Phone-number verification (linkWithPhoneNumber), separate from the plain
@@ -637,8 +584,6 @@ export class MyProfileComponent implements OnInit, OnDestroy {
     this.form.firstName = user.firstName || (user.name?.split(' ')[0] ?? '');
     this.form.lastName = user.lastName || (user.name?.split(' ').slice(1).join(' ') ?? '');
     this.form.phone = user.phone || '';
-    this.form.stage = user.stage || '';
-    this.form.dueDate = user.dueDate || '';
   }
 
   saveProfile() {
@@ -656,9 +601,7 @@ export class MyProfileComponent implements OnInit, OnDestroy {
     this.api.updateMe({
       firstName: this.form.firstName.trim(),
       lastName: this.form.lastName.trim(),
-      phone: this.form.phone.trim() || undefined,
-      stage: this.form.stage || undefined,
-      dueDate: this.form.dueDate || undefined
+      phone: this.form.phone.trim() || undefined
     }).subscribe({
       next: (res) => {
         this.saving.set(false);

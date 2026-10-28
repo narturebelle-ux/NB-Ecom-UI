@@ -15,7 +15,8 @@ import {
   ConsentDocumentType,
   ConsentStatus,
   Journey,
-  JourneyStatus
+  JourneyStatus,
+  Dashboard
 } from '../models/maternal.models';
 import { environment } from '../../environments/environment';
 
@@ -186,14 +187,12 @@ export class ApiService {
     return this.http.get<User>(`${this.baseUrl}/me`);
   }
 
-  /** PATCH /api/v1/me — same body/semantics as the old PUT /users/me; requires a verified user. */
-  updateMe(payload: {
-    firstName?: string;
-    lastName?: string;
-    phone?: string;
-    stage?: string;
-    dueDate?: string;
-  }): Observable<User> {
+  /**
+   * PATCH /api/v1/me — requires a verified user. Per UI_INTEGRATION_GUIDE.md §7, `stage`/
+   * `dueDate` are frozen as of the Journey migration: the API accepts but silently ignores
+   * them now, so this only ever sends the three fields it still actually writes.
+   */
+  updateMe(payload: { firstName?: string; lastName?: string; phone?: string }): Observable<User> {
     return this.http.patch<User>(`${this.baseUrl}/me`, payload);
   }
 
@@ -234,6 +233,15 @@ export class ApiService {
   /** PATCH /api/v1/me/journeys/{id} — both fields optional, only non-null ones are applied. */
   updateJourney(id: number, patch: { status?: JourneyStatus; expectedDeliveryDate?: string | null }): Observable<Journey> {
     return this.http.patch<Journey>(`${this.baseUrl}/me/journeys/${id}`, patch);
+  }
+
+  /**
+   * GET /api/v1/me/dashboard — requires consent (403 CONSENT_REQUIRED otherwise, handled
+   * globally by the auth interceptor). Pulls profile/consent/journey/nextActions together;
+   * `journeySetupRequired` drives the "Set up your journey" card.
+   */
+  getDashboard(): Observable<Dashboard> {
+    return this.http.get<Dashboard>(`${this.baseUrl}/me/dashboard`);
   }
 
   // --- Cart Operations ---

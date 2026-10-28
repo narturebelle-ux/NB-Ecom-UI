@@ -3,7 +3,13 @@ import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../services/api.service';
-import { Journey, JourneyStatus, JOURNEY_STATUS_LABELS } from '../../models/maternal.models';
+import {
+  Journey,
+  JourneyStatus,
+  JOURNEY_STATUS_LABELS,
+  NextAction,
+  PROFESSIONAL_TYPE_LABELS
+} from '../../models/maternal.models';
 
 const ALL_STATUSES: JourneyStatus[] = [
   'PREGNANCY',
@@ -14,10 +20,9 @@ const ALL_STATUSES: JourneyStatus[] = [
 ];
 
 /**
- * Real "My Journey" dashboard (roadmap §Phase 1 UI, brief §1.4) — built directly against
- * POST/GET/PATCH /me/journeys since GET /me/dashboard (brief §1.3) hasn't shipped yet.
- * Per the roadmap: "the user can join at any state and can correct the stage or EDD" —
- * so this lets them pick any JourneyStatus, not just PREGNANCY, when first setting up.
+ * Real "My Journey" dashboard (roadmap §Phase 1 UI, brief §1.4), now built against
+ * GET /api/v1/me/dashboard (brief §1.3, shipped 2026-10-28) rather than the bare
+ * /me/journeys list — gives the real next-actions timeline instead of a "coming soon" note.
  */
 @Component({
   selector: 'app-journey',
@@ -33,7 +38,7 @@ const ALL_STATUSES: JourneyStatus[] = [
           <div class="card glass loading-card">Loading your journey…</div>
         } @else if (errorMsg()) {
           <div class="status-banner is-error">{{ errorMsg() }}</div>
-        } @else if (!activeJourney() && !settingUp()) {
+        } @else if (journeySetupRequired() && !settingUp()) {
           <!-- No active journey: setup card -->
           <div class="card glass setup-card">
             <span class="icon">🌱</span>
@@ -94,12 +99,37 @@ const ALL_STATUSES: JourneyStatus[] = [
               <p class="edd-line">Expected delivery: <strong>{{ journey.expectedDeliveryDate | date:'mediumDate' }}</strong></p>
             }
 
-            <p class="next-actions-note">
-              Personalised next actions and your care timeline are coming soon — this dashboard
-              will grow to show them once that's ready.
+            <button class="btn btn-outline" (click)="startEdit(journey)">Edit Stage / EDD</button>
+          </div>
+
+          <!-- Next actions timeline -->
+          <div class="card glass timeline-card">
+            <h3>Your Care Timeline</h3>
+            <p class="clinical-disclaimer">
+              ⚠️ This guidance is pending clinical review and isn't medical advice — always confirm with your own doctor.
             </p>
 
-            <button class="btn btn-outline" (click)="startEdit(journey)">Edit Stage / EDD</button>
+            @if (nextActions().length === 0) {
+              <p class="field-hint">Nothing queued up for your current stage yet.</p>
+            } @else {
+              <div class="action-list">
+                @for (action of nextActions(); track action.title) {
+                  <div class="action-row">
+                    <div class="action-icon">{{ action.optional ? '💡' : '📋' }}</div>
+                    <div class="action-body">
+                      <div class="action-head">
+                        <strong>{{ action.title }}</strong>
+                        @if (action.optional) {
+                          <span class="optional-badge">Optional</span>
+                        }
+                      </div>
+                      <p>{{ action.description }}</p>
+                      <span class="professional-tag">{{ professionalLabel(action.professionalType) }}</span>
+                    </div>
+                  </div>
+                }
+              </div>
+            }
           </div>
         }
 
@@ -123,6 +153,7 @@ const ALL_STATUSES: JourneyStatus[] = [
       background: #fff;
       box-shadow: 0 20px 45px rgba(27, 51, 39, 0.08);
       border: 1px solid var(--border-light);
+      margin-bottom: 1.5rem;
     }
     .loading-card { padding: 2.5rem; text-align: center; color: var(--text-muted); }
 
@@ -169,14 +200,40 @@ const ALL_STATUSES: JourneyStatus[] = [
     .trimester-badge { background: var(--blush-100); color: var(--blush-700); }
     .dashboard-card h2 { font-size: 1.75rem; color: var(--sage-900); margin-bottom: 0.5rem; }
     .edd-line { font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 1rem; }
-    .next-actions-note {
-      font-size: 0.82rem;
-      color: var(--text-muted);
-      font-style: italic;
-      background: var(--sage-50);
-      padding: 0.85rem 1rem;
+
+    .timeline-card { padding: 2rem; }
+    .timeline-card h3 { font-size: 1.15rem; color: var(--primary-deep); margin-bottom: 0.5rem; }
+    .clinical-disclaimer {
+      font-size: 0.78rem;
+      color: #92610a;
+      background: #fff8eb;
+      border: 1px solid #fbd38d;
       border-radius: var(--radius-md);
-      margin-bottom: 1.5rem;
+      padding: 0.6rem 0.85rem;
+      margin-bottom: 1.25rem;
+    }
+    .action-list { display: flex; flex-direction: column; gap: 1rem; }
+    .action-row { display: flex; gap: 0.85rem; align-items: flex-start; }
+    .action-icon { font-size: 1.3rem; flex-shrink: 0; }
+    .action-body { flex: 1; }
+    .action-head { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+    .action-head strong { font-size: 0.95rem; color: var(--sage-900); }
+    .optional-badge {
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      background: var(--sage-50);
+      padding: 0.15rem 0.5rem;
+      border-radius: var(--radius-full);
+    }
+    .action-body p { font-size: 0.85rem; color: var(--text-secondary); margin: 0.25rem 0 0.4rem; line-height: 1.5; }
+    .professional-tag {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--blush-700);
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
     }
 
     .status-banner {
@@ -198,7 +255,7 @@ const ALL_STATUSES: JourneyStatus[] = [
     .back-link {
       display: block;
       text-align: center;
-      margin-top: 1.5rem;
+      margin-top: 0.5rem;
       font-size: 0.85rem;
       color: var(--text-muted);
     }
@@ -211,7 +268,10 @@ export class JourneyComponent implements OnInit {
 
   loading = signal(true);
   errorMsg = signal<string | null>(null);
+  journeySetupRequired = signal(true);
   activeJourney = signal<Journey | null>(null);
+  nextActions = signal<NextAction[]>([]);
+
   settingUp = signal(false);
   editing = signal(false);
   saving = signal(false);
@@ -229,12 +289,22 @@ export class JourneyComponent implements OnInit {
     return JOURNEY_STATUS_LABELS[status];
   }
 
+  professionalLabel(type: NextAction['professionalType']): string {
+    return PROFESSIONAL_TYPE_LABELS[type] || type;
+  }
+
   ngOnInit() {
-    this.api.getJourneys().subscribe({
-      next: (journeys) => {
+    this.loadDashboard();
+  }
+
+  private loadDashboard() {
+    this.loading.set(true);
+    this.api.getDashboard().subscribe({
+      next: (dashboard) => {
         this.loading.set(false);
-        const active = journeys.find(j => j.status !== 'CLOSED') || null;
-        this.activeJourney.set(active);
+        this.journeySetupRequired.set(dashboard.journeySetupRequired);
+        this.activeJourney.set(dashboard.journey);
+        this.nextActions.set(dashboard.nextActions || []);
       },
       error: (err) => {
         this.loading.set(false);
@@ -269,12 +339,12 @@ export class JourneyComponent implements OnInit {
       : this.api.createJourney(this.formStatus, edd);
 
     request.subscribe({
-      next: (journey) => {
+      next: () => {
         this.saving.set(false);
-        this.activeJourney.set(journey);
         this.settingUp.set(false);
         this.editing.set(false);
         this.api.showToast(active ? 'Journey updated.' : 'Your journey is set up!');
+        this.loadDashboard();
       },
       error: (err) => {
         this.saving.set(false);

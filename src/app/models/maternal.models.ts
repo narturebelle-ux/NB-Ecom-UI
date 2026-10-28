@@ -186,3 +186,39 @@ export const JOURNEY_STATUS_LABELS: Record<JourneyStatus, string> = {
   CHILDCARE_0_7: 'Early Childcare (0–7 years)',
   CLOSED: 'Closed'
 };
+
+// --- Phase 1: Dashboard (roadmap §1.3) ---
+
+export type ProfessionalType =
+  | 'GYNECOLOGIST'
+  | 'NUTRITIONIST'
+  | 'LACTATION_CONSULTANT'
+  | 'PEDIATRICIAN'
+  | 'POSTPARTUM_PHYSIOTHERAPIST'
+  | 'CLINICAL_PSYCHOLOGIST';
+
+export const PROFESSIONAL_TYPE_LABELS: Record<ProfessionalType, string> = {
+  GYNECOLOGIST: 'Gynecologist',
+  NUTRITIONIST: 'Nutritionist',
+  LACTATION_CONSULTANT: 'Lactation Consultant',
+  PEDIATRICIAN: 'Pediatrician',
+  POSTPARTUM_PHYSIOTHERAPIST: 'Postpartum Physiotherapist',
+  CLINICAL_PSYCHOLOGIST: 'Clinical Psychologist'
+};
+
+export interface NextAction {
+  professionalType: ProfessionalType;
+  title: string;
+  description: string;
+  /** Always "PENDING_CLINICAL_REVIEW" today — this content hasn't been clinically signed off yet. */
+  reviewStatus: string;
+  optional: boolean;
+}
+
+export interface Dashboard {
+  profile: { firstName?: string; lastName?: string };
+  pendingConsents: string[];
+  journey: Journey | null;
+  nextActions: NextAction[];
+  journeySetupRequired: boolean;
+}
