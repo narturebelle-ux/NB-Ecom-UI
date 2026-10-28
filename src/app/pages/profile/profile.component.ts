@@ -1,8 +1,10 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, inject, OnDestroy, OnInit, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import { RecaptchaVerifier } from 'firebase/auth';
 import { ApiService } from '../../services/api.service';
 import { FirebaseAuthService } from '../../services/firebase-auth.service';
+import { User } from '../../models/maternal.models';
 
 @Component({
   selector: 'app-profile',
@@ -31,6 +33,15 @@ import { FirebaseAuthService } from '../../services/firebase-auth.service';
           </div>
         }
 
+        <!-- Edit toggle -->
+        <div class="edit-toggle-row">
+          <span class="edit-toggle-label">{{ editMode() ? 'Editing — make your changes below' : 'Edit Profile Details' }}</span>
+          <label class="switch">
+            <input type="checkbox" [checked]="editMode()" (change)="toggleEditMode()">
+            <span class="slider"></span>
+          </label>
+        </div>
+
         <!-- Profile Form -->
         <form class="profile-form" (ngSubmit)="saveProfile()">
 
@@ -44,6 +55,7 @@ import { FirebaseAuthService } from '../../services/firebase-auth.service';
                 name="firstName"
                 placeholder="e.g. Priya"
                 required
+                [disabled]="!editMode()"
               />
             </div>
             <div class="form-group">
@@ -54,6 +66,7 @@ import { FirebaseAuthService } from '../../services/firebase-auth.service';
                 [(ngModel)]="form.lastName"
                 name="lastName"
                 placeholder="e.g. Sharma"
+                [disabled]="!editMode()"
               />
             </div>
           </div>
@@ -67,7 +80,18 @@ import { FirebaseAuthService } from '../../services/firebase-auth.service';
               readonly
               title="Email cannot be changed here. Use your Google/Firebase account settings."
             />
-            <span class="field-hint">🔒 Managed by your sign-in provider</span>
+            <span class="field-hint auth-status">
+              @if (api.currentUser()?.authProvider === 'GOOGLE' || api.currentUser()?.authProvider === 'GOOGLE.COM') {
+                🔵 Signed in with Google
+              } @else if (api.currentUser()?.authProvider === 'PHONE' || api.currentUser()?.authProvider === 'PHONE.PHONE') {
+                📱 Signed in with Phone OTP
+              } @else if (api.currentUser()?.emailVerified) {
+                ✅ Verified
+              } @else {
+                ⚠️ Not verified yet
+              }
+              · 🔒 Managed by your sign-in provider
+            </span>
           </div>
 
           <div class="form-group">
@@ -82,33 +106,57 @@ import { FirebaseAuthService } from '../../services/firebase-auth.service';
                 placeholder="10-digit mobile number"
                 maxlength="10"
                 pattern="[0-9]{10}"
+                [disabled]="!editMode()"
               />
             </div>
           </div>
+
+          <!-- Phone verification (Firebase linkWithPhoneNumber) is temporarily hidden —
+               not needed right now. Logic stays in the component, just not rendered. -->
 
           <div class="form-row">
             <div class="form-group">
-              <label class="form-label">Pregnancy Stage</label>
-              <select class="form-control" [(ngModel)]="form.stage" name="stage">
-                <option value="">— Select your stage —</option>
-                <option value="MONTH_3">Month 3 (1st Trimester)</option>
-                <option value="MONTH_6">Month 6 (2nd Trimester)</option>
-                <option value="MONTH_9">Month 9 (3rd Trimester)</option>
+              <label class="form-label">Trimester</label>
+              <select class="form-control" [(ngModel)]="form.stage" name="stage" (ngModelChange)="onStageChange()" [disabled]="!editMode()">
+                <option value="">— Select your trimester —</option>
+                <option value="MONTH_3">1st Trimester</option>
+                <option value="MONTH_6">2nd Trimester</option>
+                <option value="MONTH_9">3rd Trimester</option>
               </select>
             </div>
             <div class="form-group">
-              <label class="form-label">Expected Due Date</label>
-              <input
-                type="date"
+              <label class="form-label">Which Month?</label>
+              <select
                 class="form-control"
-                [(ngModel)]="form.dueDate"
-                name="dueDate"
-              />
+                [(ngModel)]="monthInStage"
+                name="monthInStage"
+                (ngModelChange)="onMonthChange()"
+                [disabled]="!editMode() || !form.stage"
+              >
+                <option [ngValue]="null">— Select month —</option>
+                @for (m of monthOptionsForStage(); track m) {
+                  <option [ngValue]="m">Month {{ m }}</option>
+                }
+              </select>
             </div>
           </div>
 
+          <div class="form-group">
+            <label class="form-label">Expected Due Date</label>
+            <input
+              type="date"
+              class="form-control"
+              [(ngModel)]="form.dueDate"
+              name="dueDate"
+              [disabled]="!editMode()"
+            />
+            <span class="field-hint">
+              {{ monthInStage ? 'Estimated from your selected month — adjust if your doctor gave you an exact date.' : 'Pick your trimester and month above for an estimate, or enter an exact date here.' }}
+            </span>
+          </div>
+
           <div class="form-actions">
-            <button type="submit" class="btn btn-primary" [disabled]="saving()">
+            <button type="submit" class="btn btn-primary" [disabled]="!editMode() || saving()">
               @if (saving()) { ⏳ Saving… } @else { 💾 Update Profile }
             </button>
             <button type="button" class="btn btn-outline" (click)="signOut()">
@@ -117,21 +165,7 @@ import { FirebaseAuthService } from '../../services/firebase-auth.service';
           </div>
         </form>
 
-        <!-- Auth Info Card -->
-        <div class="auth-info-card">
-          <span class="auth-badge">
-            @if (api.currentUser()?.authProvider === 'GOOGLE' || api.currentUser()?.authProvider === 'GOOGLE.COM') {
-              🔵 Signed in with Google
-            } @else if (api.currentUser()?.authProvider === 'PHONE' || api.currentUser()?.authProvider === 'PHONE.PHONE') {
-              📱 Signed in with Phone OTP
-            } @else {
-              ✅ {{ api.currentUser()?.authProvider || 'Authenticated' }}
-            }
-          </span>
-          <span class="member-since">
-            Member since {{ memberSince() }}
-          </span>
-        </div>
+        <p class="member-since">Member since {{ memberSince() }}</p>
 
       </div>
     </div>
@@ -245,9 +279,18 @@ import { FirebaseAuthService } from '../../services/firebase-auth.service';
       color: #8a9e90;
       cursor: not-allowed;
     }
+    .form-control:disabled {
+      background: #f6f8f6;
+      color: #8a9e90;
+      cursor: not-allowed;
+    }
     .field-hint {
       font-size: 0.77rem;
       color: #8a9e90;
+    }
+    .auth-status {
+      font-weight: 600;
+      color: #4a6355;
     }
     .phone-input-row {
       display: flex;
@@ -266,6 +309,24 @@ import { FirebaseAuthService } from '../../services/firebase-auth.service';
     }
     .phone-input-row .form-control {
       border-radius: 0 10px 10px 0;
+    }
+
+    .verify-phone-block {
+      margin-bottom: 1.25rem;
+    }
+    .verified-pill {
+      display: inline-block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #1b6b3a;
+      background: #e8f5ec;
+      border: 1px solid #b2dfca;
+      padding: 0.3rem 0.75rem;
+      border-radius: var(--radius-full, 999px);
+    }
+    .btn-sm {
+      padding: 0.5rem 1rem;
+      font-size: 0.85rem;
     }
 
     .form-actions {
@@ -295,30 +356,80 @@ import { FirebaseAuthService } from '../../services/firebase-auth.service';
       color: #4a6355;
     }
     .btn-outline:hover { background: #f0f5f1; }
-
-    .auth-info-card {
-      background: #fff;
-      border-radius: 12px;
-      padding: 1rem 1.25rem;
-      border: 1px solid #e8ede9;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 0.5rem;
-    }
-    .auth-badge {
+    .btn-link {
+      background: none;
+      border: none;
+      color: #4a6355;
       font-size: 0.85rem;
       font-weight: 600;
-      color: #2e4f3e;
+      text-decoration: underline;
+      cursor: pointer;
+      padding: 0.4rem;
     }
+
     .member-since {
       font-size: 0.8rem;
       color: #8a9e90;
+      text-align: center;
+      margin: 0;
+    }
+
+    .edit-toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #fff;
+      border: 1px solid #e8ede9;
+      border-radius: 12px;
+      padding: 0.85rem 1.25rem;
+      margin-bottom: 1.25rem;
+    }
+    .edit-toggle-label {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #1b3327;
+    }
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 44px;
+      height: 24px;
+      flex-shrink: 0;
+    }
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      inset: 0;
+      background: #d5e0d8;
+      border-radius: 999px;
+      transition: background 0.2s;
+    }
+    .slider::before {
+      content: '';
+      position: absolute;
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background: #fff;
+      border-radius: 50%;
+      transition: transform 0.2s;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+    .switch input:checked + .slider {
+      background: #2e4f3e;
+    }
+    .switch input:checked + .slider::before {
+      transform: translateX(20px);
     }
   `]
 })
-export class MyProfileComponent implements OnInit {
+export class MyProfileComponent implements OnInit, OnDestroy {
   api = inject(ApiService);
   firebaseAuth = inject(FirebaseAuthService);
   router = inject(Router);
@@ -335,12 +446,73 @@ export class MyProfileComponent implements OnInit {
     dueDate: ''
   };
 
+  // Fields stay read-only (and Update Profile disabled) until the user flips this on —
+  // auto-locks again after a successful save.
+  editMode = signal(false);
+
+  toggleEditMode() {
+    this.editMode.set(!this.editMode());
+  }
+
+  // Which month (1-9) within the selected trimester — UI-only, not sent to the backend
+  // directly. Used purely to estimate form.dueDate; the user can still edit that field
+  // by hand afterward (e.g. to enter an exact date from their doctor).
+  monthInStage: number | null = null;
+
+  private static readonly MONTHS_BY_STAGE: Record<string, number[]> = {
+    MONTH_3: [1, 2, 3],
+    MONTH_6: [4, 5, 6],
+    MONTH_9: [7, 8, 9]
+  };
+
+  monthOptionsForStage(): number[] {
+    return MyProfileComponent.MONTHS_BY_STAGE[this.form.stage] || [];
+  }
+
+  onStageChange() {
+    // Changing trimester invalidates whichever month was picked for the old one.
+    this.monthInStage = null;
+  }
+
+  onMonthChange() {
+    if (!this.monthInStage) return;
+    // Pregnancy is ~9 months total; a simple calendar-month estimate is accurate enough
+    // for "approximate" — exact dates come from the user's doctor, not this app.
+    const due = new Date();
+    due.setMonth(due.getMonth() + (9 - this.monthInStage));
+    this.form.dueDate = due.toISOString().slice(0, 10);
+  }
+
+  // Phone-number verification (linkWithPhoneNumber), separate from the plain
+  // "Mobile Number" field above — this updates the verified phoneVerified flag.
+  phoneLinkStep = signal<'idle' | 'enter-number' | 'otp-sent'>('idle');
+  linkPhoneNumber = '';
+  linkOtpCode = '';
+  linkingPhone = signal(false);
+  private linkConfirmationResult: any = null;
+  private linkAppVerifier: RecaptchaVerifier | null = null;
+
   ngOnInit() {
-    const user = this.api.currentUser();
-    if (!user) {
-      this.router.navigate(['/auth/login']);
-      return;
-    }
+    // authGuard guarantees a signed-in user by the time this component loads.
+    this.populateForm(this.api.currentUser());
+
+    // Refresh from the server (GET /api/v1/users/me) so the page reflects
+    // server-truth rather than whatever was cached at login time.
+    this.api.getMyProfile().subscribe({
+      next: (user) => {
+        if (user) {
+          this.api.setUser(user);
+          this.populateForm(user);
+        }
+      },
+      error: () => {
+        // Keep showing the cached user; interceptor already handled 401/403 side effects.
+      }
+    });
+  }
+
+  private populateForm(user: User | null) {
+    if (!user) return;
     this.form.firstName = user.firstName || (user.name?.split(' ')[0] ?? '');
     this.form.lastName = user.lastName || (user.name?.split(' ').slice(1).join(' ') ?? '');
     this.form.phone = user.phone || '';
@@ -360,35 +532,97 @@ export class MyProfileComponent implements OnInit {
     this.saving.set(true);
     this.statusMsg.set(null);
 
-    this.api.updateProfile(user.id, {
+    this.api.updateProfile({
       firstName: this.form.firstName.trim(),
       lastName: this.form.lastName.trim(),
       phone: this.form.phone.trim() || undefined,
       stage: this.form.stage || undefined,
       dueDate: this.form.dueDate || undefined
-    }).subscribe(res => {
-      this.saving.set(false);
-      if (res?.success && res?.user) {
-        // Merge updated user back into the signal + localStorage
-        this.api.setUser({ ...user, ...res.user });
-        this.showStatus('Profile updated successfully! ✨', false);
-      } else if (res?.success === false) {
-        this.showStatus(res.message || 'Update failed. Please try again.', true);
-      } else {
-        // fallback for offline/mock
-        const updatedUser = {
-          ...user,
-          firstName: this.form.firstName.trim(),
-          lastName: this.form.lastName.trim(),
-          name: `${this.form.firstName.trim()} ${this.form.lastName.trim()}`.trim(),
-          phone: this.form.phone.trim() || user.phone,
-          stage: this.form.stage || user.stage,
-          dueDate: this.form.dueDate || user.dueDate
-        };
-        this.api.setUser(updatedUser as any);
-        this.showStatus('Profile saved locally (server offline).', false);
+    }).subscribe({
+      next: (res: any) => {
+        this.saving.set(false);
+        if (res?.id) {
+          // Real backend success: PUT /users/me returns the updated user directly
+          // (not wrapped) — e.g. changing phone resets phoneVerified server-side,
+          // so this merge also picks that up.
+          this.api.setUser(res);
+          this.populateForm(res);
+          this.editMode.set(false);
+          this.showStatus('Profile updated successfully! ✨', false);
+        } else if (res?.success === false) {
+          this.showStatus(res.message || 'Update failed. Please try again.', true);
+        } else {
+          // fallback for offline/mock
+          const updatedUser = {
+            ...user,
+            firstName: this.form.firstName.trim(),
+            lastName: this.form.lastName.trim(),
+            name: `${this.form.firstName.trim()} ${this.form.lastName.trim()}`.trim(),
+            phone: this.form.phone.trim() || user.phone,
+            stage: this.form.stage || user.stage,
+            dueDate: this.form.dueDate || user.dueDate
+          };
+          this.api.setUser(updatedUser as any);
+          this.showStatus('Profile saved locally (server offline).', false);
+        }
+      },
+      error: (err) => {
+        this.saving.set(false);
+        // 401/403 side effects (sign-out+redirect, verify-email redirect, toast) are
+        // already handled by the auth interceptor; just stop the spinner and explain.
+        if (err?.status !== 401 && err?.status !== 403) {
+          this.showStatus(err?.error?.message || 'Update failed. Please try again.', true);
+        }
       }
     });
+  }
+
+  async startPhoneLink() {
+    if (!this.linkPhoneNumber) return;
+    this.linkingPhone.set(true);
+
+    try {
+      if (this.firebaseAuth.isConfigured() && !this.linkAppVerifier) {
+        this.linkAppVerifier = this.firebaseAuth.initRecaptcha('profile-recaptcha-container');
+      }
+      this.linkConfirmationResult = await this.firebaseAuth.linkPhoneToAccount(this.linkPhoneNumber, this.linkAppVerifier);
+      this.phoneLinkStep.set('otp-sent');
+      this.api.showToast(`Verification code sent to +91 ${this.linkPhoneNumber}`);
+    } catch (err: any) {
+      this.api.showToast(err?.message || 'Could not send verification code.');
+    } finally {
+      this.linkingPhone.set(false);
+    }
+  }
+
+  async confirmPhoneLink() {
+    if (!this.linkOtpCode) return;
+    this.linkingPhone.set(true);
+
+    try {
+      await this.firebaseAuth.confirmPhoneLink(this.linkConfirmationResult, this.linkOtpCode);
+
+      this.api.loginWithFirebase().subscribe({
+        next: (user) => {
+          this.linkingPhone.set(false);
+          if (user) {
+            this.api.setUser(user);
+            this.populateForm(user);
+          }
+          this.phoneLinkStep.set('idle');
+          this.linkPhoneNumber = '';
+          this.linkOtpCode = '';
+          this.api.showToast('Phone number verified! ✨');
+        },
+        error: () => {
+          this.linkingPhone.set(false);
+          this.api.showToast('Phone verified with Firebase, but syncing with the server failed. Try reloading the page.');
+        }
+      });
+    } catch (err: any) {
+      this.linkingPhone.set(false);
+      this.api.showToast(err?.message || 'Invalid verification code.');
+    }
   }
 
   signOut() {
@@ -419,6 +653,16 @@ export class MyProfileComponent implements OnInit {
     this.isError.set(error);
     if (!error) {
       setTimeout(() => this.statusMsg.set(null), 4000);
+    }
+  }
+
+  ngOnDestroy() {
+    if (this.linkAppVerifier) {
+      try {
+        this.linkAppVerifier.clear();
+      } catch (e) {
+        // cleanup safe
+      }
     }
   }
 }

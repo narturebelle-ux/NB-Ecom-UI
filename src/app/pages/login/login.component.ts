@@ -1,11 +1,11 @@
 import { Component, inject, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { ApiService } from '../../services/api.service';
 import { FirebaseAuthService } from '../../services/firebase-auth.service';
-import { PregnancyStage } from '../../models/maternal.models';
-import { RecaptchaVerifier } from 'firebase/auth';
+import { PregnancyStage, User, isVerifiedUser } from '../../models/maternal.models';
+import { RecaptchaVerifier, GoogleAuthProvider, AuthCredential } from 'firebase/auth';
 
 @Component({
   selector: 'app-login',
@@ -40,13 +40,20 @@ import { RecaptchaVerifier } from 'firebase/auth';
             </div>
           }
 
-          <!-- Auth Tabs: Google 1-Tap vs Phone OTP -->
+          @if (accountLinkNotice()) {
+            <div class="link-notice">🔗 {{ accountLinkNotice() }}</div>
+          }
+
+          <!-- Auth Tabs -->
           <div class="auth-tabs">
             <button type="button" class="auth-tab" [class.active]="activeTab === 'GOOGLE'" (click)="activeTab = 'GOOGLE'">
-              Google Sign-In
+              Google
             </button>
             <button type="button" class="auth-tab" [class.active]="activeTab === 'PHONE'" (click)="activeTab = 'PHONE'">
               Mobile OTP
+            </button>
+            <button type="button" class="auth-tab" [class.active]="activeTab === 'EMAIL'" (click)="activeTab = 'EMAIL'">
+              Email
             </button>
           </div>
 
@@ -133,6 +140,87 @@ import { RecaptchaVerifier } from 'firebase/auth';
                   <button type="button" class="btn btn-outline full-w mt-1" (click)="otpSent = false">
                     ← Change Phone Number
                   </button>
+                </form>
+              }
+            </div>
+          }
+
+          <!-- TAB 3: EMAIL + PASSWORD -->
+          @if (activeTab === 'EMAIL') {
+            <div class="tab-content">
+              @if (emailMode === 'SIGN_IN') {
+                <form (ngSubmit)="handleEmailSignIn()">
+                  <div class="form-group">
+                    <label class="form-label">Email Address</label>
+                    <input type="email" [(ngModel)]="email" name="email" placeholder="you@example.com" class="form-control" required />
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Password</label>
+                    <input type="password" [(ngModel)]="password" name="password" placeholder="Your password" class="form-control" required />
+                  </div>
+                  <button type="submit" class="btn btn-primary btn-lg full-w mt-2" [disabled]="!email || !password || isSubmitting">
+                    {{ isSubmitting ? 'Signing in...' : 'Sign In' }}
+                  </button>
+                  <div class="email-links">
+                    <button type="button" class="btn-link" (click)="switchEmailMode('SIGN_UP')">Create an account</button>
+                    <button type="button" class="btn-link" (click)="switchEmailMode('FORGOT_PASSWORD')">Forgot password?</button>
+                  </div>
+                </form>
+              }
+
+              @if (emailMode === 'SIGN_UP') {
+                <form (ngSubmit)="handleEmailSignUp()">
+                  <div class="form-group">
+                    <label class="form-label">Email Address</label>
+                    <input type="email" [(ngModel)]="email" name="signupEmail" placeholder="you@example.com" class="form-control" required />
+                  </div>
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label class="form-label">Password</label>
+                      <input type="password" [(ngModel)]="password" name="signupPassword" placeholder="At least 6 characters" class="form-control" required minlength="6" />
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label">Confirm Password</label>
+                      <input type="password" [(ngModel)]="confirmPassword" name="confirmPassword" placeholder="Re-enter password" class="form-control" required />
+                    </div>
+                  </div>
+
+                  <div class="stage-onboarding">
+                    <label class="form-label">Select Your Current Stage:</label>
+                    <div class="stage-pill-select">
+                      <button type="button" class="s-pill" [class.selected]="selectedStage === 'MONTH_3'" (click)="selectedStage = 'MONTH_3'">
+                        Month 3 (1st Trim)
+                      </button>
+                      <button type="button" class="s-pill" [class.selected]="selectedStage === 'MONTH_6'" (click)="selectedStage = 'MONTH_6'">
+                        Month 6 (2nd Trim)
+                      </button>
+                      <button type="button" class="s-pill" [class.selected]="selectedStage === 'MONTH_9'" (click)="selectedStage = 'MONTH_9'">
+                        Month 9 (3rd Trim)
+                      </button>
+                    </div>
+                  </div>
+
+                  <button type="submit" class="btn btn-primary btn-lg full-w mt-2" [disabled]="!email || !password || isSubmitting">
+                    {{ isSubmitting ? 'Creating account...' : 'Create Account' }}
+                  </button>
+                  <div class="email-links">
+                    <button type="button" class="btn-link" (click)="switchEmailMode('SIGN_IN')">Already have an account? Sign in</button>
+                  </div>
+                </form>
+              }
+
+              @if (emailMode === 'FORGOT_PASSWORD') {
+                <form (ngSubmit)="handleForgotPassword()">
+                  <div class="form-group">
+                    <label class="form-label">Email Address</label>
+                    <input type="email" [(ngModel)]="email" name="forgotEmail" placeholder="you@example.com" class="form-control" required />
+                  </div>
+                  <button type="submit" class="btn btn-primary btn-lg full-w mt-2" [disabled]="!email || isSubmitting">
+                    {{ isSubmitting ? 'Sending...' : 'Send Reset Link' }}
+                  </button>
+                  <div class="email-links">
+                    <button type="button" class="btn-link" (click)="switchEmailMode('SIGN_IN')">← Back to sign in</button>
+                  </div>
                 </form>
               }
             </div>
@@ -240,6 +328,17 @@ import { RecaptchaVerifier } from 'firebase/auth';
       color: #2d3748;
     }
 
+    .link-notice {
+      background: #eef2ff;
+      border: 1px solid #c7d2fe;
+      border-radius: var(--radius-md);
+      padding: 0.85rem 1rem;
+      margin-bottom: 1.25rem;
+      font-size: 0.82rem;
+      color: #3730a3;
+      line-height: 1.45;
+    }
+
     .auth-tabs {
       display: flex;
       border-bottom: 2px solid var(--border-light);
@@ -250,7 +349,7 @@ import { RecaptchaVerifier } from 'firebase/auth';
       background: none;
       border: none;
       padding: 0.75rem;
-      font-size: 0.95rem;
+      font-size: 0.9rem;
       font-weight: 600;
       color: var(--text-secondary);
       cursor: pointer;
@@ -347,6 +446,53 @@ import { RecaptchaVerifier } from 'firebase/auth';
       box-shadow: none;
     }
 
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+    @media (max-width: 480px) {
+      .form-row { grid-template-columns: 1fr; }
+    }
+    .form-group {
+      margin-bottom: 1.1rem;
+    }
+    .form-label {
+      display: block;
+      font-size: 0.82rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-secondary);
+      margin-bottom: 0.35rem;
+    }
+    .form-control {
+      padding: 0.65rem 0.85rem;
+      border: 1.5px solid var(--border-color);
+      border-radius: var(--radius-md);
+      font-size: 0.95rem;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    .email-links {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 0.85rem;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    .btn-link {
+      background: none;
+      border: none;
+      color: var(--primary-deep);
+      font-size: 0.82rem;
+      font-weight: 600;
+      text-decoration: underline;
+      cursor: pointer;
+      padding: 0.2rem;
+    }
+
     .stage-pill-select {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -408,22 +554,38 @@ export class LoginComponent implements OnInit, OnDestroy {
   api = inject(ApiService);
   firebaseAuth = inject(FirebaseAuthService);
   router = inject(Router);
+  route = inject(ActivatedRoute);
 
-  activeTab: 'GOOGLE' | 'PHONE' = 'GOOGLE';
+  activeTab: 'GOOGLE' | 'PHONE' | 'EMAIL' = 'GOOGLE';
+  emailMode: 'SIGN_IN' | 'SIGN_UP' | 'FORGOT_PASSWORD' = 'SIGN_IN';
   selectedStage: PregnancyStage = 'MONTH_3';
 
   phone = '';
   otpCode = '';
   otpSent = false;
+
+  email = '';
+  password = '';
+  confirmPassword = '';
+
   isSubmitting = false;
+  returnUrl: string | null = null;
 
   private confirmationResult: any = null;
   private appVerifier: RecaptchaVerifier | null = null;
 
+  /** Signal-less; plain field is fine since it's read once per render via template binding. */
+  private accountLinkNoticeMsg: string | null = null;
+  private pendingCredential: AuthCredential | null = null;
+
+  accountLinkNotice(): string | null {
+    return this.accountLinkNoticeMsg;
+  }
+
   ngOnInit() {
-    // If user is already logged in, redirect
+    this.returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
     if (this.api.currentUser()) {
-      this.navigateToStage();
+      this.redirectAfterLogin();
     }
   }
 
@@ -437,38 +599,149 @@ export class LoginComponent implements OnInit, OnDestroy {
     }
   }
 
+  switchEmailMode(mode: 'SIGN_IN' | 'SIGN_UP' | 'FORGOT_PASSWORD') {
+    this.emailMode = mode;
+  }
+
   /**
    * Real Google Sign-In via Firebase
    */
   async handleGoogleLogin() {
     this.isSubmitting = true;
     try {
-      const { idToken, user } = await this.firebaseAuth.loginWithGoogle();
-      
-      // Verify with Spring Boot backend
-      this.api.loginWithFirebase({
-        idToken,
-        stage: this.selectedStage
-      }).subscribe({
-        next: (res) => {
-          this.isSubmitting = false;
-          this.api.setUser(res.user || user);
-          this.api.showToast(`Welcome back, ${res.user?.name || user?.displayName || 'Mother'}!`);
-          this.navigateToStage();
-        },
-        error: (err) => {
-          this.isSubmitting = false;
-          this.api.showToast('Authentication succeeded! Welcome to NartureBelle.');
-          this.api.setUser(user);
-          this.navigateToStage();
-        }
-      });
+      const { user } = await this.firebaseAuth.loginWithGoogle();
+      this.completeFirebaseLogin(user);
     } catch (err: any) {
       this.isSubmitting = false;
       console.error('Google Sign-In Error:', err);
+
+      if (err.code === 'auth/account-exists-with-different-credential') {
+        await this.handleAccountExistsError(err);
+        return;
+      }
       if (err.code !== 'auth/popup-closed-by-user') {
         this.api.showToast(err.message || 'Failed to complete Google Sign-In.');
       }
+    }
+  }
+
+  /**
+   * Firebase throws this when a Google sign-in attempt matches an email that already
+   * has an account via a different method (e.g. email+password). Recover the pending
+   * Google credential, tell the user which method to use, and switch them to it —
+   * handleEmailSignIn() will link the credential once they sign in successfully.
+   */
+  private async handleAccountExistsError(err: any) {
+    const email = err.customData?.email;
+    this.pendingCredential = GoogleAuthProvider.credentialFromError(err);
+
+    if (!email) {
+      this.api.showToast('An account already exists with a different sign-in method.');
+      return;
+    }
+
+    const methods = await this.firebaseAuth.getSignInMethodsForEmail(email);
+    const methodLabel = methods.includes('password') ? 'email & password' : (methods[0] || 'a different method');
+
+    this.email = email;
+    this.accountLinkNoticeMsg = `An account already exists for ${email} using ${methodLabel}. Sign in below and your Google account will be linked automatically.`;
+    this.activeTab = 'EMAIL';
+    this.emailMode = 'SIGN_IN';
+  }
+
+  /**
+   * Email + password sign-in
+   */
+  async handleEmailSignIn() {
+    if (!this.email || !this.password) return;
+    this.isSubmitting = true;
+
+    try {
+      const { user } = await this.firebaseAuth.loginWithEmail(this.email, this.password);
+
+      if (this.pendingCredential) {
+        try {
+          await this.firebaseAuth.linkPendingCredential(this.pendingCredential);
+          this.api.showToast('Your Google account has been linked to this account.');
+        } catch (linkErr) {
+          console.warn('Credential linking failed:', linkErr);
+        }
+        this.pendingCredential = null;
+        this.accountLinkNoticeMsg = null;
+      }
+
+      this.completeFirebaseLogin(user);
+    } catch (err: any) {
+      this.isSubmitting = false;
+      console.error('Email Sign-In Error:', err);
+      this.api.showToast(this.friendlyAuthError(err));
+    }
+  }
+
+  /**
+   * Email + password sign-up. Firebase sends the verification email automatically
+   * (handled inside FirebaseAuthService.signUpWithEmail); the new account starts
+   * unverified, so completeFirebaseLogin() will route to the verify-email page.
+   */
+  async handleEmailSignUp() {
+    if (!this.email || !this.password) return;
+    if (this.password !== this.confirmPassword) {
+      this.api.showToast('Passwords do not match.');
+      return;
+    }
+
+    this.isSubmitting = true;
+    try {
+      const { user } = await this.firebaseAuth.signUpWithEmail(this.email, this.password);
+      this.completeFirebaseLogin(user);
+    } catch (err: any) {
+      this.isSubmitting = false;
+      console.error('Email Sign-Up Error:', err);
+
+      if (err.code === 'auth/email-already-in-use') {
+        this.api.showToast('An account with this email already exists — sign in instead.');
+        this.password = '';
+        this.confirmPassword = '';
+        this.emailMode = 'SIGN_IN';
+        return;
+      }
+      this.api.showToast(this.friendlyAuthError(err));
+    }
+  }
+
+  /** Turns common Firebase auth error codes into plain-language messages instead of raw "Firebase: Error (auth/...)" text. */
+  private friendlyAuthError(err: any): string {
+    switch (err?.code) {
+      case 'auth/weak-password':
+        return 'Please choose a stronger password (at least 6 characters).';
+      case 'auth/invalid-email':
+        return 'That email address looks invalid.';
+      case 'auth/network-request-failed':
+        return 'Network error — please check your connection and try again.';
+      case 'auth/invalid-credential':
+      case 'auth/wrong-password':
+      case 'auth/user-not-found':
+        return 'Incorrect email or password.';
+      case 'auth/too-many-requests':
+        return 'Too many attempts — please wait a moment and try again.';
+      default:
+        return err?.message?.replace(/^Firebase:\s*/i, '') || 'Something went wrong. Please try again.';
+    }
+  }
+
+  async handleForgotPassword() {
+    if (!this.email) return;
+    this.isSubmitting = true;
+
+    try {
+      await this.firebaseAuth.sendPasswordReset(this.email);
+      this.api.showToast(`If an account exists for ${this.email}, a reset link has been sent.`);
+      this.emailMode = 'SIGN_IN';
+    } catch (err: any) {
+      console.error('Password Reset Error:', err);
+      this.api.showToast(err.message || 'Could not send reset email. Please try again.');
+    } finally {
+      this.isSubmitting = false;
     }
   }
 
@@ -507,41 +780,95 @@ export class LoginComponent implements OnInit, OnDestroy {
     this.isSubmitting = true;
 
     try {
-      const { idToken, phone } = await this.firebaseAuth.verifyPhoneOtp(
-        this.confirmationResult,
-        this.otpCode
-      );
-
-      // Verify with Spring Boot backend
-      this.api.loginWithFirebase({
-        idToken,
+      const { phone } = await this.firebaseAuth.verifyPhoneOtp(this.confirmationResult, this.otpCode);
+      this.completeFirebaseLogin({
+        name: `Mother (${phone})`,
+        phone,
+        phoneVerified: true,
+        authProvider: 'FIREBASE_PHONE',
+        role: 'USER',
         stage: this.selectedStage
-      }).subscribe({
-        next: (res) => {
-          this.isSubmitting = false;
-          this.api.setUser(res.user);
-          this.api.showToast('Successfully verified mobile number! Welcome to NartureBelle.');
-          this.navigateToStage();
-        },
-        error: (err) => {
-          this.isSubmitting = false;
-          this.api.showToast('Phone verified! Welcome to NartureBelle.');
-          this.api.setUser({
-            id: Date.now(),
-            name: `Mother (${phone})`,
-            phone: phone,
-            authProvider: 'FIREBASE_PHONE',
-            role: 'USER',
-            stage: this.selectedStage
-          });
-          this.navigateToStage();
-        }
       });
     } catch (err: any) {
       this.isSubmitting = false;
       console.error('OTP Verification Error:', err);
       this.api.showToast(err.message || 'Invalid verification code. Please check and try again.');
     }
+  }
+
+  /**
+   * Shared post-sign-in step for all three methods: the Firebase client SDK is already
+   * signed in by this point, so the auth interceptor will attach the fresh ID token
+   * automatically — no need to pass it explicitly here. Calls POST /api/v1/auth/firebase
+   * (no request body — the real API takes none) and stores the returned user directly
+   * (the API returns the user object itself, not wrapped).
+   *
+   * The pregnancy-stage pill selected on this page can't be sent with /auth/firebase
+   * (it accepts no body) and PUT /users/me — the only way to persist it — requires a
+   * VERIFIED user. So: if already verified (Google/Phone, or a returning user), sync the
+   * stage immediately via a follow-up PUT. If not yet verified (fresh email/password
+   * signup), stash it and let the verify-email page apply it once verification succeeds.
+   */
+  private completeFirebaseLogin(fallbackUser: Partial<User> | any) {
+    this.api.loginWithFirebase().subscribe({
+      next: (user: any) => {
+        const resolvedUser = user || fallbackUser;
+        this.api.setUser(resolvedUser);
+
+        if (isVerifiedUser(resolvedUser)) {
+          this.syncPendingStageThenProceed(resolvedUser);
+        } else {
+          this.isSubmitting = false;
+          localStorage.setItem('nb_pending_stage', this.selectedStage);
+          const queryParams = this.returnUrl ? { returnUrl: this.returnUrl } : {};
+          this.router.navigate(['/auth/verify-email'], { queryParams });
+        }
+      },
+      error: (err) => {
+        this.isSubmitting = false;
+        // A real HTTP error means the backend rejected the token — never fabricate a
+        // session on a real rejection (ApiService's own catchError already handles the
+        // true-network-failure dev fallback before this error callback ever runs).
+        this.api.showToast(err?.error?.message || 'Could not verify your sign-in with the server. Please try again.');
+      }
+    });
+  }
+
+  /** Only sync if this is a first login (no stage set yet) — never silently overwrite a returning user's choice. */
+  private syncPendingStageThenProceed(user: User) {
+    if (user.stage) {
+      this.isSubmitting = false;
+      this.api.showToast(`Welcome back, ${user.firstName || user.name || user.email || 'Mother'}!`);
+      this.redirectAfterLogin();
+      return;
+    }
+
+    this.api.updateProfile({ stage: this.selectedStage }).subscribe({
+      next: (res: any) => {
+        this.isSubmitting = false;
+        if (res?.id) {
+          this.api.setUser(res);
+        }
+        this.api.showToast(`Welcome, ${user.firstName || user.name || user.email || 'Mother'}!`);
+        this.redirectAfterLogin();
+      },
+      error: (err) => {
+        // Stage sync is a nice-to-have, not worth blocking login over. On 401/403 the
+        // interceptor already redirected; don't race it with a second navigation here.
+        this.isSubmitting = false;
+        if (err?.status !== 401 && err?.status !== 403) {
+          this.redirectAfterLogin();
+        }
+      }
+    });
+  }
+
+  private redirectAfterLogin() {
+    if (this.returnUrl) {
+      this.router.navigateByUrl(this.returnUrl);
+      return;
+    }
+    this.navigateToStage();
   }
 
   private navigateToStage() {

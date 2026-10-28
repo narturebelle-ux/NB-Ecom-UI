@@ -41,3 +41,16 @@ __screenshots__/
 # System files
 .DS_Store
 Thumbs.db
+
+# Real secrets — never commit these. Use the committed .env.*.example files
+# as templates; scripts/generate-env.js turns them into the environment
+# files below right before a staging/production build.
+.env
+.env.*
+!.env.*.example
+
+# Generated at build time from .env.staging / .env.production by
+# scripts/generate-env.js — contains real Firebase/API values, must not be
+# committed. environment.ts and environment.test.ts stay tracked (mock only).
+src/environments/environment.staging.ts
+src/environments/environment.prod.ts

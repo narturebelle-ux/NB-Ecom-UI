@@ -281,6 +281,7 @@ import { FeatureDirective } from '../../directives/feature.directive';
       gap: 0.75rem;
     }
     .assessment-btn { white-space: nowrap; }
+    .login-btn { white-space: nowrap; flex-shrink: 0; }
     .cart-btn {
       position: relative;
       background: var(--bg-surface);

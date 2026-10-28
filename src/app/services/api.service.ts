@@ -1,6 +1,6 @@
 import { Injectable, signal, computed } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { Observable, of } from 'rxjs';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { Observable, of, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import {
   Product,
@@ -12,12 +12,13 @@ import {
   CartItem,
   PregnancyStage
 } from '../models/maternal.models';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ApiService {
-  private readonly baseUrl = 'http://localhost:8085/api/v1';
+  private readonly baseUrl = environment.apiUrl;
 
   // Reactive State Signals
   readonly cart = signal<CartItem[]>([]);
@@ -140,49 +141,40 @@ export class ApiService {
     );
   }
 
-  login(authData: any): Observable<any> {
-    return this.http.post<any>(`${this.baseUrl}/auth/login`, authData).pipe(
-      catchError(() => of({
-        success: true,
-        token: 'nb_token_demo',
-        user: {
-          id: 1,
-          name: authData.name || 'Expecting Mother',
-          email: authData.email || 'mother@narturebelle.com',
-          phone: authData.phone || '+91 9876543210',
-          authProvider: authData.provider || 'GOOGLE',
-          role: 'USER',
-          stage: authData.stage || 'MONTH_3'
+  /**
+   * Calls POST /api/v1/auth/firebase (per the AUTH CONTRACT) right after any Firebase
+   * sign-in — no request body; the Bearer token (attached by the auth HttpInterceptor)
+   * is the only input. Returns the user object directly (not wrapped). Only falls back
+   * to mock data when the backend is truly unreachable (network/connection failure) —
+   * a real HTTP error (401 bad token, etc.) must propagate, never be swallowed, since
+   * swallowing it would silently fabricate a fake "logged in" state.
+   */
+  loginWithFirebase(): Observable<User> {
+    return this.http.post<User>(`${this.baseUrl}/auth/firebase`, {}).pipe(
+      catchError((err: HttpErrorResponse) => {
+        if (err.status !== 0) {
+          return throwError(() => err);
         }
-      }))
-    );
-  }
-
-  loginWithFirebase(firebasePayload: { idToken: string; stage?: string; dueDate?: string }): Observable<any> {
-    return this.http.post<any>(`${this.baseUrl}/auth/firebase`, firebasePayload).pipe(
-      catchError(() => of({
-        success: true,
-        token: 'nb_jwt_mock_token',
-        user: {
+        console.warn('Backend unreachable, using mock auth response', err);
+        const mockEmail = this.currentUser()?.email;
+        return of({
           id: 99,
+          firebaseUid: 'mock_uid',
           name: 'Verified Expecting Mother',
-          email: 'mother@example.com',
+          email: mockEmail || 'mother@example.com',
+          emailVerified: true,
           phone: '9876543210',
+          phoneVerified: false,
           authProvider: 'FIREBASE',
-          stage: firebasePayload.stage || 'MONTH_3'
-        }
-      }))
+          role: 'USER'
+        } as User);
+      })
     );
   }
 
-  sendOtp(phone: string): Observable<any> {
-    return this.http.post<any>(`${this.baseUrl}/auth/send-otp`, { phone }).pipe(
-      catchError(() => of({
-        success: true,
-        message: `OTP sent successfully to ${phone}. (Demo OTP: 123456)`,
-        simulatedOtp: '123456'
-      }))
-    );
+  /** GET /api/v1/users/me — the logged-in user's own profile. */
+  getMyProfile(): Observable<User> {
+    return this.http.get<User>(`${this.baseUrl}/users/me`);
   }
 
   // --- Cart Operations ---
@@ -242,15 +234,21 @@ export class ApiService {
     this.showToast('You have signed out.');
   }
 
-  updateProfile(userId: number, payload: {
+  /** PUT /api/v1/users/me — the logged-in user's own profile, per the AUTH CONTRACT. */
+  updateProfile(payload: {
     firstName?: string;
     lastName?: string;
     phone?: string;
     stage?: string;
     dueDate?: string;
   }): Observable<any> {
-    return this.http.put<any>(`${this.baseUrl}/users/${userId}`, payload).pipe(
-      catchError(() => of({ success: false, message: 'Could not reach server. Please try again.' }))
+    return this.http.put<any>(`${this.baseUrl}/users/me`, payload).pipe(
+      catchError((err: HttpErrorResponse) => {
+        if (err.status !== 0) {
+          return throwError(() => err);
+        }
+        return of({ success: false, message: 'Could not reach server. Please try again.' });
+      })
     );
   }
 

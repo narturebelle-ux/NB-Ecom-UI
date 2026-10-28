@@ -7,7 +7,15 @@ import {
   signInWithPopup,
   RecaptchaVerifier,
   signInWithPhoneNumber,
+  linkWithPhoneNumber,
+  linkWithCredential,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  sendEmailVerification,
+  sendPasswordResetEmail,
+  fetchSignInMethodsForEmail,
   ConfirmationResult,
+  AuthCredential,
   signOut as fbSignOut,
   User as FirebaseUser
 } from 'firebase/auth';
@@ -63,6 +71,7 @@ export class FirebaseAuthService {
         user: {
           displayName: 'Ananya Verma',
           email: 'ananya.verma@example.com',
+          emailVerified: true,
           photoURL: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&q=80'
         }
       };
@@ -81,10 +90,129 @@ export class FirebaseAuthService {
       user: {
         displayName: result.user.displayName,
         email: result.user.email,
+        emailVerified: result.user.emailVerified,
         photoURL: result.user.photoURL,
         uid: result.user.uid
       }
     };
+  }
+
+  /**
+   * Email + password sign-up. Sends a verification email immediately after account creation.
+   */
+  async signUpWithEmail(email: string, password: string): Promise<{ idToken: string; user: any }> {
+    if (!this.isConfigured() || !this.auth) {
+      return {
+        idToken: 'mock_email_id_token_' + Date.now(),
+        user: { email, emailVerified: false, uid: 'mock_uid_' + Date.now() }
+      };
+    }
+
+    const credential = await createUserWithEmailAndPassword(this.auth, email, password);
+    await sendEmailVerification(credential.user);
+    const idToken = await credential.user.getIdToken();
+
+    return {
+      idToken,
+      user: { email: credential.user.email, emailVerified: credential.user.emailVerified, uid: credential.user.uid }
+    };
+  }
+
+  /**
+   * Email + password sign-in.
+   */
+  async loginWithEmail(email: string, password: string): Promise<{ idToken: string; user: any }> {
+    if (!this.isConfigured() || !this.auth) {
+      return {
+        idToken: 'mock_email_id_token_' + Date.now(),
+        user: { email, emailVerified: true, uid: 'mock_uid_' + Date.now() }
+      };
+    }
+
+    const credential = await signInWithEmailAndPassword(this.auth, email, password);
+    const idToken = await credential.user.getIdToken();
+
+    return {
+      idToken,
+      user: { email: credential.user.email, emailVerified: credential.user.emailVerified, uid: credential.user.uid }
+    };
+  }
+
+  /**
+   * Sends a password-reset email.
+   */
+  async sendPasswordReset(email: string): Promise<void> {
+    if (!this.isConfigured() || !this.auth) {
+      return; // dev simulation: no-op
+    }
+    await sendPasswordResetEmail(this.auth, email);
+  }
+
+  /**
+   * Re-sends the verification email to the currently signed-in user.
+   */
+  async resendVerificationEmail(): Promise<void> {
+    if (!this.isConfigured() || !this.auth?.currentUser) {
+      return; // dev simulation: no-op
+    }
+    await sendEmailVerification(this.auth.currentUser);
+  }
+
+  /**
+   * Reloads the current user from Firebase (picks up a just-clicked verification link)
+   * and returns a FORCE-REFRESHED ID token, so the new email_verified claim is actually
+   * present the next time it's sent to the API — a token fetched without forceRefresh
+   * can still carry the stale, pre-verification claim.
+   */
+  async reloadAndGetFreshToken(): Promise<string | null> {
+    if (!this.isConfigured() || !this.auth?.currentUser) {
+      return 'mock_refreshed_token_' + Date.now(); // dev simulation: treat as always-verified
+    }
+    await this.auth.currentUser.reload();
+    return await this.auth.currentUser.getIdToken(true);
+  }
+
+  /**
+   * Current Firebase ID token, refreshed automatically by the SDK when it's close to
+   * expiry. Pass forceRefresh=true right after an action that changes token claims
+   * (e.g. linking a phone number) so the new claim is picked up immediately.
+   */
+  async getIdToken(forceRefresh = false): Promise<string | null> {
+    if (!this.isConfigured() || !this.auth?.currentUser) {
+      return null;
+    }
+    return await this.auth.currentUser.getIdToken(forceRefresh);
+  }
+
+  isEmailVerified(): boolean {
+    return this.auth?.currentUser?.emailVerified ?? false;
+  }
+
+  getCurrentEmail(): string | null {
+    return this.auth?.currentUser?.email ?? null;
+  }
+
+  /**
+   * Looks up which sign-in methods already exist for an email — used when Firebase
+   * throws 'auth/account-exists-with-different-credential' during Google sign-in, so
+   * the UI can tell the user which method to use instead.
+   */
+  async getSignInMethodsForEmail(email: string): Promise<string[]> {
+    if (!this.isConfigured() || !this.auth) {
+      return ['password'];
+    }
+    return await fetchSignInMethodsForEmail(this.auth, email);
+  }
+
+  /**
+   * Links a pending credential (e.g. a Google credential recovered from an
+   * 'account-exists-with-different-credential' error) onto the currently signed-in user.
+   */
+  async linkPendingCredential(credential: AuthCredential): Promise<void> {
+    if (!this.isConfigured() || !this.auth?.currentUser) {
+      return; // dev simulation: no-op
+    }
+    await linkWithCredential(this.auth.currentUser, credential);
   }
 
   /**
@@ -158,6 +286,44 @@ export class FirebaseAuthService {
   }
 
   /**
+   * Starts linking a phone number onto the CURRENTLY SIGNED-IN user (profile page "add
+   * phone" flow) — distinct from sendPhoneOtp, which signs in with phone as the primary method.
+   */
+  async linkPhoneToAccount(
+    phoneNumber: string,
+    appVerifier?: RecaptchaVerifier | null
+  ): Promise<ConfirmationResult | { isMock: boolean; verificationId: string }> {
+    const formattedPhone = phoneNumber.startsWith('+') ? phoneNumber : `+91${phoneNumber}`;
+
+    if (!this.isConfigured() || !this.auth?.currentUser || !appVerifier) {
+      return { isMock: true, verificationId: 'mock_link_vid_' + Date.now() };
+    }
+
+    return await linkWithPhoneNumber(this.auth.currentUser, formattedPhone, appVerifier);
+  }
+
+  /**
+   * Confirms the OTP for a phone-link started by linkPhoneToAccount, and returns a
+   * force-refreshed ID token so the new phone_number claim is picked up immediately.
+   */
+  async confirmPhoneLink(confirmationResult: any, otpCode: string): Promise<{ idToken: string; phone: string }> {
+    if (!this.isConfigured() || confirmationResult?.isMock) {
+      if (otpCode === '123456') {
+        return { idToken: 'mock_linked_phone_token_' + Date.now(), phone: '+919876543210' };
+      }
+      throw new Error('Invalid OTP code. For demo mode, enter 123456.');
+    }
+
+    const userCredential = await confirmationResult.confirm(otpCode);
+    const idToken = await userCredential.user.getIdToken(true);
+
+    return {
+      idToken,
+      phone: userCredential.user.phoneNumber || ''
+    };
+  }
+
+  /**
    * Signs out from Firebase
    */
   async logout(): Promise<void> {
@@ -167,3 +333,6 @@ export class FirebaseAuthService {
     this.currentFirebaseUser.set(null);
   }
 }
+
+export { GoogleAuthProvider };
+export type { AuthCredential };
