@@ -4,7 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ApiService } from '../../services/api.service';
 import { FirebaseAuthService } from '../../services/firebase-auth.service';
-import { PregnancyStage, User, isVerifiedUser } from '../../models/maternal.models';
+import { goToPostAuthDestination } from '../../services/post-auth-redirect';
+import { User, isVerifiedUser } from '../../models/maternal.models';
 import { RecaptchaVerifier, GoogleAuthProvider, AuthCredential } from 'firebase/auth';
 
 @Component({
@@ -71,23 +72,6 @@ import { RecaptchaVerifier, GoogleAuthProvider, AuthCredential } from 'firebase/
                   <span>{{ isSubmitting ? 'Connecting with Google...' : 'Continue with Google' }}</span>
                 </button>
               </div>
-
-              <div class="or-divider"><span>OR CUSTOMIZE PROFILE</span></div>
-
-              <div class="stage-onboarding">
-                <label class="form-label">Select Your Current Stage:</label>
-                <div class="stage-pill-select">
-                  <button type="button" class="s-pill" [class.selected]="selectedStage === 'MONTH_3'" (click)="selectedStage = 'MONTH_3'">
-                    Month 3 (1st Trim)
-                  </button>
-                  <button type="button" class="s-pill" [class.selected]="selectedStage === 'MONTH_6'" (click)="selectedStage = 'MONTH_6'">
-                    Month 6 (2nd Trim)
-                  </button>
-                  <button type="button" class="s-pill" [class.selected]="selectedStage === 'MONTH_9'" (click)="selectedStage = 'MONTH_9'">
-                    Month 9 (3rd Trim)
-                  </button>
-                </div>
-              </div>
             </div>
           }
 
@@ -102,15 +86,6 @@ import { RecaptchaVerifier, GoogleAuthProvider, AuthCredential } from 'firebase/
                       <span class="country-prefix">+91</span>
                       <input type="tel" [(ngModel)]="phone" name="phone" placeholder="Enter 10-digit mobile number" class="form-control" required maxlength="10" />
                     </div>
-                  </div>
-
-                  <div class="stage-onboarding">
-                    <label class="form-label">Current Pregnancy Month:</label>
-                    <select [(ngModel)]="selectedStage" name="stage" class="form-control">
-                      <option value="MONTH_3">Month 1–3 (First Trimester)</option>
-                      <option value="MONTH_6">Month 4–6 (Second Trimester)</option>
-                      <option value="MONTH_9">Month 7–9 (Third Trimester)</option>
-                    </select>
                   </div>
 
                   <!-- Container for Firebase invisible reCAPTCHA -->
@@ -182,21 +157,6 @@ import { RecaptchaVerifier, GoogleAuthProvider, AuthCredential } from 'firebase/
                     <div class="form-group">
                       <label class="form-label">Confirm Password</label>
                       <input type="password" [(ngModel)]="confirmPassword" name="confirmPassword" placeholder="Re-enter password" class="form-control" required />
-                    </div>
-                  </div>
-
-                  <div class="stage-onboarding">
-                    <label class="form-label">Select Your Current Stage:</label>
-                    <div class="stage-pill-select">
-                      <button type="button" class="s-pill" [class.selected]="selectedStage === 'MONTH_3'" (click)="selectedStage = 'MONTH_3'">
-                        Month 3 (1st Trim)
-                      </button>
-                      <button type="button" class="s-pill" [class.selected]="selectedStage === 'MONTH_6'" (click)="selectedStage = 'MONTH_6'">
-                        Month 6 (2nd Trim)
-                      </button>
-                      <button type="button" class="s-pill" [class.selected]="selectedStage === 'MONTH_9'" (click)="selectedStage = 'MONTH_9'">
-                        Month 9 (3rd Trim)
-                      </button>
                     </div>
                   </div>
 
@@ -493,33 +453,6 @@ import { RecaptchaVerifier, GoogleAuthProvider, AuthCredential } from 'firebase/
       padding: 0.2rem;
     }
 
-    .stage-pill-select {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 0.5rem;
-      margin-top: 0.5rem;
-    }
-    .s-pill {
-      background: var(--bg-cream);
-      border: 1px solid var(--border-color);
-      border-radius: var(--radius-pill);
-      padding: 0.5rem 0.25rem;
-      font-size: 0.75rem;
-      font-weight: 600;
-      color: var(--text-secondary);
-      cursor: pointer;
-      text-align: center;
-      transition: all var(--transition-fast);
-    }
-    .s-pill:hover {
-      border-color: var(--primary-deep);
-    }
-    .s-pill.selected {
-      background: var(--primary-deep);
-      color: #fff;
-      border-color: var(--primary-deep);
-    }
-
     .text-lg {
       font-size: 1.4rem;
       letter-spacing: 0.25em;
@@ -558,7 +491,6 @@ export class LoginComponent implements OnInit, OnDestroy {
 
   activeTab: 'GOOGLE' | 'PHONE' | 'EMAIL' = 'GOOGLE';
   emailMode: 'SIGN_IN' | 'SIGN_UP' | 'FORGOT_PASSWORD' = 'SIGN_IN';
-  selectedStage: PregnancyStage = 'MONTH_3';
 
   phone = '';
   otpCode = '';
@@ -585,7 +517,7 @@ export class LoginComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this.returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
     if (this.api.currentUser()) {
-      this.redirectAfterLogin();
+      goToPostAuthDestination(this.api, this.router, this.returnUrl);
     }
   }
 
@@ -786,8 +718,7 @@ export class LoginComponent implements OnInit, OnDestroy {
         phone,
         phoneVerified: true,
         authProvider: 'FIREBASE_PHONE',
-        role: 'USER',
-        stage: this.selectedStage
+        role: 'USER'
       });
     } catch (err: any) {
       this.isSubmitting = false;
@@ -803,11 +734,10 @@ export class LoginComponent implements OnInit, OnDestroy {
    * (no request body — the real API takes none) and stores the returned user directly
    * (the API returns the user object itself, not wrapped).
    *
-   * The pregnancy-stage pill selected on this page can't be sent with /auth/firebase
-   * (it accepts no body) and PUT /users/me — the only way to persist it — requires a
-   * VERIFIED user. So: if already verified (Google/Phone, or a returning user), sync the
-   * stage immediately via a follow-up PUT. If not yet verified (fresh email/password
-   * signup), stash it and let the verify-email page apply it once verification succeeds.
+   * Per roadmap §1 UI, journey stage/EDD are never collected at sign-up — they're set later
+   * in Profile → My Journey. If verified, goToPostAuthDestination() checks for pending
+   * consents and routes to the consent screen or straight to /journey. If not yet verified
+   * (fresh email/password signup), route to verify-email instead.
    */
   private completeFirebaseLogin(fallbackUser: Partial<User> | any) {
     this.api.loginWithFirebase().subscribe({
@@ -816,10 +746,10 @@ export class LoginComponent implements OnInit, OnDestroy {
         this.api.setUser(resolvedUser);
 
         if (isVerifiedUser(resolvedUser)) {
-          this.syncPendingStageThenProceed(resolvedUser);
+          this.api.showToast(`Welcome, ${resolvedUser.firstName || resolvedUser.name || resolvedUser.email || 'Mother'}!`);
+          goToPostAuthDestination(this.api, this.router, this.returnUrl);
         } else {
           this.isSubmitting = false;
-          localStorage.setItem('nb_pending_stage', this.selectedStage);
           const queryParams = this.returnUrl ? { returnUrl: this.returnUrl } : {};
           this.router.navigate(['/auth/verify-email'], { queryParams });
         }
@@ -832,52 +762,5 @@ export class LoginComponent implements OnInit, OnDestroy {
         this.api.showToast(err?.error?.message || 'Could not verify your sign-in with the server. Please try again.');
       }
     });
-  }
-
-  /** Only sync if this is a first login (no stage set yet) — never silently overwrite a returning user's choice. */
-  private syncPendingStageThenProceed(user: User) {
-    if (user.stage) {
-      this.isSubmitting = false;
-      this.api.showToast(`Welcome back, ${user.firstName || user.name || user.email || 'Mother'}!`);
-      this.redirectAfterLogin();
-      return;
-    }
-
-    this.api.updateProfile({ stage: this.selectedStage }).subscribe({
-      next: (res: any) => {
-        this.isSubmitting = false;
-        if (res?.id) {
-          this.api.setUser(res);
-        }
-        this.api.showToast(`Welcome, ${user.firstName || user.name || user.email || 'Mother'}!`);
-        this.redirectAfterLogin();
-      },
-      error: (err) => {
-        // Stage sync is a nice-to-have, not worth blocking login over. On 401/403 the
-        // interceptor already redirected; don't race it with a second navigation here.
-        this.isSubmitting = false;
-        if (err?.status !== 401 && err?.status !== 403) {
-          this.redirectAfterLogin();
-        }
-      }
-    });
-  }
-
-  private redirectAfterLogin() {
-    if (this.returnUrl) {
-      this.router.navigateByUrl(this.returnUrl);
-      return;
-    }
-    this.navigateToStage();
-  }
-
-  private navigateToStage() {
-    if (this.selectedStage === 'MONTH_6') {
-      this.router.navigateByUrl('/products/month-6');
-    } else if (this.selectedStage === 'MONTH_9') {
-      this.router.navigateByUrl('/products/month-9');
-    } else {
-      this.router.navigateByUrl('/products/month-3');
-    }
   }
 }
