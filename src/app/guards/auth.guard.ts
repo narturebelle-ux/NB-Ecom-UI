@@ -1,7 +1,7 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
 import { ApiService } from '../services/api.service';
-import { isVerifiedUser } from '../models/maternal.models';
+import { isVerifiedUser, isAdminUser } from '../models/maternal.models';
 
 /** Requires any signed-in user. Redirects to login with a returnUrl otherwise. */
 export const authGuard: CanActivateFn = (_route, state) => {
@@ -38,7 +38,7 @@ export const adminGuard: CanActivateFn = (_route, state) => {
   if (!user) {
     return router.createUrlTree(['/auth/login'], { queryParams: { returnUrl: state.url } });
   }
-  if (user.role !== 'ADMIN') {
+  if (!isAdminUser(user)) {
     api.showToast('You are not allowed to access that page.');
     return router.createUrlTree(['/']);
   }

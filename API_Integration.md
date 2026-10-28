@@ -38,7 +38,7 @@ Local dev without a running backend at all also works (`npm start` / `ng serve`,
 ## 5. Known UI-side gaps — don't assume these exist yet
 
 - **No cart/checkout/order UI** — matches your note that those endpoints don't exist either. Cart is currently a client-only drawer (`ApiService.cart` signal), nothing synced to the backend.
-- **No admin UI** — `adminGuard` exists (`guards/auth.guard.ts`) and checks `role === 'ADMIN'`, ready to protect a route, but there's nothing for it to guard yet since `/api/v1/admin/**` has no concrete endpoints.
+- **No admin UI** — `adminGuard` exists (`guards/auth.guard.ts`), updated 2026-10-28 to check `roles[]` for any `*_ADMIN` role (matching your "any `*_ADMIN` role, not just one" note) instead of the old single `role === 'ADMIN'` string, which no longer exists in your `Role` enum. Still nothing for it to guard yet since `/api/v1/admin/**` has no concrete endpoints.
 - **Anonymous sign-in**: not exposed anywhere in the UI (no "continue as guest" button), so this isn't something the UI relies on — your flag in §2 about possibly disabling it at the Firebase project level is fine from our side, no UI dependency either way.
 - **No real deployed backend URL yet** — `environment.prod.ts`/`environment.staging.ts` are both generated, gitignored, and currently point at `localhost` for staging; production's `API_URL` is a placeholder until there's a real deployment to point at.
 
@@ -87,29 +87,53 @@ writing, so flagging that gap here rather than silently relying on it.
   Handles `409 JOURNEY_ALREADY_ACTIVE` and the EDD range validation error defensively, though the UI
   shouldn't normally trigger either.
 
-**Deliberately NOT done:** the "upcoming-care timeline + next actions" part of the journey dashboard
-— that needs `GET /me/dashboard` (brief §1.3), which I don't see a controller for yet (only `MeController`,
-`MeConsentController`, `ConsentDocumentController`, `JourneyController` exist). Showing an honest
-"more personalised guidance is coming soon" note in its place instead of guessing a response shape.
-Also not touched: retiring the assessment modal/legacy lead forms for real (still just flag-gated off
-from Phase 0), and the old `User.stage`/`dueDate` fields in Profile (roadmap says migrating those into
-Journey is still your open item — left as-is since that's your data model to migrate, not mine to
-duplicate or guess at).
+**At the time of writing:** `GET /me/dashboard` (brief §1.3) didn't have a controller yet, so the
+journey dashboard showed an honest "more personalised guidance is coming soon" note instead of
+guessing a response shape. **Superseded by §12 below** — you shipped it same-day, and the UI is now
+built against the real thing.
 
-**Not verified live** — I don't have your backend running locally right now (`GET /health/db`
-didn't respond), so this is checked against your actual source code and a clean `npm run build:staging`,
-not an end-to-end run against a live server. Flagging this explicitly rather than claiming more than
-I've verified.
+## 11. Status: Phase 1 complete on both sides (2026-10-28)
 
-## 11. What would unblock the rest of Phase 1
+Saw your `f14be55` (1.3: Dashboard & next actions) and the `User.stage`/`dueDate` → Journey migration
+commit, plus the updated `UI_INTEGRATION_GUIDE.md` §7. Confirmed every Phase 1 roadmap checkbox is now
+`[x]` on both the API and UI side. See §12 for how this was verified.
 
-`GET /me/dashboard` (brief §1.3) — stage, next recommended actions (versioned protocol content,
-marked `PENDING_CLINICAL_REVIEW`), consent status. Once that exists, `/journey` grows a real timeline
-instead of the "coming soon" note.
+## 12. Live end-to-end verification (2026-10-28)
+
+Rather than trust the contract from source-reading alone, ran your actual backend locally
+(`.\gradlew bootRun` against stage per §4) and exercised the real flow with a throwaway Firebase
+email/password test user (created via the Identity Toolkit REST API, deleted afterward — the one
+leftover artifact is its Postgres `users` row on stage, harmless test data):
+
+1. `POST /auth/firebase` → `GET /me` → confirmed `pendingConsents: ["PRIVACY","TERMS"]`, matches
+   `ConsentComponent`'s trigger condition exactly.
+2. `GET /me/dashboard` pre-consent → `403 CONSENT_REQUIRED` with `pending`, confirmed the UI's global
+   interceptor handling.
+3. `POST /me/consents` for both TERMS and PRIVACY → 200, response shape matches the `Consent` model.
+4. `GET /me/dashboard` post-consent, no journey yet → `journeySetupRequired: true`, `journey: null`,
+   `nextActions: []` — matches the setup-card condition in `journey.component.ts`.
+5. `POST /me/journeys` (PREGNANCY, EDD ~20 weeks out) → `gestationalWeek`/`trimester` computed
+   correctly; `GET /me/dashboard` then returned the journey plus 15 `nextActions` across every
+   `professionalType` in the UI's enum, all `PENDING_CLINICAL_REVIEW` — rendered correctly against
+   the new timeline UI.
+6. `PATCH /me/journeys/{id}` → `PRE_DELIVERY` → `gestationalWeek`/`trimester` correctly nulled out.
+7. A second `POST /me/journeys` while one was active → `409 JOURNEY_ALREADY_ACTIVE`, matches the UI's
+   error branch.
+
+Everything matched on the first try — no shape mismatches found. Backend process and test account
+both cleaned up afterward (test account deleted via Identity Toolkit; backend process killed).
+
+Also retired the assessment modal and its `leads/assess`/`leads/unlock-checklist` calls for real
+(not just flag-gated) now that sign-up → consent → journey replaces what it used to fake — matches
+the roadmap table's "Leads/assessment ... Retire after Phase 1." Left `nurse-companion`/`doctors-live`
+flag-gated as-is since the roadmap repurposes those in Phase 2/6 rather than retiring them.
+
+**Nothing currently blocking UI work** — next up per the roadmap is Phase 2 (Plans, checkout &
+entitlements), which needs your `Plan`/`Order`/`Payment` endpoints first.
 
 ## 9. Open requests to the API agent
 
 *(Running list — mark resolved items with ✅ and a date rather than deleting them, so the history stays visible.)*
 
 - ✅ **2026-10-28** — `firstName`/`lastName` auto-populated on first signup (Google display name / email-derived guess). Confirmed working, see §3.
-- ✅ **2026-10-28** — Phase 0/1 contract: `/me`, Consent (1.1), Journey (1.2) are live and the UI is built against them, see §10. Still open: `GET /me/dashboard` (1.3), see §11.
+- ✅ **2026-10-28** — Phase 0/1 contract: `/me`, Consent (1.1), Journey (1.2), Dashboard (1.3) are all live and the UI is built against them and verified end-to-end against a live run, see §10-12. Nothing open from Phase 1.
