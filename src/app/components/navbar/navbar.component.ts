@@ -70,10 +70,6 @@ import { FeatureDirective } from '../../directives/feature.directive';
 
         <!-- Right Header Actions -->
         <div class="header-actions">
-          <button *appFeature="'legacyLeadForms'" (click)="openAssessment()" class="btn btn-secondary btn-sm assessment-btn">
-            <span>✨</span> Find My Routine
-          </button>
-
           <!-- Cart Drawer Toggle -->
           <button *appFeature="'productRecommendations'" (click)="toggleCart()" class="cart-btn" aria-label="Shopping Cart">
             <span class="cart-icon">🛍️</span>
@@ -169,9 +165,6 @@ import { FeatureDirective } from '../../directives/feature.directive';
               Sign In
             </a>
           }
-          <button *appFeature="'legacyLeadForms'" (click)="openAssessment(); isMobileOpen = false" class="btn btn-primary btn-sm mobile-action-btn">
-            ✨ Take 60s Pregnancy Checkup
-          </button>
         </div>
       }
     </header>
@@ -305,7 +298,6 @@ import { FeatureDirective } from '../../directives/feature.directive';
       align-items: center;
       gap: 0.75rem;
     }
-    .assessment-btn { white-space: nowrap; }
     .login-btn { white-space: nowrap; flex-shrink: 0; }
     .cart-btn {
       position: relative;
@@ -470,7 +462,6 @@ import { FeatureDirective } from '../../directives/feature.directive';
     @media (max-width: 1024px) {
       .nav-links { display: none; }
       .mobile-toggle { display: block; }
-      .assessment-btn { display: none; }
     }
   `]
 })
@@ -488,11 +479,6 @@ export class NavbarComponent {
 
   toggleUserMenu() {
     this.isUserMenuOpen = !this.isUserMenuOpen;
-  }
-
-  openAssessment() {
-    this.api.isAssessmentOpen.set(true);
-    this.isUserMenuOpen = false;
   }
 
   toggleCart() {

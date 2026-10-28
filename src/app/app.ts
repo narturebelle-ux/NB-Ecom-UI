@@ -3,7 +3,6 @@ import { RouterOutlet } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { NavbarComponent } from './components/navbar/navbar.component';
 import { FooterComponent } from './components/footer/footer.component';
-import { AssessmentModalComponent } from './components/assessment-modal/assessment-modal.component';
 import { CartDrawerComponent } from './components/cart-drawer/cart-drawer.component';
 import { FeatureDirective } from './directives/feature.directive';
 import { ApiService } from './services/api.service';
@@ -16,7 +15,6 @@ import { ApiService } from './services/api.service';
     RouterOutlet,
     NavbarComponent,
     FooterComponent,
-    AssessmentModalComponent,
     CartDrawerComponent,
     FeatureDirective
   ],

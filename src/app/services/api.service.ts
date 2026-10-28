@@ -30,7 +30,6 @@ export class ApiService {
   readonly cart = signal<CartItem[]>([]);
   readonly currentUser = signal<User | null>(null);
   readonly toastMessage = signal<string | null>(null);
-  readonly isAssessmentOpen = signal<boolean>(false);
   readonly isCartOpen = signal<boolean>(false);
 
   // Computed Cart Metrics
@@ -124,25 +123,6 @@ export class ApiService {
       catchError(() => of({
         success: true,
         message: 'Your seat is reserved! SMS reminder and Zoom link will be delivered 1 hour prior.'
-      }))
-    );
-  }
-
-  submitAssessment(leadData: any): Observable<any> {
-    return this.http.post<any>(`${this.baseUrl}/leads/assess`, leadData).pipe(
-      catchError(() => of({
-        success: true,
-        discountVoucher: 'NARTURE10',
-        message: 'Your personalized Doctor-Approved pregnancy routine has been generated!'
-      }))
-    );
-  }
-
-  unlockChecklist(leadData: any): Observable<any> {
-    return this.http.post<any>(`${this.baseUrl}/leads/unlock-checklist`, leadData).pipe(
-      catchError(() => of({
-        success: true,
-        message: 'Checklist successfully unlocked with local clinic recommendations!'
       }))
     );
   }

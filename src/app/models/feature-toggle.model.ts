@@ -6,7 +6,7 @@ export interface FeatureFlags {
   babyCareProducts: boolean;
   // Roadmap phase 0/1 — care-coordination pivot. All off until their phase ships.
   productRecommendations: boolean; // Phase 6: store pages become personalised recommendations
-  legacyLeadForms: boolean; // assessment modal, lead forms, nurse-companion booking, doctor-live RSVP
+  legacyLeadForms: boolean; // nurse-companion booking + doctor-live RSVP, pending Phase 2/6 repurposing
   careBooking: boolean; // Phase 3: provider booking
   recordsVault: boolean; // Phase 4: records vault
   childTracker: boolean; // Phase 6: child profile + vaccination tracker
