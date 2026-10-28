@@ -8,7 +8,9 @@ import { NurseCompanionComponent } from './pages/nurse-companion/nurse-companion
 import { DoctorsLiveComponent } from './pages/doctors-live/doctors-live.component';
 import { LoginComponent } from './pages/login/login.component';
 import { MyProfileComponent } from './pages/profile/profile.component';
+import { VerifyEmailComponent } from './pages/verify-email/verify-email.component';
 import { featureGuard } from './guards/feature.guard';
+import { authGuard } from './guards/auth.guard';
 
 export const routes: Routes = [
   { path: '', component: HomeComponent, title: 'NartureBelle™ | Radical Honesty in Maternal Care' },
@@ -29,7 +31,11 @@ export const routes: Routes = [
     canActivate: [featureGuard('doctorLiveSessions')]
   },
   { path: 'auth/login', component: LoginComponent, title: 'Sign In | NartureBelle' },
-  { path: 'profile', component: MyProfileComponent, title: 'My Profile | NartureBelle' },
+  { path: 'auth/verify-email', component: VerifyEmailComponent, title: 'Verify Your Email | NartureBelle', canActivate: [authGuard] },
+  { path: 'profile', component: MyProfileComponent, title: 'My Profile | NartureBelle', canActivate: [authGuard] },
+  // No dedicated /cart, /checkout or /orders routes exist yet — cart is a navbar drawer,
+  // not a routed page, and checkout/orders aren't built. verifiedGuard is ready to attach
+  // to those routes (checkout, orders) once they exist.
   { path: '**', redirectTo: '' }
 ];
 

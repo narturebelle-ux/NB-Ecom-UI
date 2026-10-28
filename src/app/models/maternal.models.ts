@@ -92,16 +92,24 @@ export interface LeadProfile {
 
 export interface User {
   id: number;
+  firebaseUid?: string;
   firstName?: string;
   lastName?: string;
   name: string;
   email?: string;
+  emailVerified?: boolean;
   phone?: string;
+  phoneVerified?: boolean;
   authProvider: string;
   stage?: PregnancyStage;
   dueDate?: string;
   role: string;
   createdAt?: string;
+}
+
+/** True if the user can access verified-only features (update profile, checkout, orders). */
+export function isVerifiedUser(user: User | null | undefined): boolean {
+  return !!user && (user.emailVerified === true || user.phoneVerified === true);
 }
 
 export interface CartItem {

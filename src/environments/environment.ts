@@ -1,3 +1,7 @@
+// Default file compiled in when no build configuration applies a fileReplacement
+// (i.e. `ng build` with no -c flag, before defaultConfiguration kicks in).
+// Actual per-environment values live in environment.test.ts / .staging.ts / .prod.ts
+// and are swapped in via the "fileReplacements" entries in angular.json.
 export const environment = {
   production: false,
   apiUrl: 'http://localhost:8085/api/v1',
