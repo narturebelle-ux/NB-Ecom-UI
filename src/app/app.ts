@@ -5,6 +5,7 @@ import { NavbarComponent } from './components/navbar/navbar.component';
 import { FooterComponent } from './components/footer/footer.component';
 import { AssessmentModalComponent } from './components/assessment-modal/assessment-modal.component';
 import { CartDrawerComponent } from './components/cart-drawer/cart-drawer.component';
+import { FeatureDirective } from './directives/feature.directive';
 import { ApiService } from './services/api.service';
 
 @Component({
@@ -16,7 +17,8 @@ import { ApiService } from './services/api.service';
     NavbarComponent,
     FooterComponent,
     AssessmentModalComponent,
-    CartDrawerComponent
+    CartDrawerComponent,
+    FeatureDirective
   ],
   templateUrl: './app.html',
   styleUrl: './app.css'

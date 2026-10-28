@@ -1,10 +1,11 @@
 import { Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { FeatureDirective } from '../../directives/feature.directive';
 
 @Component({
   selector: 'app-footer',
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, FeatureDirective],
   template: `
     <footer class="main-footer">
       <!-- Newsletter / Lead Magnet Strip -->
@@ -40,11 +41,11 @@ import { RouterLink } from '@angular/router';
         <div class="footer-col">
           <h4 class="col-title">Pregnancy Milestones</h4>
           <ul class="footer-links">
-            <li><a routerLink="/products/month-3">Month 3: 1st Trimester Essentials</a></li>
-            <li><a routerLink="/products/month-6">Month 6: 2nd Trimester & Sleep</a></li>
-            <li><a routerLink="/products/month-9">Month 9: Hospital Bag & Delivery</a></li>
+            <li *appFeature="'productRecommendations'"><a routerLink="/products/month-3">Month 3: 1st Trimester Essentials</a></li>
+            <li *appFeature="'productRecommendations'"><a routerLink="/products/month-6">Month 6: 2nd Trimester & Sleep</a></li>
+            <li *appFeature="'productRecommendations'"><a routerLink="/products/month-9">Month 9: Hospital Bag & Delivery</a></li>
             <li><a routerLink="/checklists">Doctor Checkup & Scan Checklist</a></li>
-            <li><span class="coming-soon">Baby Care 0–5 Years (Coming Soon)</span></li>
+            <li *appFeature="'childTracker'"><span class="coming-soon">Baby Care 0–5 Years (Coming Soon)</span></li>
           </ul>
         </div>
 
@@ -52,8 +53,8 @@ import { RouterLink } from '@angular/router';
         <div class="footer-col">
           <h4 class="col-title">Maternal Services</h4>
           <ul class="footer-links">
-            <li><a routerLink="/services/nurse-companion">Dedicated Care Nurse ("Maa Sakhi")</a></li>
-            <li><a routerLink="/doctors-live">Live OB-GYN Webinars & Q&As</a></li>
+            <li *appFeature="'legacyLeadForms'"><a routerLink="/services/nurse-companion">Dedicated Care Nurse ("Maa Sakhi")</a></li>
+            <li *appFeature="'legacyLeadForms'"><a routerLink="/doctors-live">Live OB-GYN Webinars & Q&As</a></li>
             <li><a routerLink="/checklists">Accredited Maternity Hospitals</a></li>
             <li><a routerLink="/checklists">Fetal Scan Labs & 4D Anomaly Scans</a></li>
             <li><a routerLink="/auth/login">My Routine & Due Date Tracker</a></li>
