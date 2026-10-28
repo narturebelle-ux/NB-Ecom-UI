@@ -1,15 +1,16 @@
 import { Component, inject, OnDestroy, OnInit, signal } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { RecaptchaVerifier } from 'firebase/auth';
 import { ApiService } from '../../services/api.service';
 import { FirebaseAuthService } from '../../services/firebase-auth.service';
-import { User } from '../../models/maternal.models';
+import { User, ConsentDocument, ConsentStatus, ConsentDocumentType } from '../../models/maternal.models';
 
 @Component({
   selector: 'app-profile',
   standalone: true,
-  imports: [FormsModule],
+  imports: [CommonModule, FormsModule],
   template: `
     <div class="profile-page">
       <div class="profile-container">
@@ -164,6 +165,36 @@ import { User } from '../../models/maternal.models';
             </button>
           </div>
         </form>
+
+        <!-- Consent Center (roadmap §1.1 UI) -->
+        <div class="consent-center">
+          <h2 class="section-title">Consent &amp; Privacy</h2>
+
+          @if (consentLoading()) {
+            <p class="field-hint">Loading…</p>
+          } @else {
+            @for (doc of consentDocuments(); track doc.id) {
+              <div class="consent-row">
+                <div class="consent-info">
+                  <strong>{{ doc.title || doc.type }}</strong>
+                  <span class="field-hint">
+                    v{{ doc.version }} ·
+                    @if (isGranted(doc.type)) {
+                      Granted {{ grantedDate(doc.type) }}
+                    } @else {
+                      Not granted
+                    }
+                  </span>
+                </div>
+                @if (isGranted(doc.type)) {
+                  <button class="btn-link" [disabled]="consentActionBusy()" (click)="revoke(doc.type)">Revoke</button>
+                } @else {
+                  <button class="btn-link" [disabled]="consentActionBusy()" (click)="grant(doc)">Grant</button>
+                }
+              </div>
+            }
+          }
+        </div>
 
         <p class="member-since">Member since {{ memberSince() }}</p>
 
@@ -374,6 +405,30 @@ import { User } from '../../models/maternal.models';
       margin: 0;
     }
 
+    .consent-center {
+      background: #fff;
+      border-radius: 16px;
+      padding: 1.5rem 2rem;
+      box-shadow: 0 4px 24px rgba(27,51,39,0.06);
+      border: 1px solid #e8ede9;
+      margin-bottom: 1.25rem;
+    }
+    .section-title {
+      font-size: 1.1rem;
+      color: #1b3327;
+      margin: 0 0 1rem;
+    }
+    .consent-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.75rem 0;
+      border-top: 1px solid #f0f3f1;
+    }
+    .consent-row:first-of-type { border-top: none; }
+    .consent-info { display: flex; flex-direction: column; gap: 0.2rem; }
+    .consent-info strong { font-size: 0.92rem; color: #1b3327; }
+
     .edit-toggle-row {
       display: flex;
       align-items: center;
@@ -438,6 +493,11 @@ export class MyProfileComponent implements OnInit, OnDestroy {
   statusMsg = signal<string | null>(null);
   isError = signal(false);
 
+  consentLoading = signal(true);
+  consentActionBusy = signal(false);
+  consentDocuments = signal<ConsentDocument[]>([]);
+  consentStatus = signal<ConsentStatus | null>(null);
+
   form = {
     firstName: '',
     lastName: '',
@@ -496,9 +556,9 @@ export class MyProfileComponent implements OnInit, OnDestroy {
     // authGuard guarantees a signed-in user by the time this component loads.
     this.populateForm(this.api.currentUser());
 
-    // Refresh from the server (GET /api/v1/users/me) so the page reflects
+    // Refresh from the server (GET /api/v1/me — roadmap §0.6) so the page reflects
     // server-truth rather than whatever was cached at login time.
-    this.api.getMyProfile().subscribe({
+    this.api.getMe().subscribe({
       next: (user) => {
         if (user) {
           this.api.setUser(user);
@@ -507,6 +567,67 @@ export class MyProfileComponent implements OnInit, OnDestroy {
       },
       error: () => {
         // Keep showing the cached user; interceptor already handled 401/403 side effects.
+      }
+    });
+
+    this.loadConsents();
+  }
+
+  private loadConsents() {
+    this.consentLoading.set(true);
+    this.api.getMyConsents().subscribe({
+      next: (status) => {
+        this.consentStatus.set(status);
+        this.api.getConsentDocuments().subscribe({
+          next: (docs) => {
+            this.consentDocuments.set(docs);
+            this.consentLoading.set(false);
+          },
+          error: () => this.consentLoading.set(false)
+        });
+      },
+      error: () => this.consentLoading.set(false)
+    });
+  }
+
+  isGranted(type: ConsentDocumentType): boolean {
+    return !this.consentStatus()?.pending.includes(type);
+  }
+
+  grantedDate(type: ConsentDocumentType): string {
+    const grant = this.consentStatus()?.history.find(c => c.documentType === type && !c.revokedAt);
+    if (!grant?.grantedAt) return '';
+    try {
+      return new Date(grant.grantedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+    } catch {
+      return '';
+    }
+  }
+
+  grant(doc: ConsentDocument) {
+    this.consentActionBusy.set(true);
+    this.api.grantConsent(doc.type, doc.version).subscribe({
+      next: () => {
+        this.consentActionBusy.set(false);
+        this.loadConsents();
+      },
+      error: (err) => {
+        this.consentActionBusy.set(false);
+        this.api.showToast(err?.error?.message || 'Could not save your agreement. Please try again.');
+      }
+    });
+  }
+
+  revoke(type: ConsentDocumentType) {
+    this.consentActionBusy.set(true);
+    this.api.revokeConsent(type).subscribe({
+      next: () => {
+        this.consentActionBusy.set(false);
+        this.loadConsents();
+      },
+      error: (err) => {
+        this.consentActionBusy.set(false);
+        this.api.showToast(err?.error?.message || 'Could not revoke. Please try again.');
       }
     });
   }
@@ -532,39 +653,21 @@ export class MyProfileComponent implements OnInit, OnDestroy {
     this.saving.set(true);
     this.statusMsg.set(null);
 
-    this.api.updateProfile({
+    this.api.updateMe({
       firstName: this.form.firstName.trim(),
       lastName: this.form.lastName.trim(),
       phone: this.form.phone.trim() || undefined,
       stage: this.form.stage || undefined,
       dueDate: this.form.dueDate || undefined
     }).subscribe({
-      next: (res: any) => {
+      next: (res) => {
         this.saving.set(false);
-        if (res?.id) {
-          // Real backend success: PUT /users/me returns the updated user directly
-          // (not wrapped) — e.g. changing phone resets phoneVerified server-side,
-          // so this merge also picks that up.
-          this.api.setUser(res);
-          this.populateForm(res);
-          this.editMode.set(false);
-          this.showStatus('Profile updated successfully! ✨', false);
-        } else if (res?.success === false) {
-          this.showStatus(res.message || 'Update failed. Please try again.', true);
-        } else {
-          // fallback for offline/mock
-          const updatedUser = {
-            ...user,
-            firstName: this.form.firstName.trim(),
-            lastName: this.form.lastName.trim(),
-            name: `${this.form.firstName.trim()} ${this.form.lastName.trim()}`.trim(),
-            phone: this.form.phone.trim() || user.phone,
-            stage: this.form.stage || user.stage,
-            dueDate: this.form.dueDate || user.dueDate
-          };
-          this.api.setUser(updatedUser as any);
-          this.showStatus('Profile saved locally (server offline).', false);
-        }
+        // PATCH /me returns the updated user directly (not wrapped) — e.g. changing
+        // phone resets phoneVerified server-side, so this merge also picks that up.
+        this.api.setUser(res);
+        this.populateForm(res);
+        this.editMode.set(false);
+        this.showStatus('Profile updated successfully! ✨', false);
       },
       error: (err) => {
         this.saving.set(false);
