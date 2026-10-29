@@ -5,7 +5,9 @@ import { FormsModule } from '@angular/forms';
 import { RecaptchaVerifier } from 'firebase/auth';
 import { ApiService } from '../../services/api.service';
 import { FirebaseAuthService } from '../../services/firebase-auth.service';
+import { NotificationService } from '../../services/notification.service';
 import { User, ConsentDocument, ConsentStatus, ConsentDocumentType } from '../../models/maternal.models';
+import { DEFAULT_NOTIFICATION_PREFERENCES, NotificationPreferences } from '../../models/notification.models';
 
 @Component({
   selector: 'app-profile',
@@ -157,6 +159,49 @@ import { User, ConsentDocument, ConsentStatus, ConsentDocumentType } from '../..
                 }
               </div>
             }
+          }
+        </div>
+
+        <!-- Notification Preferences (roadmap §Phase 5 UI) -->
+        <div class="consent-center">
+          <h2 class="section-title">Notification Preferences</h2>
+          <p class="field-hint prefs-note">Preferences only — no messages are actually sent by any channel yet; only in-app reminders are real right now.</p>
+          <label class="pref-row">
+            <input type="checkbox" [(ngModel)]="notifPrefs.inApp" name="prefInApp" (ngModelChange)="savePrefs()" />
+            In-app reminders
+          </label>
+          <label class="pref-row">
+            <input type="checkbox" [(ngModel)]="notifPrefs.email" name="prefEmail" (ngModelChange)="savePrefs()" />
+            Email
+          </label>
+          <label class="pref-row">
+            <input type="checkbox" [(ngModel)]="notifPrefs.sms" name="prefSms" (ngModelChange)="savePrefs()" />
+            SMS
+          </label>
+          <label class="pref-row">
+            <input type="checkbox" [(ngModel)]="notifPrefs.whatsapp" name="prefWhatsapp" (ngModelChange)="savePrefs()" />
+            WhatsApp
+          </label>
+        </div>
+
+        <!-- Self-service export / deletion (roadmap §Phase 6) -->
+        <div class="consent-center">
+          <h2 class="section-title">Your Data</h2>
+          <p class="field-hint prefs-note">
+            Exports/clears what this prototype keeps on this device only (plan, bookings, records
+            metadata, reminders). It does not delete your real account or server-side data — no
+            DELETE /me endpoint exists yet.
+          </p>
+          <div class="data-actions">
+            <button type="button" class="btn-link" (click)="exportData()">⬇️ Download my data (JSON)</button>
+            <button type="button" class="btn-link danger" (click)="confirmingDelete.set(true)" [hidden]="confirmingDelete()">🗑️ Delete local data</button>
+          </div>
+          @if (confirmingDelete()) {
+            <div class="delete-confirm">
+              <span>This clears everything this prototype stored on this device and signs you out. Are you sure?</span>
+              <button type="button" class="btn-link danger" (click)="deleteLocalData()">Yes, delete it</button>
+              <button type="button" class="btn-link" (click)="confirmingDelete.set(false)">Cancel</button>
+            </div>
           }
         </div>
 
@@ -407,6 +452,12 @@ import { User, ConsentDocument, ConsentStatus, ConsentDocumentType } from '../..
     .consent-info { display: flex; flex-direction: column; gap: 0.2rem; }
     .consent-info strong { font-size: 0.92rem; color: #1b3327; }
 
+    .prefs-note { margin-bottom: 0.85rem; }
+    .pref-row { display: flex; align-items: center; gap: 0.6rem; font-size: 0.88rem; color: #4a6355; padding: 0.4rem 0; cursor: pointer; }
+    .data-actions { display: flex; gap: 1.25rem; flex-wrap: wrap; }
+    .delete-confirm { margin-top: 0.75rem; padding: 0.85rem 1rem; background: #fdecea; border: 1px solid #f5b7b1; border-radius: 10px; font-size: 0.85rem; color: #a0281c; display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+    .btn-link.danger { color: #a0281c; }
+
     .edit-toggle-row {
       display: flex;
       align-items: center;
@@ -465,6 +516,7 @@ import { User, ConsentDocument, ConsentStatus, ConsentDocumentType } from '../..
 export class MyProfileComponent implements OnInit, OnDestroy {
   api = inject(ApiService);
   firebaseAuth = inject(FirebaseAuthService);
+  private notifications = inject(NotificationService);
   router = inject(Router);
 
   saving = signal(false);
@@ -475,6 +527,9 @@ export class MyProfileComponent implements OnInit, OnDestroy {
   consentActionBusy = signal(false);
   consentDocuments = signal<ConsentDocument[]>([]);
   consentStatus = signal<ConsentStatus | null>(null);
+
+  notifPrefs: NotificationPreferences = { ...DEFAULT_NOTIFICATION_PREFERENCES };
+  confirmingDelete = signal(false);
 
   form = {
     firstName: '',
@@ -518,6 +573,43 @@ export class MyProfileComponent implements OnInit, OnDestroy {
     });
 
     this.loadConsents();
+    this.notifPrefs = { ...DEFAULT_NOTIFICATION_PREFERENCES, ...this.notifications.getPreferences() };
+  }
+
+  savePrefs() {
+    this.notifications.savePreferences(this.notifPrefs);
+    this.api.showToast('Notification preferences saved.');
+  }
+
+  exportData() {
+    const uid = this.api.currentUser()?.id ?? 'guest';
+    const keys = Object.keys(localStorage).filter(k => k.includes(`_${uid}`) || k === 'nb_user');
+    const data: Record<string, unknown> = {};
+    for (const key of keys) {
+      try {
+        data[key] = JSON.parse(localStorage.getItem(key) || 'null');
+      } catch {
+        data[key] = localStorage.getItem(key);
+      }
+    }
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `narturebelle-data-${uid}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  deleteLocalData() {
+    const uid = this.api.currentUser()?.id ?? 'guest';
+    const keys = Object.keys(localStorage).filter(k => k.includes(`_${uid}`) || k === 'nb_user');
+    keys.forEach(k => localStorage.removeItem(k));
+    this.confirmingDelete.set(false);
+    this.firebaseAuth.logout().finally(() => {
+      this.api.logout();
+      this.router.navigate(['/']);
+    });
   }
 
   private loadConsents() {

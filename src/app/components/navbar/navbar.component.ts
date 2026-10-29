@@ -1,7 +1,9 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive, Router } from '@angular/router';
 import { ApiService } from '../../services/api.service';
 import { FirebaseAuthService } from '../../services/firebase-auth.service';
+import { NotificationService } from '../../services/notification.service';
+import { Reminder } from '../../models/notification.models';
 import { CommonModule } from '@angular/common';
 import { FeatureDirective } from '../../directives/feature.directive';
 
@@ -78,6 +80,33 @@ import { FeatureDirective } from '../../directives/feature.directive';
               <span class="cart-badge">{{ api.cartCount() }}</span>
             }
           </button>
+
+          <!-- Reminder bell (roadmap §Phase 5) -->
+          @if (api.currentUser()) {
+            <div class="bell-menu" [class.menu-open]="isBellOpen">
+              <button class="bell-btn" (click)="toggleBell()" type="button" aria-label="Reminders">
+                <span>🔔</span>
+                @if (notifications.unreadCount() > 0) {
+                  <span class="cart-badge">{{ notifications.unreadCount() }}</span>
+                }
+              </button>
+              @if (isBellOpen) {
+                <div class="bell-dropdown">
+                  @if (reminders().length === 0) {
+                    <p class="bell-empty">No reminders right now.</p>
+                  } @else {
+                    @for (r of reminders(); track r.id) {
+                      <div class="bell-item" [class.unread]="!r.read" (click)="openReminder(r.id)">
+                        <strong>{{ r.title }}</strong>
+                        <p>{{ r.body }}</p>
+                        <button class="dismiss-btn" (click)="dismissReminder($event, r.id)">Dismiss</button>
+                      </div>
+                    }
+                  }
+                </div>
+              }
+            </div>
+          }
 
           <!-- Auth: signed-in user dropdown -->
           @if (api.currentUser(); as user) {
@@ -337,6 +366,48 @@ import { FeatureDirective } from '../../directives/feature.directive';
       border: 2px solid #fff;
     }
 
+    /* Reminder bell (roadmap §Phase 5) */
+    .bell-menu { position: relative; }
+    .bell-btn {
+      position: relative;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-light);
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 1.1rem;
+    }
+    .bell-dropdown {
+      position: absolute;
+      top: calc(100% + 8px);
+      right: 0;
+      background: #fff;
+      border: 1px solid var(--border-light);
+      border-radius: 12px;
+      box-shadow: 0 8px 30px rgba(27,51,39,0.12);
+      min-width: 280px;
+      max-height: 360px;
+      overflow-y: auto;
+      z-index: 2000;
+      padding: 0.5rem;
+    }
+    .bell-empty { font-size: 0.85rem; color: var(--text-muted); padding: 0.75rem; text-align: center; }
+    .bell-item {
+      padding: 0.65rem 0.75rem;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-bottom: 0.25rem;
+    }
+    .bell-item:hover { background: var(--sage-50); }
+    .bell-item.unread { background: #f0f7f3; }
+    .bell-item strong { display: block; font-size: 0.85rem; color: var(--sage-900); }
+    .bell-item p { font-size: 0.78rem; color: var(--text-secondary); margin: 0.2rem 0 0.35rem; }
+    .dismiss-btn { background: none; border: none; color: var(--text-muted); font-size: 0.72rem; text-decoration: underline; cursor: pointer; padding: 0; }
+
     /* User dropdown menu */
     .user-menu {
       position: relative;
@@ -470,10 +541,32 @@ import { FeatureDirective } from '../../directives/feature.directive';
 export class NavbarComponent {
   api = inject(ApiService);
   firebaseAuth = inject(FirebaseAuthService);
+  notifications = inject(NotificationService);
   router = inject(Router);
 
   isMobileOpen = false;
   isUserMenuOpen = false;
+  isBellOpen = false;
+
+  reminders = signal<Reminder[]>([]);
+
+  toggleBell() {
+    this.isBellOpen = !this.isBellOpen;
+    if (this.isBellOpen) {
+      this.reminders.set(this.notifications.getReminders());
+    }
+  }
+
+  openReminder(id: string) {
+    this.notifications.markRead(id);
+    this.reminders.set(this.notifications.getReminders());
+  }
+
+  dismissReminder(event: Event, id: string) {
+    event.stopPropagation();
+    this.notifications.dismiss(id);
+    this.reminders.set(this.notifications.getReminders());
+  }
 
   toggleMobileMenu() {
     this.isMobileOpen = !this.isMobileOpen;

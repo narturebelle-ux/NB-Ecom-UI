@@ -4,6 +4,7 @@ import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../services/api.service';
 import { CommerceService } from '../../services/commerce.service';
+import { NotificationService } from '../../services/notification.service';
 import {
   Journey,
   JourneyStatus,
@@ -299,6 +300,7 @@ const ALL_STATUSES: JourneyStatus[] = [
 export class JourneyComponent implements OnInit {
   api = inject(ApiService);
   private commerce = inject(CommerceService);
+  private notifications = inject(NotificationService);
 
   statuses = ALL_STATUSES;
   entitlements = signal<Entitlement[]>([]);
@@ -343,6 +345,7 @@ export class JourneyComponent implements OnInit {
         this.journeySetupRequired.set(dashboard.journeySetupRequired);
         this.activeJourney.set(dashboard.journey);
         this.nextActions.set(dashboard.nextActions || []);
+        this.notifications.syncFromNextActions(dashboard.nextActions || []);
       },
       error: (err) => {
         this.loading.set(false);
