@@ -143,7 +143,7 @@ import { FeatureDirective } from '../../directives/feature.directive';
             </div>
           } @else {
             <a routerLink="/auth/login" class="btn btn-ghost-nav btn-sm login-btn">Sign in</a>
-            <a routerLink="/auth/login" class="btn btn-primary btn-sm get-started-btn">Get started</a>
+            <a routerLink="/auth/signup" class="btn btn-primary btn-sm get-started-btn">Get started</a>
           }
 
           <!-- Mobile Hamburger Toggle (signed-in only; guests have nothing to navigate to yet) -->

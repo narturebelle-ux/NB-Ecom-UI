@@ -38,7 +38,7 @@ import { Plan } from '../../models/commerce.models';
             @if (api.currentUser()) {
               <a [routerLink]="onboarding.onboarded() ? '/journey' : '/onboarding'" class="btn btn-primary btn-lg">{{ onboarding.onboarded() ? 'Go to my journey' : 'Continue onboarding' }} <mat-icon class="icon-sm">arrow_forward</mat-icon></a>
             } @else {
-              <a routerLink="/auth/login" class="btn btn-primary btn-lg">Start your journey <mat-icon class="icon-sm">arrow_forward</mat-icon></a>
+              <a routerLink="/auth/signup" class="btn btn-primary btn-lg">Start your journey <mat-icon class="icon-sm">arrow_forward</mat-icon></a>
             }
             <a href="#how-it-works" class="btn btn-ghost btn-lg">See how it works</a>
           </div>
@@ -120,7 +120,7 @@ import { Plan } from '../../models/commerce.models';
           <span class="kicker">How it works</span>
           <h2>Three calm steps to getting started</h2>
           <p>No long forms at sign-up. You share what you want, when you want.</p>
-          <a routerLink="/auth/login" class="btn btn-outline">Create your account</a>
+          <a routerLink="/auth/signup" class="btn btn-outline">Create your account</a>
         </div>
         <div class="how-steps">
           @for (step of steps; track step.title; let i = $index) {
@@ -248,7 +248,7 @@ import { Plan } from '../../models/commerce.models';
           @if (api.currentUser()) {
             <a [routerLink]="onboarding.onboarded() ? '/journey' : '/onboarding'" class="btn btn-light btn-lg">{{ onboarding.onboarded() ? 'Go to my journey' : 'Continue onboarding' }}</a>
           } @else {
-            <a routerLink="/auth/login" class="btn btn-light btn-lg">Get started</a>
+            <a routerLink="/auth/signup" class="btn btn-light btn-lg">Get started</a>
           }
         </div>
       </div>

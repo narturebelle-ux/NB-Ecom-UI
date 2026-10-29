@@ -42,6 +42,7 @@ export const routes: Routes = [
   },
 
   { path: 'auth/login', component: LoginComponent, title: 'Sign In | NartureBelle' },
+  { path: 'auth/signup', component: LoginComponent, title: 'Create Your Account | NartureBelle', data: { mode: 'signup' } },
   { path: 'auth/verify-email', component: VerifyEmailComponent, title: 'Verify Your Email | NartureBelle', canActivate: [authGuard] },
   {
     path: 'auth/consent',

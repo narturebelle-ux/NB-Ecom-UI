@@ -2,7 +2,7 @@ import { Component, inject, OnInit, OnDestroy } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ApiService } from '../../services/api.service';
 import { FirebaseAuthService } from '../../services/firebase-auth.service';
 import { goToPostAuthDestination } from '../../services/post-auth-redirect';
@@ -12,16 +12,29 @@ import { RecaptchaVerifier, GoogleAuthProvider, AuthCredential } from 'firebase/
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [MatIconModule, CommonModule, FormsModule],
+  imports: [MatIconModule, CommonModule, FormsModule, RouterLink],
   template: `
     <div class="login-wrapper">
       <div class="container login-container">
         <div class="login-box card glass">
           <div class="login-header">
             <img src="favicon.svg" alt="" class="logo-icon">
-            <h2>Welcome to NartureBelle</h2>
-            <p>Sign in to your care journey — your plan, your care team, and your records, all in one private place.</p>
+            @if (isSignUp) {
+              <h2>Create your account</h2>
+              <p>Start your care journey in a few minutes. Signing up is free. You only pay once you choose a care plan.</p>
+            } @else {
+              <h2>Welcome back</h2>
+              <p>Sign in to your care journey: your plan, your care team and your records, all in one private place.</p>
+            }
           </div>
+
+          @if (isSignUp) {
+            <ol class="next-steps">
+              <li><span>1</span> Create your account</li>
+              <li><span>2</span> Tell us about you</li>
+              <li><span>3</span> Choose a plan and meet your coordinator</li>
+            </ol>
+          }
 
           <!-- Developer-only notice; end users on a configured build never see infrastructure status. -->
           @if (!firebaseAuth.isConfigured()) {
@@ -65,7 +78,7 @@ import { RecaptchaVerifier, GoogleAuthProvider, AuthCredential } from 'firebase/
                     <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.98 0 12s.45 3.82 1.25 5.42l4.03-3.15z"/>
                     <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
                   </svg>
-                  <span>{{ isSubmitting ? 'Connecting with Google...' : 'Continue with Google' }}</span>
+                  <span>{{ isSubmitting ? 'Connecting with Google...' : (isSignUp ? 'Sign up with Google' : 'Continue with Google') }}</span>
                 </button>
               </div>
             </div>
@@ -105,7 +118,7 @@ import { RecaptchaVerifier, GoogleAuthProvider, AuthCredential } from 'firebase/
                   </div>
 
                   <button type="submit" class="btn btn-primary btn-lg full-w mt-2" [disabled]="!otpCode || isSubmitting">
-                    {{ isSubmitting ? 'Verifying...' : 'Verify & Sign In →' }}
+                    {{ isSubmitting ? 'Verifying...' : (isSignUp ? 'Verify & Create Account →' : 'Verify & Sign In →') }}
                   </button>
 
                   <button type="button" class="btn btn-outline full-w mt-1" (click)="otpSent = false">
@@ -182,6 +195,14 @@ import { RecaptchaVerifier, GoogleAuthProvider, AuthCredential } from 'firebase/
             </div>
           }
 
+          <p class="switch-page">
+            @if (isSignUp) {
+              Already have an account? <a [routerLink]="['/auth/login']" [queryParams]="returnUrl ? { returnUrl } : {}">Sign in</a>
+            } @else {
+              New to NartureBelle? <a [routerLink]="['/auth/signup']" [queryParams]="returnUrl ? { returnUrl } : {}">Create an account</a>
+            }
+          </p>
+
           <div class="login-footer">
             <p><mat-icon class="icon-sm">lock</mat-icon> Encrypted in transit. We never share your health data without your consent.</p>
           </div>
@@ -214,6 +235,11 @@ import { RecaptchaVerifier, GoogleAuthProvider, AuthCredential } from 'firebase/
       text-align: center;
       margin-bottom: 1.5rem;
     }
+    .next-steps { list-style: none; padding: 0.85rem 1rem; margin: 0 0 1.5rem; display: flex; flex-direction: column; gap: 0.5rem; background: var(--sage-50); border: 1px solid var(--sage-100); border-radius: var(--radius-md); }
+    .next-steps li { display: flex; align-items: center; gap: 0.6rem; font-size: 0.85rem; color: var(--sage-900); }
+    .next-steps span { width: 22px; height: 22px; flex-shrink: 0; border-radius: 50%; display: grid; place-items: center; background: var(--sage-700); color: #fff; font-size: 0.72rem; font-weight: 700; }
+    .switch-page { text-align: center; font-size: 0.88rem; color: var(--text-secondary); margin: 1.5rem 0 0; }
+    .switch-page a { font-weight: 700; color: var(--sage-700); }
     .logo-icon {
       width: 56px;
       height: 56px;
@@ -508,7 +534,12 @@ export class LoginComponent implements OnInit, OnDestroy {
     return this.accountLinkNoticeMsg;
   }
 
+  /** /auth/signup reuses this page with sign-up wording; Firebase creates the account either way. */
+  isSignUp = false;
+
   ngOnInit() {
+    this.isSignUp = this.route.snapshot.data['mode'] === 'signup';
+    if (this.isSignUp) this.emailMode = 'SIGN_UP';
     this.returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
     if (this.api.currentUser()) {
       goToPostAuthDestination(this.api, this.router, this.returnUrl);
