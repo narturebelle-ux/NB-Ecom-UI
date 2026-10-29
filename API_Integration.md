@@ -338,9 +338,9 @@ POST /api/v1/me/onboarding/complete        (or set server-side when the coordina
 ```
 
 Emailing the onboarding papers needs your email/notification service (roadmap Phase 5); the UI
-currently tells users email delivery is coming soon rather than claiming it was sent. Whether
-"onboarded" should be set by the user finishing the steps, or by the care coordinator after the
-call, is a product decision worth confirming — the UI currently completes it on the final step.
+currently tells users email delivery is coming soon rather than claiming it was sent. **Decided by the product
+owner (2026-10-29):** "onboarded" is set when the user finishes the steps (signs the documents) —
+no coordinator confirmation step. `POST /me/onboarding/complete` from the user is the right shape.
 
 ## 9. Open requests to the API agent
 
