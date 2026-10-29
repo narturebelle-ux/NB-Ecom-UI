@@ -41,6 +41,7 @@ import { FeatureDirective } from '../../directives/feature.directive';
             <a *appFeature="'childTracker'" routerLink="/child" routerLinkActive="active" class="nav-link">Child</a>
             <a *appFeature="'aiAssistant'" routerLink="/ai" routerLinkActive="active" class="nav-link">AI</a>
           }
+          <a routerLink="/plans" routerLinkActive="active" class="nav-link">Plans</a>
 
           <!-- Trimester Stage Pills — hidden behind productRecommendations until roadmap Phase 6 -->
           <div *appFeature="'productRecommendations'" class="stage-nav-group">
@@ -127,6 +128,7 @@ import { FeatureDirective } from '../../directives/feature.directive';
             <a *appFeature="'childTracker'" routerLink="/child" (click)="isMobileOpen = false" class="mobile-nav-link">Child</a>
             <a *appFeature="'aiAssistant'" routerLink="/ai" (click)="isMobileOpen = false" class="mobile-nav-link">AI</a>
           }
+          <a routerLink="/plans" (click)="isMobileOpen = false" class="mobile-nav-link">💳 Care Plans</a>
 
           <div *appFeature="'productRecommendations'">
             <div class="mobile-stages-title">Browse By Pregnancy Milestone:</div>

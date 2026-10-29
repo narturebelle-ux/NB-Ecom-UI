@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../services/api.service';
+import { CommerceService } from '../../services/commerce.service';
 import {
   Journey,
   JourneyStatus,
@@ -10,6 +11,7 @@ import {
   NextAction,
   PROFESSIONAL_TYPE_LABELS
 } from '../../models/maternal.models';
+import { Entitlement } from '../../models/commerce.models';
 
 const ALL_STATUSES: JourneyStatus[] = [
   'PREGNANCY',
@@ -100,6 +102,30 @@ const ALL_STATUSES: JourneyStatus[] = [
             }
 
             <button class="btn btn-outline" (click)="startEdit(journey)">Edit Stage / EDD</button>
+          </div>
+
+          <!-- Session wallet (roadmap §Phase 2 UI) — client-side only, see CommerceService -->
+          <div class="card glass wallet-card">
+            <h3>My Care Plan</h3>
+            @if (entitlements().length === 0) {
+              <p class="field-hint">No active care plan yet.</p>
+              <a routerLink="/plans" class="btn btn-primary">Choose a Plan</a>
+            } @else {
+              <div class="wallet-list">
+                @for (e of entitlements(); track e.purchasedAt) {
+                  <div class="wallet-row">
+                    <div class="wallet-head">
+                      <strong>{{ e.planName }}</strong>
+                      <span class="field-hint">Expires {{ e.expiresAt | date:'mediumDate' }}</span>
+                    </div>
+                    <div class="wallet-bar">
+                      <div class="wallet-bar-fill" [style.width.%]="(e.usedSessions / e.totalSessions) * 100"></div>
+                    </div>
+                    <span class="field-hint">{{ e.totalSessions - e.usedSessions }} of {{ e.totalSessions }} sessions remaining</span>
+                  </div>
+                }
+              </div>
+            }
           </div>
 
           <!-- Next actions timeline -->
@@ -201,6 +227,15 @@ const ALL_STATUSES: JourneyStatus[] = [
     .dashboard-card h2 { font-size: 1.75rem; color: var(--sage-900); margin-bottom: 0.5rem; }
     .edd-line { font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 1rem; }
 
+    .wallet-card { padding: 2rem; }
+    .wallet-card h3 { font-size: 1.15rem; color: var(--primary-deep); margin-bottom: 1rem; }
+    .wallet-list { display: flex; flex-direction: column; gap: 1.25rem; }
+    .wallet-row { display: flex; flex-direction: column; gap: 0.4rem; }
+    .wallet-head { display: flex; justify-content: space-between; align-items: baseline; }
+    .wallet-head strong { font-size: 0.95rem; color: var(--sage-900); }
+    .wallet-bar { height: 8px; border-radius: var(--radius-full); background: var(--sage-50); overflow: hidden; }
+    .wallet-bar-fill { height: 100%; background: var(--blush-700); border-radius: var(--radius-full); }
+
     .timeline-card { padding: 2rem; }
     .timeline-card h3 { font-size: 1.15rem; color: var(--primary-deep); margin-bottom: 0.5rem; }
     .clinical-disclaimer {
@@ -263,8 +298,10 @@ const ALL_STATUSES: JourneyStatus[] = [
 })
 export class JourneyComponent implements OnInit {
   api = inject(ApiService);
+  private commerce = inject(CommerceService);
 
   statuses = ALL_STATUSES;
+  entitlements = signal<Entitlement[]>([]);
 
   loading = signal(true);
   errorMsg = signal<string | null>(null);
@@ -295,6 +332,7 @@ export class JourneyComponent implements OnInit {
 
   ngOnInit() {
     this.loadDashboard();
+    this.entitlements.set(this.commerce.getEntitlements());
   }
 
   private loadDashboard() {

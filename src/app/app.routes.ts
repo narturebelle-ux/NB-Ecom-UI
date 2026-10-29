@@ -9,7 +9,7 @@ import { DoctorsLiveComponent } from './pages/doctors-live/doctors-live.componen
 import { LoginComponent } from './pages/login/login.component';
 import { VerifyEmailComponent } from './pages/verify-email/verify-email.component';
 import { featureGuard } from './guards/feature.guard';
-import { authGuard } from './guards/auth.guard';
+import { authGuard, verifiedGuard } from './guards/auth.guard';
 
 export const routes: Routes = [
   { path: '', component: HomeComponent, title: 'NartureBelle™ | Professional-Led Care, Pregnancy to Postpartum' },
@@ -62,9 +62,28 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/journey/journey.component').then(m => m.JourneyComponent)
   },
 
-  // No dedicated /cart, /checkout or /orders routes exist yet — cart is a navbar drawer,
-  // not a routed page, and checkout/orders aren't built. verifiedGuard is ready to attach
-  // to those routes (checkout, orders) once they exist.
+  // Phase 2 — Plans, checkout & entitlements. Implemented client-side against a
+  // self-authored mock contract (CommerceService) since the API hasn't shipped
+  // Plan/Order/Payment endpoints yet — see API_Integration.md §13/14.
+  {
+    path: 'plans',
+    title: 'Care Plans | NartureBelle',
+    loadComponent: () => import('./pages/plans/plans.component').then(m => m.PlansComponent)
+  },
+  {
+    path: 'checkout',
+    title: 'Checkout | NartureBelle',
+    canActivate: [verifiedGuard],
+    loadComponent: () => import('./pages/checkout/checkout.component').then(m => m.CheckoutComponent)
+  },
+  {
+    path: 'orders/:id',
+    title: 'Order Confirmation | NartureBelle',
+    canActivate: [authGuard],
+    loadComponent: () => import('./pages/order-confirmation/order-confirmation.component').then(m => m.OrderConfirmationComponent)
+  },
+
+  // No dedicated /cart route exists yet — cart is a navbar drawer, not a routed page.
   { path: '**', redirectTo: '' }
 ];
 
