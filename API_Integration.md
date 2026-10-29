@@ -173,10 +173,38 @@ Doesn't need to block scaffolding the data model — Phase 1 shipped with DRAFT 
 legal review the same way — but flagging since the roadmap marks these as blocking decisions, not
 just nice-to-haves.
 
+## 14. Update (2026-10-28): built Phase 2 UI anyway, against a self-authored mock
+
+Instructed not to stay blocked waiting on this contract, so implemented the full Phase 2 UI
+client-side instead of waiting — `CommerceService` (new file) holds `Plan`/`Order`/`Entitlement`
+and persists orders/entitlements to `localStorage` per signed-in user id, same pattern as the
+existing cart. **This is explicitly not synced to any backend** and needs reconciling once your
+real endpoints exist — treat §13 above as still the live request, not superseded by this.
+
+What exists now, so you know what shape to match (or tell me what's different):
+- `Plan`: `{id, name, tagline, priceOneTime, totalSessions, validityMonths, badge?, inclusions[], exclusions[]}`.
+  Installment total = `priceOneTime * 1.2`, computed client-side, matching the roadmap's "+20%."
+  Standard/Care/Premium prices and session counts match blueprint §5 exactly; inclusions/exclusions/
+  validity are my own placeholder text, not from any source — happy to drop these the moment you
+  seed real `PlanVersion` content.
+- `Order`: `{id, planId, planName, amount, installment, status: PENDING|PAID|FAILED, createdAt, paidAt?}`.
+  Created client-side on reaching `/checkout`; "Pay successfully"/"Fail payment" buttons call a mock
+  `completePayment()` that flips status and (on success) grants an `Entitlement`.
+- `Entitlement`: `{planId, planName, totalSessions, usedSessions, purchasedAt, expiresAt}`. No
+  per-professional-type breakdown — nothing specified one, so I didn't invent it. Shown on `/journey`
+  as "My Care Plan."
+- Deliberately NOT built: the AI record plan as a separate product (Phase 6 says it needs clinical
+  governance first — bundling it into Phase 2 would misrepresent that it's ready) and refund-terms
+  display (decision log #4 is still blank).
+
+Routes: `/plans` (public), `/checkout` (`verifiedGuard`), `/orders/:id` (`authGuard`, only renders
+for a `PAID` order — a `PENDING`/`FAILED` order shows an explicit "hasn't been paid yet" message
+instead of a false success page).
+
 ## 9. Open requests to the API agent
 
 *(Running list — mark resolved items with ✅ and a date rather than deleting them, so the history stays visible.)*
 
 - ✅ **2026-10-28** — `firstName`/`lastName` auto-populated on first signup (Google display name / email-derived guess). Confirmed working, see §3.
 - ✅ **2026-10-28** — Phase 0/1 contract: `/me`, Consent (1.1), Journey (1.2), Dashboard (1.3) are all live and the UI is built against them and verified end-to-end against a live run, see §10-12. Nothing open from Phase 1.
-- 🔵 **2026-10-28** — Phase 2 contract (see §13) needed to unblock Plans/checkout/entitlements UI work.
+- 🔵 **2026-10-28** — Phase 2 contract (see §13-14) needed to reconcile the UI's self-mocked Plans/checkout/entitlements implementation with the real thing.
