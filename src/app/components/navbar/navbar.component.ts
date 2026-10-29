@@ -5,17 +5,18 @@ import { FirebaseAuthService } from '../../services/firebase-auth.service';
 import { NotificationService } from '../../services/notification.service';
 import { Reminder } from '../../models/notification.models';
 import { CommonModule } from '@angular/common';
+import { MatIconModule } from '@angular/material/icon';
 import { FeatureDirective } from '../../directives/feature.directive';
 
 @Component({
   selector: 'app-navbar',
   standalone: true,
-  imports: [RouterLink, RouterLinkActive, CommonModule, FeatureDirective],
+  imports: [RouterLink, RouterLinkActive, CommonModule, MatIconModule, FeatureDirective],
   template: `
     <!-- Top Announcement Bar (legacy lead-gen promo — hidden, not deleted) -->
     <div *appFeature="'legacyLeadForms'" class="announcement-bar">
       <div class="container announcement-content">
-        <span>✨ <strong>Free OB-GYN Live Masterclass:</strong> 1st Trimester Nutrition &amp; Safe Scans this Saturday!</span>
+        <span><strong>Free OB-GYN Live Masterclass:</strong> 1st Trimester Nutrition &amp; Safe Scans this Saturday!</span>
         <a routerLink="/doctors-live" class="announcement-link">Reserve Free Seat &rarr;</a>
       </div>
     </div>
@@ -59,15 +60,15 @@ import { FeatureDirective } from '../../directives/feature.directive';
           </div>
 
           <a routerLink="/checklists" routerLinkActive="active" class="nav-link highlight-link">
-            <span>📋</span> Checkup Checklist
+            <mat-icon class="icon-sm">fact_check</mat-icon> Checkup Checklist
           </a>
 
           <!-- Legacy lead-gen nav links — hidden, not deleted -->
           <a *appFeature="'legacyLeadForms'" routerLink="/services/nurse-companion" routerLinkActive="active" class="nav-link nurse-link">
-            <span>👩‍⚕️</span> Nurse Companion
+            <mat-icon class="icon-sm">medical_services</mat-icon> Nurse Companion
           </a>
           <a *appFeature="'legacyLeadForms'" routerLink="/doctors-live" routerLinkActive="active" class="nav-link doctor-link">
-            <span>🔴</span> Doctor Live
+            <mat-icon class="icon-sm">videocam</mat-icon> Doctor Live
           </a>
         </nav>
 
@@ -75,7 +76,7 @@ import { FeatureDirective } from '../../directives/feature.directive';
         <div class="header-actions">
           <!-- Cart Drawer Toggle -->
           <button *appFeature="'productRecommendations'" (click)="toggleCart()" class="cart-btn" aria-label="Shopping Cart">
-            <span class="cart-icon">🛍️</span>
+            <mat-icon class="cart-icon">shopping_bag</mat-icon>
             @if (api.cartCount() > 0) {
               <span class="cart-badge">{{ api.cartCount() }}</span>
             }
@@ -85,7 +86,7 @@ import { FeatureDirective } from '../../directives/feature.directive';
           @if (api.currentUser()) {
             <div class="bell-menu" [class.menu-open]="isBellOpen">
               <button class="bell-btn" (click)="toggleBell()" type="button" aria-label="Reminders">
-                <span>🔔</span>
+                <mat-icon>notifications</mat-icon>
                 @if (notifications.unreadCount() > 0) {
                   <span class="cart-badge">{{ notifications.unreadCount() }}</span>
                 }
@@ -112,24 +113,24 @@ import { FeatureDirective } from '../../directives/feature.directive';
           @if (api.currentUser(); as user) {
             <div class="user-menu" [class.menu-open]="isUserMenuOpen">
               <button class="user-pill" (click)="toggleUserMenu()" type="button">
-                <span class="user-avatar">🌸</span>
+                <mat-icon class="user-avatar">account_circle</mat-icon>
                 <span class="user-name">{{ getDisplayName(user) }}</span>
-                <span class="chevron">{{ isUserMenuOpen ? '▲' : '▼' }}</span>
+                <mat-icon class="chevron">{{ isUserMenuOpen ? 'expand_less' : 'expand_more' }}</mat-icon>
               </button>
               @if (isUserMenuOpen) {
                 <div class="user-dropdown">
                   @if (needsName(user)) {
                     <a routerLink="/profile" class="dropdown-item" (click)="isUserMenuOpen = false">
-                      <span>✏️</span> Add your name
+                      <mat-icon class="icon-sm">edit</mat-icon> Add your name
                     </a>
                     <hr class="dropdown-divider">
                   }
                   <a routerLink="/profile" class="dropdown-item" (click)="isUserMenuOpen = false">
-                    <span>👤</span> Profile &amp; Privacy
+                    <mat-icon class="icon-sm">shield_person</mat-icon> Profile &amp; Privacy
                   </a>
                   <hr class="dropdown-divider">
                   <button class="dropdown-item sign-out-item" (click)="signOut()">
-                    <span>🚪</span> Sign Out
+                    <mat-icon class="icon-sm">logout</mat-icon> Sign Out
                   </button>
                 </div>
               }
@@ -140,7 +141,7 @@ import { FeatureDirective } from '../../directives/feature.directive';
 
           <!-- Mobile Hamburger Toggle -->
           <button (click)="toggleMobileMenu()" class="mobile-toggle" aria-label="Toggle Navigation">
-            <span>{{ isMobileOpen ? '✕' : '☰' }}</span>
+            <mat-icon>{{ isMobileOpen ? 'close' : 'menu' }}</mat-icon>
           </button>
         </div>
       </div>
@@ -151,13 +152,13 @@ import { FeatureDirective } from '../../directives/feature.directive';
           <a routerLink="/" (click)="isMobileOpen = false" class="mobile-nav-link">Home</a>
 
           @if (api.currentUser()) {
-            <a routerLink="/journey" (click)="isMobileOpen = false" class="mobile-nav-link">🌱 My Journey</a>
+            <a routerLink="/journey" (click)="isMobileOpen = false" class="mobile-nav-link"><mat-icon class="icon-sm">eco</mat-icon> My Journey</a>
             <a *appFeature="'careBooking'" routerLink="/care" (click)="isMobileOpen = false" class="mobile-nav-link">Care</a>
             <a *appFeature="'recordsVault'" routerLink="/records" (click)="isMobileOpen = false" class="mobile-nav-link">Records</a>
             <a *appFeature="'childTracker'" routerLink="/child" (click)="isMobileOpen = false" class="mobile-nav-link">Child</a>
             <a *appFeature="'aiAssistant'" routerLink="/ai" (click)="isMobileOpen = false" class="mobile-nav-link">AI</a>
           }
-          <a routerLink="/plans" (click)="isMobileOpen = false" class="mobile-nav-link">💳 Care Plans</a>
+          <a routerLink="/plans" (click)="isMobileOpen = false" class="mobile-nav-link"><mat-icon class="icon-sm">workspace_premium</mat-icon> Care Plans</a>
 
           <div *appFeature="'productRecommendations'">
             <div class="mobile-stages-title">Browse By Pregnancy Milestone:</div>
@@ -175,21 +176,21 @@ import { FeatureDirective } from '../../directives/feature.directive';
           </div>
           <hr class="mobile-divider">
           <a routerLink="/checklists" (click)="isMobileOpen = false" class="mobile-nav-link">
-            📋 Prenatal Checkup Checklist &amp; Labs
+            <mat-icon class="icon-sm">fact_check</mat-icon> Prenatal Checkup Checklist &amp; Labs
           </a>
           <a *appFeature="'legacyLeadForms'" routerLink="/services/nurse-companion" (click)="isMobileOpen = false" class="mobile-nav-link">
-            👩‍⚕️ Dedicated Nurse Care Companion
+            Dedicated Nurse Care Companion
           </a>
           <a *appFeature="'legacyLeadForms'" routerLink="/doctors-live" (click)="isMobileOpen = false" class="mobile-nav-link">
-            🔴 OB-GYN Live Webinars
+            OB-GYN Live Webinars
           </a>
           <hr class="mobile-divider">
           @if (api.currentUser(); as user) {
             <a routerLink="/profile" (click)="isMobileOpen = false" class="mobile-nav-link profile-link">
-              👤 Profile &amp; Privacy ({{ getDisplayName(user) }})
+              <mat-icon class="icon-sm">shield_person</mat-icon> Profile &amp; Privacy ({{ getDisplayName(user) }})
             </a>
             <button (click)="signOut()" class="btn btn-outline btn-sm mobile-action-btn">
-              🚪 Sign Out
+              <mat-icon class="icon-sm">logout</mat-icon> Sign Out
             </button>
           } @else {
             <a routerLink="/auth/login" (click)="isMobileOpen = false" class="btn btn-outline btn-sm mobile-action-btn">
@@ -348,7 +349,7 @@ import { FeatureDirective } from '../../directives/feature.directive';
       border-color: var(--sage-700);
       transform: scale(1.05);
     }
-    .cart-icon { font-size: 1.25rem; }
+    .cart-icon { font-size: 1.25rem; width: 1.25rem; height: 1.25rem; }
     .cart-badge {
       position: absolute;
       top: -4px;
@@ -394,6 +395,7 @@ import { FeatureDirective } from '../../directives/feature.directive';
       overflow-y: auto;
       z-index: 2000;
       padding: 0.5rem;
+      animation: dropIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
     }
     .bell-empty { font-size: 0.85rem; color: var(--text-muted); padding: 0.75rem; text-align: center; }
     .bell-item {
@@ -427,16 +429,19 @@ import { FeatureDirective } from '../../directives/feature.directive';
       border-color: var(--sage-700);
       background: #e8f0ec;
     }
-    .user-avatar { font-size: 1rem; }
+    .user-avatar { font-size: 1.3rem; width: 1.3rem; height: 1.3rem; color: var(--sage-700); }
     .user-name {
       font-weight: 600;
       font-size: 0.85rem;
       color: var(--sage-900);
     }
     .chevron {
-      font-size: 0.6rem;
+      font-size: 1.1rem;
+      width: 1.1rem;
+      height: 1.1rem;
       color: var(--text-muted);
       margin-left: 0.1rem;
+      transition: transform var(--transition-fast);
     }
     .user-dropdown {
       position: absolute;
@@ -489,6 +494,7 @@ import { FeatureDirective } from '../../directives/feature.directive';
 
     /* Mobile Menu */
     .mobile-menu {
+      animation: dropIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
       padding: 1.25rem;
       border-top: 1px solid var(--border-light);
       display: flex;

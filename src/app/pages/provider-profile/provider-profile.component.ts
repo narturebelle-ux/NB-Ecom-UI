@@ -1,16 +1,17 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
+import { MatIconModule } from '@angular/material/icon';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ProviderService } from '../../services/provider.service';
 import { CommerceService } from '../../services/commerce.service';
 import { ApiService } from '../../services/api.service';
 import { PROFESSIONAL_TYPE_LABELS } from '../../models/maternal.models';
-import { Provider, Slot } from '../../models/provider.models';
+import { Provider, Slot, providerInitials } from '../../models/provider.models';
 
 @Component({
   selector: 'app-provider-profile',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [MatIconModule, CommonModule, RouterLink],
   template: `
     <div class="profile-page">
       <div class="container">
@@ -19,16 +20,16 @@ import { Provider, Slot } from '../../models/provider.models';
           <a routerLink="/care" class="btn btn-outline">Back to Directory</a>
         } @else {
           <div class="provider-header card">
-            <span class="avatar">{{ provider()!.avatar }}</span>
+            <span class="avatar">{{ initials(provider()!.name) }}</span>
             <div>
               <h1>{{ provider()!.name }}</h1>
               <span class="type-tag">{{ label(provider()!.type) }}</span>
               <p class="credentials">{{ provider()!.credentialsSummary }}</p>
               <p class="bio">{{ provider()!.bio }}</p>
               <div class="meta-row">
-                <span>⭐ {{ provider()!.rating }}</span>
-                <span>📍 {{ provider()!.city }}</span>
-                <span>🗣️ {{ provider()!.languages.join(', ') }}</span>
+                <span><mat-icon class="icon-sm">star</mat-icon> {{ provider()!.rating }}</span>
+                <span><mat-icon class="icon-sm">location_on</mat-icon> {{ provider()!.city }}</span>
+                <span><mat-icon class="icon-sm">translate</mat-icon> {{ provider()!.languages.join(', ') }}</span>
               </div>
             </div>
           </div>
@@ -64,12 +65,13 @@ import { Provider, Slot } from '../../models/provider.models';
   styles: [`
     .profile-page { padding: 3rem 0 5rem; }
     .provider-header { display: flex; gap: 1.5rem; padding: 2rem; border-radius: var(--radius-xl); background: #fff; border: 1px solid var(--border-light); margin-bottom: 2rem; }
-    .avatar { font-size: 3.5rem; flex-shrink: 0; }
+    .avatar { width: 84px; height: 84px; flex-shrink: 0; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1.6rem; letter-spacing: 0.02em; color: var(--sage-800); background: linear-gradient(135deg, var(--sage-100), var(--trust-100)); border: 1px solid var(--border-light); box-shadow: var(--shadow-sm); }
     .provider-header h1 { font-size: 1.6rem; color: var(--sage-900); margin-bottom: 0.25rem; }
     .type-tag { font-size: 0.75rem; font-weight: 700; color: var(--blush-700); text-transform: uppercase; letter-spacing: 0.03em; }
     .credentials { font-size: 0.88rem; color: var(--text-secondary); margin: 0.5rem 0 0.25rem; }
     .bio { font-size: 0.88rem; color: var(--text-secondary); margin-bottom: 0.75rem; }
     .meta-row { display: flex; gap: 1rem; font-size: 0.82rem; color: var(--text-muted); flex-wrap: wrap; }
+    .meta-row span { display: inline-flex; align-items: center; gap: 0.25rem; }
 
     .status-banner { padding: 0.85rem 1.1rem; border-radius: 10px; margin-bottom: 1.5rem; font-size: 0.88rem; font-weight: 600; }
     .status-banner.is-warning { background: #fff8eb; color: #92610a; border: 1px solid #fbd38d; }
@@ -105,6 +107,10 @@ export class ProviderProfileComponent implements OnInit {
     if (provider) {
       this.slots.set(this.providerService.getSlots(id));
     }
+  }
+
+  initials(name: string): string {
+    return providerInitials(name);
   }
 
   label(type: Provider['type']): string {

@@ -1,4 +1,5 @@
 import { Component, inject, OnInit, OnDestroy } from '@angular/core';
+import { MatIconModule } from '@angular/material/icon';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -11,22 +12,22 @@ import { RecaptchaVerifier, GoogleAuthProvider, AuthCredential } from 'firebase/
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [MatIconModule, CommonModule, FormsModule],
   template: `
     <div class="login-wrapper">
       <div class="container login-container">
         <div class="login-box card glass">
           <div class="login-header">
-            <span class="logo-icon">🌿</span>
+            <img src="favicon.svg" alt="" class="logo-icon">
             <h2>Welcome to NartureBelle</h2>
-            <p>Access your personalized Doctor-Approved pregnancy routine, checkup scan alerts, and live sessions.</p>
+            <p>Sign in to your care journey — your plan, your care team, and your records, all in one private place.</p>
           </div>
 
-          <!-- Configuration Status Badge -->
+          <!-- Developer-only notice; end users on a configured build never see infrastructure status. -->
           @if (!firebaseAuth.isConfigured()) {
             <div class="firebase-guide-box">
               <div class="guide-header">
-                <span class="badge badge-warning">⚡ Live Firebase Mode Available</span>
+                <span class="badge badge-warning">Developer mode</span>
               </div>
               <p class="guide-text">
                 To connect your real Google Sign-In & live SMS OTP, paste your Firebase config in:
@@ -34,15 +35,10 @@ import { RecaptchaVerifier, GoogleAuthProvider, AuthCredential } from 'firebase/
                 <br><em>(Currently running in interactive testing mode)</em>
               </p>
             </div>
-          } @else {
-            <div class="firebase-connected-box">
-              <span class="badge badge-mandatory">🟢 Google Firebase Live Active</span>
-              <p class="guide-text">Real Google 1-Tap & SMS OTP verification is active.</p>
-            </div>
           }
 
           @if (accountLinkNotice()) {
-            <div class="link-notice">🔗 {{ accountLinkNotice() }}</div>
+            <div class="link-notice"><mat-icon class="icon-sm">link</mat-icon> {{ accountLinkNotice() }}</div>
           }
 
           <!-- Auth Tabs -->
@@ -187,7 +183,7 @@ import { RecaptchaVerifier, GoogleAuthProvider, AuthCredential } from 'firebase/
           }
 
           <div class="login-footer">
-            <p>🔒 256-Bit SSL Encrypted. We never share your maternal health data without clinical consent.</p>
+            <p><mat-icon class="icon-sm">lock</mat-icon> Encrypted in transit. We never share your health data without your consent.</p>
           </div>
         </div>
       </div>
@@ -219,9 +215,12 @@ import { RecaptchaVerifier, GoogleAuthProvider, AuthCredential } from 'firebase/
       margin-bottom: 1.5rem;
     }
     .logo-icon {
-      font-size: 2.5rem;
+      width: 56px;
+      height: 56px;
       display: block;
-      margin-bottom: 0.5rem;
+      margin: 0 auto 0.85rem;
+      border-radius: 50%;
+      box-shadow: var(--shadow-md);
     }
     .login-header h2 {
       font-size: 1.75rem;
@@ -241,14 +240,6 @@ import { RecaptchaVerifier, GoogleAuthProvider, AuthCredential } from 'firebase/
       border-radius: var(--radius-md);
       padding: 0.85rem 1rem;
       margin-bottom: 1.25rem;
-    }
-    .firebase-connected-box {
-      background: #f0fdf4;
-      border: 1px solid #bbf7d0;
-      border-radius: var(--radius-md);
-      padding: 0.85rem 1rem;
-      margin-bottom: 1.25rem;
-      text-align: center;
     }
     .guide-header {
       display: flex;
@@ -289,13 +280,16 @@ import { RecaptchaVerifier, GoogleAuthProvider, AuthCredential } from 'firebase/
     }
 
     .link-notice {
-      background: #eef2ff;
-      border: 1px solid #c7d2fe;
+      display: flex;
+      align-items: flex-start;
+      gap: 0.5rem;
+      background: var(--trust-50);
+      border: 1px solid var(--trust-200);
       border-radius: var(--radius-md);
       padding: 0.85rem 1rem;
       margin-bottom: 1.25rem;
       font-size: 0.82rem;
-      color: #3730a3;
+      color: var(--trust-900);
       line-height: 1.45;
     }
 

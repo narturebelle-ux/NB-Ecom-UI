@@ -1,45 +1,46 @@
 import { Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { MatIconModule } from '@angular/material/icon';
 
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, MatIconModule],
   template: `
     <!-- Hero Section -->
     <section class="hero-section">
       <div class="container hero-container">
         <div class="hero-content">
-          <div class="hero-pill">
-            <span class="pill-icon">🌱</span>
+          <div class="hero-pill animate-in">
+            <mat-icon class="icon-sm">eco</mat-icon>
             <span>Professional-Led Care Coordination</span>
           </div>
-          <h1 class="hero-title">
+          <h1 class="hero-title animate-in" style="animation-delay: 0.05s">
             Stage-Aware Care, From <span class="highlight-mandatory">Pregnancy to Childhood.</span>
           </h1>
-          <p class="hero-desc">
+          <p class="hero-desc animate-in" style="animation-delay: 0.1s">
             NartureBelle connects you with verified doctors, nurses and specialists who guide you through every stage — pregnancy, delivery, postpartum recovery, and early childcare up to age 7 — with your records kept secure and private throughout.
           </p>
 
-          <div class="hero-cta-group">
+          <div class="hero-cta-group animate-in" style="animation-delay: 0.15s">
             <a routerLink="/auth/login" class="btn btn-primary btn-lg">
-              <span>✨</span> Get Started
+              Get Started <mat-icon class="icon-sm">arrow_forward</mat-icon>
             </a>
           </div>
 
-          <div class="hero-trust-row">
+          <div class="hero-trust-row animate-in" style="animation-delay: 0.2s">
             <div class="trust-item">
-              <strong>✅</strong>
+              <mat-icon class="trust-icon">verified</mat-icon>
               <span>Verified Doctors &amp; Nurses</span>
             </div>
             <div class="divider"></div>
             <div class="trust-item">
-              <strong>🔒</strong>
+              <mat-icon class="trust-icon">lock</mat-icon>
               <span>Secure, Private Records</span>
             </div>
             <div class="divider"></div>
             <div class="trust-item">
-              <strong>🌱</strong>
+              <mat-icon class="trust-icon">eco</mat-icon>
               <span>Pregnancy to Age 7</span>
             </div>
           </div>
@@ -82,7 +83,7 @@ import { RouterLink } from '@angular/router';
       <div class="container">
         <div class="scope-grid">
           <div class="scope-card card is-card">
-            <h3>✅ What NartureBelle Is</h3>
+            <h3><mat-icon class="icon-sm scope-icon is-icon">check_circle</mat-icon> What NartureBelle Is</h3>
             <ul>
               <li>A platform to find and coordinate care with verified maternal and child-health professionals</li>
               <li>A secure place to keep your health records and share them with your care team on your terms</li>
@@ -90,7 +91,7 @@ import { RouterLink } from '@angular/router';
             </ul>
           </div>
           <div class="scope-card card is-not-card">
-            <h3>🚫 What NartureBelle Is Not</h3>
+            <h3><mat-icon class="icon-sm scope-icon is-not-icon">block</mat-icon> What NartureBelle Is Not</h3>
             <ul>
               <li>Not emergency care — in a medical emergency, contact your local emergency services immediately</li>
               <li>Not a replacement for your personal doctor or obstetrician's direct clinical advice</li>
@@ -113,7 +114,7 @@ import { RouterLink } from '@angular/router';
         <div class="pillars-grid">
           <div class="pillar-card card">
             <div class="pillar-icon-box bg-sage">
-              <span>🩺</span>
+              <mat-icon>stethoscope</mat-icon>
             </div>
             <span class="pillar-num">Pillar 01</span>
             <h3>Verified Professionals</h3>
@@ -124,7 +125,7 @@ import { RouterLink } from '@angular/router';
 
           <div class="pillar-card card">
             <div class="pillar-icon-box bg-blush">
-              <span>🌱</span>
+              <mat-icon>eco</mat-icon>
             </div>
             <span class="pillar-num">Pillar 02</span>
             <h3>Your Stage, Your Journey</h3>
@@ -135,7 +136,7 @@ import { RouterLink } from '@angular/router';
 
           <div class="pillar-card card">
             <div class="pillar-icon-box bg-gold">
-              <span>🔒</span>
+              <mat-icon>lock</mat-icon>
             </div>
             <span class="pillar-num">Pillar 03</span>
             <h3>Secure Records, Your Control</h3>
@@ -208,10 +209,16 @@ import { RouterLink } from '@angular/router';
       border-top: 1px solid var(--border-light);
       flex-wrap: wrap;
     }
-    .trust-item strong {
-      display: block;
+    .trust-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .trust-icon {
       font-size: 1.3rem;
-      line-height: 1;
+      width: 1.3rem;
+      height: 1.3rem;
+      color: var(--sage-700);
     }
     .trust-item span {
       font-size: 0.82rem;
@@ -334,9 +341,19 @@ import { RouterLink } from '@angular/router';
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 1.75rem;
       margin-bottom: 1.25rem;
+      transition: transform var(--transition-spring);
     }
+    .pillar-icon-box mat-icon {
+      font-size: 1.75rem;
+      width: 1.75rem;
+      height: 1.75rem;
+      color: var(--sage-800);
+    }
+    .pillar-card:hover .pillar-icon-box { transform: scale(1.08) rotate(-3deg); }
+    .scope-card h3 { display: flex; align-items: center; gap: 0.5rem; }
+    .scope-icon.is-icon { color: var(--sage-600); }
+    .scope-icon.is-not-icon { color: var(--blush-700); }
     .bg-sage { background: var(--sage-100); }
     .bg-blush { background: var(--blush-100); }
     .bg-gold { background: var(--gold-100); }

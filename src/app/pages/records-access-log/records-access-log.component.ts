@@ -1,4 +1,5 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
+import { MatIconModule } from '@angular/material/icon';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { RecordsService } from '../../services/records.service';
@@ -7,7 +8,7 @@ import { AccessLogEntry } from '../../models/records.models';
 @Component({
   selector: 'app-records-access-log',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [MatIconModule, CommonModule, RouterLink],
   template: `
     <div class="log-page">
       <div class="container">
@@ -22,7 +23,7 @@ import { AccessLogEntry } from '../../models/records.models';
           <div class="log-list">
             @for (entry of log(); track entry.id) {
               <div class="log-row">
-                <span class="action-icon">{{ icon(entry.action) }}</span>
+                <mat-icon class="action-icon">{{ icon(entry.action) }}</mat-icon>
                 <div>
                   <strong>{{ entry.action }}</strong> — {{ entry.recordName }}
                   @if (entry.detail) { <span class="field-hint">({{ entry.detail }})</span> }
@@ -41,7 +42,7 @@ import { AccessLogEntry } from '../../models/records.models';
     .log-header h1 { font-size: 1.6rem; color: var(--sage-900); }
     .log-list { display: flex; flex-direction: column; gap: 0.9rem; }
     .log-row { display: flex; gap: 0.75rem; align-items: flex-start; background: #fff; border: 1px solid var(--border-light); border-radius: var(--radius-md); padding: 0.85rem 1rem; }
-    .action-icon { font-size: 1.1rem; }
+    .action-icon { font-size: 1.2rem; width: 1.2rem; height: 1.2rem; color: var(--trust-700); flex-shrink: 0; }
     .btn-outline { padding: 0.55rem 1rem; border-radius: 8px; border: 1.5px solid var(--border-color); color: var(--text-secondary); text-decoration: none; font-size: 0.85rem; font-weight: 700; }
   `]
 })
@@ -55,12 +56,12 @@ export class RecordsAccessLogComponent implements OnInit {
 
   icon(action: AccessLogEntry['action']): string {
     switch (action) {
-      case 'UPLOAD': return '⬆️';
-      case 'VIEW': return '👁️';
-      case 'DOWNLOAD': return '⬇️';
-      case 'SHARE': return '🔗';
-      case 'DELETE': return '🗑️';
-      default: return '•';
+      case 'UPLOAD': return 'upload';
+      case 'VIEW': return 'visibility';
+      case 'DOWNLOAD': return 'download';
+      case 'SHARE': return 'share';
+      case 'DELETE': return 'delete';
+      default: return 'circle';
     }
   }
 }

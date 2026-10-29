@@ -1,4 +1,5 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
+import { MatIconModule } from '@angular/material/icon';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -30,7 +31,7 @@ const ALL_STATUSES: JourneyStatus[] = [
 @Component({
   selector: 'app-journey',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule],
+  imports: [MatIconModule, CommonModule, RouterLink, FormsModule],
   template: `
     <div class="journey-page">
       <div class="journey-container">
@@ -44,7 +45,7 @@ const ALL_STATUSES: JourneyStatus[] = [
         } @else if (journeySetupRequired() && !settingUp()) {
           <!-- No active journey: setup card -->
           <div class="card glass setup-card">
-            <span class="icon">🌱</span>
+            <mat-icon class="hero-icon">eco</mat-icon>
             <h2>Set up your journey</h2>
             <p>Tell us where you are so we can tailor your timeline. You can change this anytime.</p>
             <button class="btn btn-primary" (click)="settingUp.set(true)">Set Up My Journey</button>
@@ -133,7 +134,7 @@ const ALL_STATUSES: JourneyStatus[] = [
           <div class="card glass timeline-card">
             <h3>Your Care Timeline</h3>
             <p class="clinical-disclaimer">
-              ⚠️ This guidance is pending clinical review and isn't medical advice — always confirm with your own doctor.
+              <mat-icon class="icon-sm">info</mat-icon> This guidance is pending clinical review and isn't medical advice — always confirm with your own doctor.
             </p>
 
             @if (nextActions().length === 0) {
@@ -142,7 +143,7 @@ const ALL_STATUSES: JourneyStatus[] = [
               <div class="action-list">
                 @for (action of nextActions(); track action.title) {
                   <div class="action-row">
-                    <div class="action-icon">{{ action.optional ? '💡' : '📋' }}</div>
+                    <mat-icon class="action-icon">{{ action.optional ? 'lightbulb' : 'event_available' }}</mat-icon>
                     <div class="action-body">
                       <div class="action-head">
                         <strong>{{ action.title }}</strong>
@@ -250,7 +251,7 @@ const ALL_STATUSES: JourneyStatus[] = [
     }
     .action-list { display: flex; flex-direction: column; gap: 1rem; }
     .action-row { display: flex; gap: 0.85rem; align-items: flex-start; }
-    .action-icon { font-size: 1.3rem; flex-shrink: 0; }
+    .action-icon { font-size: 1.3rem; width: 1.3rem; height: 1.3rem; flex-shrink: 0; color: var(--sage-600); }
     .action-body { flex: 1; }
     .action-head { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
     .action-head strong { font-size: 0.95rem; color: var(--sage-900); }

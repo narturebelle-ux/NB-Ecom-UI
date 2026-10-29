@@ -1,4 +1,5 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
+import { MatIconModule } from '@angular/material/icon';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -12,7 +13,7 @@ const CATEGORIES: RecordCategory[] = ['SCAN', 'LAB_REPORT', 'PRESCRIPTION', 'DIS
 @Component({
   selector: 'app-records',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [MatIconModule, CommonModule, FormsModule, RouterLink],
   template: `
     <div class="records-page">
       <div class="container">
@@ -22,7 +23,7 @@ const CATEGORIES: RecordCategory[] = ['SCAN', 'LAB_REPORT', 'PRESCRIPTION', 'DIS
         </div>
 
         <div class="danger-notice">
-          🚫 <strong>Not secure storage yet.</strong> This prototype only remembers a filename, category
+          <mat-icon class="icon-sm">gpp_maybe</mat-icon> <strong>Not secure storage yet.</strong> This prototype only remembers a filename, category
           and size on this device — it does NOT upload, encrypt, or store the actual file content anywhere.
           Please don't add real medical documents here until this is replaced with real encrypted storage.
         </div>
@@ -65,7 +66,7 @@ const CATEGORIES: RecordCategory[] = ['SCAN', 'LAB_REPORT', 'PRESCRIPTION', 'DIS
                   </div>
                 } @else {
                   <div class="record-info" (click)="view(r)">
-                    <span class="icon">📄</span>
+                    <mat-icon class="icon">description</mat-icon>
                     <div>
                       <strong>{{ r.name }}</strong>
                       <span class="field-hint">{{ categoryLabel(r.category) }} · {{ formatSize(r.sizeBytes) }} · {{ r.uploadedAt | date:'mediumDate' }}</span>
@@ -125,7 +126,7 @@ const CATEGORIES: RecordCategory[] = ['SCAN', 'LAB_REPORT', 'PRESCRIPTION', 'DIS
 
     .record-card { display: flex; flex-direction: column; gap: 0.75rem; }
     .record-info { display: flex; gap: 0.75rem; align-items: center; cursor: pointer; }
-    .icon { font-size: 1.5rem; }
+    .icon { font-size: 1.6rem; width: 1.6rem; height: 1.6rem; color: var(--trust-700); }
     .record-info strong { display: block; color: var(--sage-900); font-size: 0.95rem; }
     .record-actions { display: flex; gap: 0.9rem; flex-wrap: wrap; }
     .btn-link { background: none; border: none; color: var(--text-secondary); font-size: 0.8rem; font-weight: 600; text-decoration: underline; cursor: pointer; padding: 0; }

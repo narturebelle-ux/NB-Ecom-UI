@@ -1,4 +1,5 @@
 import { Component, inject, signal } from '@angular/core';
+import { MatIconModule } from '@angular/material/icon';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { CommerceService } from '../../services/commerce.service';
@@ -11,7 +12,7 @@ import { Plan } from '../../models/commerce.models';
 @Component({
   selector: 'app-plans',
   standalone: true,
-  imports: [CommonModule],
+  imports: [MatIconModule, CommonModule],
   template: `
     <div class="plans-page">
       <div class="container">
@@ -21,7 +22,7 @@ import { Plan } from '../../models/commerce.models';
         </div>
 
         <div class="draft-notice">
-          ⚠️ Pricing and inclusions shown here are illustrative, pending final product/legal review.
+          <mat-icon class="icon-sm">info</mat-icon> Pricing and inclusions shown here are illustrative, pending final product/legal review.
           Payments on this prototype are simulated — no real charge is made.
         </div>
 
@@ -48,10 +49,10 @@ import { Plan } from '../../models/commerce.models';
 
               <ul class="feature-list">
                 @for (item of plan.inclusions; track item) {
-                  <li class="included">✅ {{ item }}</li>
+                  <li class="included"><mat-icon class="icon-sm">check</mat-icon> <span>{{ item }}</span></li>
                 }
                 @for (item of plan.exclusions; track item) {
-                  <li class="excluded">— {{ item }}</li>
+                  <li class="excluded"><mat-icon class="icon-sm">remove</mat-icon> <span>{{ item }}</span></li>
                 }
               </ul>
 
@@ -149,7 +150,9 @@ import { Plan } from '../../models/commerce.models';
     }
 
     .feature-list { list-style: none; display: flex; flex-direction: column; gap: 0.6rem; margin-bottom: 1.75rem; flex: 1; }
-    .feature-list li { font-size: 0.85rem; line-height: 1.4; }
+    .feature-list li { font-size: 0.85rem; line-height: 1.4; display: flex; align-items: flex-start; gap: 0.45rem; }
+    .feature-list li mat-icon { flex-shrink: 0; margin-top: 0.05rem; }
+    .feature-list li.included mat-icon { color: var(--sage-600); }
     .feature-list li.included { color: var(--text-primary); }
     .feature-list li.excluded { color: var(--text-muted); }
 

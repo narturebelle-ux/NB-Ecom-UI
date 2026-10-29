@@ -1,4 +1,5 @@
 import { Component, inject, OnDestroy, OnInit, signal } from '@angular/core';
+import { MatIconModule } from '@angular/material/icon';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -12,7 +13,7 @@ import { DEFAULT_NOTIFICATION_PREFERENCES, NotificationPreferences } from '../..
 @Component({
   selector: 'app-profile',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [MatIconModule, CommonModule, FormsModule, RouterLink],
   template: `
     <div class="profile-page">
       <div class="profile-container">
@@ -20,7 +21,7 @@ import { DEFAULT_NOTIFICATION_PREFERENCES, NotificationPreferences } from '../..
         <!-- Header -->
         <div class="profile-header">
           <div class="avatar-circle">
-            <span class="avatar-emoji">🌸</span>
+            <mat-icon class="avatar-icon">person</mat-icon>
           </div>
           <div class="profile-title">
             <h1>My Profile</h1>
@@ -31,7 +32,7 @@ import { DEFAULT_NOTIFICATION_PREFERENCES, NotificationPreferences } from '../..
         <!-- Success / Error Banner -->
         @if (statusMsg()) {
           <div class="status-banner" [class.is-error]="isError()">
-            <span>{{ isError() ? '⚠️' : '✅' }}</span>
+            <mat-icon class="icon-sm">{{ isError() ? 'error' : 'check_circle' }}</mat-icon>
             {{ statusMsg() }}
           </div>
         }
@@ -85,15 +86,15 @@ import { DEFAULT_NOTIFICATION_PREFERENCES, NotificationPreferences } from '../..
             />
             <span class="field-hint auth-status">
               @if (api.currentUser()?.authProvider === 'GOOGLE' || api.currentUser()?.authProvider === 'GOOGLE.COM') {
-                🔵 Signed in with Google
+                <mat-icon class="icon-sm">account_circle</mat-icon> Signed in with Google
               } @else if (api.currentUser()?.authProvider === 'PHONE' || api.currentUser()?.authProvider === 'PHONE.PHONE') {
-                📱 Signed in with Phone OTP
+                <mat-icon class="icon-sm">smartphone</mat-icon> Signed in with Phone OTP
               } @else if (api.currentUser()?.emailVerified) {
-                ✅ Verified
+                <mat-icon class="icon-sm">verified</mat-icon> Verified
               } @else {
-                ⚠️ Not verified yet
+                <mat-icon class="icon-sm">error_outline</mat-icon> Not verified yet
               }
-              · 🔒 Managed by your sign-in provider
+              · <mat-icon class="icon-sm">lock</mat-icon> Managed by your sign-in provider
             </span>
           </div>
 
@@ -118,16 +119,16 @@ import { DEFAULT_NOTIFICATION_PREFERENCES, NotificationPreferences } from '../..
                not needed right now. Logic stays in the component, just not rendered. -->
 
           <div class="journey-pointer">
-            <span>🌱</span>
+            <mat-icon class="icon-sm">eco</mat-icon>
             <span>Your pregnancy stage and due date now live in <a routerLink="/journey">My Journey</a>, not here.</span>
           </div>
 
           <div class="form-actions">
             <button type="submit" class="btn btn-primary" [disabled]="!editMode() || saving()">
-              @if (saving()) { ⏳ Saving… } @else { 💾 Update Profile }
+              @if (saving()) { Saving… } @else { <mat-icon class="icon-sm">save</mat-icon> Update Profile }
             </button>
             <button type="button" class="btn btn-outline" (click)="signOut()">
-              🚪 Sign Out
+              <mat-icon class="icon-sm">logout</mat-icon> Sign Out
             </button>
           </div>
         </form>
@@ -193,8 +194,8 @@ import { DEFAULT_NOTIFICATION_PREFERENCES, NotificationPreferences } from '../..
             DELETE /me endpoint exists yet.
           </p>
           <div class="data-actions">
-            <button type="button" class="btn-link" (click)="exportData()">⬇️ Download my data (JSON)</button>
-            <button type="button" class="btn-link danger" (click)="confirmingDelete.set(true)" [hidden]="confirmingDelete()">🗑️ Delete local data</button>
+            <button type="button" class="btn-link" (click)="exportData()"><mat-icon class="icon-sm">download</mat-icon> Download my data (JSON)</button>
+            <button type="button" class="btn-link danger" (click)="confirmingDelete.set(true)" [hidden]="confirmingDelete()"><mat-icon class="icon-sm">delete</mat-icon> Delete local data</button>
           </div>
           @if (confirmingDelete()) {
             <div class="delete-confirm">
@@ -237,7 +238,7 @@ import { DEFAULT_NOTIFICATION_PREFERENCES, NotificationPreferences } from '../..
       border: 3px solid #c8ddd0;
       flex-shrink: 0;
     }
-    .avatar-emoji { font-size: 2rem; }
+    .avatar-icon { font-size: 2.2rem; width: 2.2rem; height: 2.2rem; color: var(--sage-700); }
     .profile-title h1 {
       font-size: 1.75rem;
       font-weight: 700;
@@ -329,6 +330,10 @@ import { DEFAULT_NOTIFICATION_PREFERENCES, NotificationPreferences } from '../..
       color: #8a9e90;
     }
     .auth-status {
+      display: inline-flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.3rem;
       font-weight: 600;
       color: #4a6355;
     }
@@ -702,7 +707,7 @@ export class MyProfileComponent implements OnInit, OnDestroy {
         this.api.setUser(res);
         this.populateForm(res);
         this.editMode.set(false);
-        this.showStatus('Profile updated successfully! ✨', false);
+        this.showStatus('Profile updated successfully.', false);
       },
       error: (err) => {
         this.saving.set(false);
@@ -750,7 +755,7 @@ export class MyProfileComponent implements OnInit, OnDestroy {
           this.phoneLinkStep.set('idle');
           this.linkPhoneNumber = '';
           this.linkOtpCode = '';
-          this.api.showToast('Phone number verified! ✨');
+          this.api.showToast('Phone number verified.');
         },
         error: () => {
           this.linkingPhone.set(false);

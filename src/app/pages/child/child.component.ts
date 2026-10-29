@@ -1,4 +1,5 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
+import { MatIconModule } from '@angular/material/icon';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ChildService } from '../../services/child.service';
@@ -8,13 +9,13 @@ import { Child, VaccinationRecord } from '../../models/child.models';
 @Component({
   selector: 'app-child',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [MatIconModule, CommonModule, FormsModule],
   template: `
     <div class="child-page">
       <div class="container">
         <h1>Child &amp; Vaccination Tracker</h1>
         <div class="draft-notice">
-          ⚠️ This vaccine schedule is a standard reference list, pending clinical review for this product.
+          <mat-icon class="icon-sm">info</mat-icon> This vaccine schedule is a standard reference list, pending clinical review for this product.
           Always confirm the actual schedule with your pediatrician.
         </div>
 

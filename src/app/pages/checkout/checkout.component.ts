@@ -1,4 +1,5 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
+import { MatIconModule } from '@angular/material/icon';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { CommerceService } from '../../services/commerce.service';
@@ -13,7 +14,7 @@ import { Order, Plan } from '../../models/commerce.models';
 @Component({
   selector: 'app-checkout',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [MatIconModule, CommonModule, RouterLink],
   template: `
     <div class="checkout-page">
       <div class="checkout-card card glass">
@@ -45,7 +46,7 @@ import { Order, Plan } from '../../models/commerce.models';
             </div>
           </div>
 
-          <p class="sim-notice">⚠️ This is a simulated checkout — no real payment gateway is connected yet. Use the buttons below to simulate the outcome.</p>
+          <p class="sim-notice"><mat-icon class="icon-sm">info</mat-icon> This is a simulated checkout — no real payment gateway is connected yet. Use the buttons below to simulate the outcome.</p>
 
           @if (order()?.status === 'FAILED') {
             <div class="status-banner is-error">Payment failed (simulated). You can try again below.</div>
@@ -53,10 +54,10 @@ import { Order, Plan } from '../../models/commerce.models';
 
           <div class="pay-actions">
             <button class="btn btn-primary full-w" [disabled]="processing()" (click)="pay(true)">
-              {{ processing() ? 'Processing…' : '✅ Pay Successfully' }}
+              @if (processing()) { Processing… } @else { <mat-icon class="icon-sm">lock</mat-icon> Pay Successfully }
             </button>
             <button class="btn btn-outline full-w" [disabled]="processing()" (click)="pay(false)">
-              ❌ Simulate Failed Payment
+              <mat-icon class="icon-sm">block</mat-icon> Simulate Failed Payment
             </button>
           </div>
 

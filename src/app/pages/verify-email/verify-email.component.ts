@@ -1,4 +1,5 @@
 import { Component, OnDestroy, inject, signal } from '@angular/core';
+import { MatIconModule } from '@angular/material/icon';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ApiService } from '../../services/api.service';
 import { FirebaseAuthService } from '../../services/firebase-auth.service';
@@ -9,10 +10,11 @@ const RESEND_COOLDOWN_SECONDS = 60;
 @Component({
   selector: 'app-verify-email',
   standalone: true,
+  imports: [MatIconModule],
   template: `
     <div class="verify-wrapper">
       <div class="verify-card card glass">
-        <span class="icon">📧</span>
+        <mat-icon class="hero-icon">mark_email_unread</mat-icon>
         <h2>Verify your email</h2>
         <p class="lead">
           We've sent a verification link to <strong>{{ email() }}</strong>.

@@ -1,14 +1,15 @@
 import { Component, inject, signal, computed } from '@angular/core';
+import { MatIconModule } from '@angular/material/icon';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { ProviderService } from '../../services/provider.service';
 import { PROFESSIONAL_TYPE_LABELS } from '../../models/maternal.models';
-import { ProfessionalTypeKey } from '../../models/provider.models';
+import { ProfessionalTypeKey, providerInitials } from '../../models/provider.models';
 
 @Component({
   selector: 'app-care-directory',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [MatIconModule, CommonModule, RouterLink],
   template: `
     <div class="directory-page">
       <div class="container">
@@ -34,14 +35,14 @@ import { ProfessionalTypeKey } from '../../models/provider.models';
         <div class="provider-grid">
           @for (p of filteredProviders(); track p.id) {
             <a [routerLink]="['/care', p.id]" class="provider-card card">
-              <span class="avatar">{{ p.avatar }}</span>
+              <span class="avatar">{{ initials(p.name) }}</span>
               <h3>{{ p.name }}</h3>
               <span class="type-tag">{{ label(p.type) }}</span>
               <p class="credentials">{{ p.credentialsSummary }}</p>
               <div class="meta-row">
-                <span>⭐ {{ p.rating }}</span>
-                <span>📍 {{ p.city }}</span>
-                @if (p.virtual) { <span>💻 Virtual</span> }
+                <span><mat-icon class="icon-sm">star</mat-icon> {{ p.rating }}</span>
+                <span><mat-icon class="icon-sm">location_on</mat-icon> {{ p.city }}</span>
+                @if (p.virtual) { <span><mat-icon class="icon-sm">videocam</mat-icon> Virtual</span> }
               </div>
             </a>
           } @empty {
@@ -66,11 +67,12 @@ import { ProfessionalTypeKey } from '../../models/provider.models';
     .provider-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; }
     .provider-card { padding: 1.5rem; border-radius: var(--radius-xl); border: 1px solid var(--border-light); background: #fff; text-decoration: none; display: flex; flex-direction: column; transition: box-shadow 0.2s, transform 0.2s; }
     .provider-card:hover { box-shadow: 0 12px 28px rgba(27,51,39,0.1); transform: translateY(-2px); }
-    .avatar { font-size: 2.25rem; margin-bottom: 0.5rem; }
+    .avatar { width: 52px; height: 52px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1.05rem; letter-spacing: 0.02em; color: var(--sage-800); background: linear-gradient(135deg, var(--sage-100), var(--trust-100)); border: 1px solid var(--border-light); margin-bottom: 0.85rem; }
     .provider-card h3 { font-size: 1.1rem; color: var(--sage-900); margin-bottom: 0.25rem; }
     .type-tag { font-size: 0.72rem; font-weight: 700; color: var(--blush-700); text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 0.5rem; }
     .credentials { font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 0.75rem; }
-    .meta-row { display: flex; gap: 0.85rem; font-size: 0.78rem; color: var(--text-muted); margin-top: auto; }
+    .meta-row { display: flex; gap: 0.85rem; font-size: 0.78rem; color: var(--text-muted); margin-top: auto; flex-wrap: wrap; }
+    .meta-row span { display: inline-flex; align-items: center; gap: 0.2rem; }
 
     @media (max-width: 992px) { .provider-grid { grid-template-columns: 1fr; } }
   `]
@@ -92,6 +94,10 @@ export class CareDirectoryComponent {
       return true;
     });
   });
+
+  initials(name: string): string {
+    return providerInitials(name);
+  }
 
   label(type: ProfessionalTypeKey): string {
     return PROFESSIONAL_TYPE_LABELS[type] || type;

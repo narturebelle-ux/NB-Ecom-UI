@@ -1,4 +1,5 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
+import { MatIconModule } from '@angular/material/icon';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ApiService } from '../../services/api.service';
 import { FirebaseAuthService } from '../../services/firebase-auth.service';
@@ -14,10 +15,11 @@ import { ConsentDocument } from '../../models/maternal.models';
 @Component({
   selector: 'app-consent',
   standalone: true,
+  imports: [MatIconModule],
   template: `
     <div class="consent-wrapper">
       <div class="consent-card card glass">
-        <span class="icon">🤝</span>
+        <mat-icon class="hero-icon">verified_user</mat-icon>
         <h1>Before we continue</h1>
         <p class="lead">
           Please review and accept the following to keep using NartureBelle. These govern how your

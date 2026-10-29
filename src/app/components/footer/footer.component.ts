@@ -1,11 +1,12 @@
 import { Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { MatIconModule } from '@angular/material/icon';
 import { FeatureDirective } from '../../directives/feature.directive';
 
 @Component({
   selector: 'app-footer',
   standalone: true,
-  imports: [RouterLink, FeatureDirective],
+  imports: [RouterLink, MatIconModule, FeatureDirective],
   template: `
     <footer class="main-footer">
       <!-- Newsletter / Lead Magnet Strip -->
@@ -26,14 +27,14 @@ import { FeatureDirective } from '../../directives/feature.directive';
         <!-- Col 1: Brand Story -->
         <div class="footer-col brand-col">
           <div class="footer-brand">
-            <span class="brand-leaf">🌿</span>
+            <img src="favicon.svg" alt="" class="brand-leaf">
             <span class="brand-name">NartureBelle™</span>
           </div>
           <p class="brand-mission">
             Your partner in conscious motherhood. We provide radical transparency on what pregnant mothers genuinely need vs. what to skip, paired with certified nurse care and doctor guidance.
           </p>
           <div class="trust-pill">
-            <span>🛡️</span> 100% Doctor Vetted & Toxins-Free Formulations
+            <mat-icon class="icon-sm">verified_user</mat-icon> 100% Doctor Vetted & Toxins-Free Formulations
           </div>
         </div>
 
@@ -67,14 +68,14 @@ import { FeatureDirective } from '../../directives/feature.directive';
           <p class="support-text">Have a question regarding safe pregnancy ingredients or our nurse care companion?</p>
           <div class="contact-card">
             <div class="contact-item">
-              <span class="icon">💬</span>
+              <mat-icon class="icon">chat</mat-icon>
               <div>
                 <strong>WhatsApp Care Desk:</strong>
                 <span>+91 99880 12345</span>
               </div>
             </div>
             <div class="contact-item">
-              <span class="icon">✉️</span>
+              <mat-icon class="icon">mail</mat-icon>
               <div>
                 <strong>Care Team:</strong>
                 <span>care&#64;narturebelle.com</span>
@@ -173,7 +174,11 @@ import { FeatureDirective } from '../../directives/feature.directive';
       margin-bottom: 1rem;
     }
     .brand-leaf {
-      font-size: 1.8rem;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.92);
+      padding: 2px;
     }
     .brand-mission {
       font-size: 0.9rem;
@@ -244,6 +249,9 @@ import { FeatureDirective } from '../../directives/feature.directive';
     }
     .contact-item .icon {
       font-size: 1.3rem;
+      width: 1.3rem;
+      height: 1.3rem;
+      color: var(--sage-200);
     }
     .contact-item strong {
       display: block;

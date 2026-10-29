@@ -1,4 +1,5 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
+import { MatIconModule } from '@angular/material/icon';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { CommerceService } from '../../services/commerce.service';
@@ -7,7 +8,7 @@ import { Order } from '../../models/commerce.models';
 @Component({
   selector: 'app-order-confirmation',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [MatIconModule, CommonModule, RouterLink],
   template: `
     <div class="confirmation-page">
       <div class="confirmation-card card glass">
@@ -20,7 +21,7 @@ import { Order } from '../../models/commerce.models';
           </p>
           <a routerLink="/plans" class="btn btn-outline">Back to Plans</a>
         } @else {
-          <span class="icon">🎉</span>
+          <mat-icon class="hero-icon">task_alt</mat-icon>
           <h1>Payment Successful</h1>
           <p class="lead">Your {{ order()!.planName }} plan is now active.</p>
 
@@ -32,7 +33,7 @@ import { Order } from '../../models/commerce.models';
             <div class="receipt-row"><span>Paid On</span><strong>{{ order()!.paidAt | date:'mediumDate' }}</strong></div>
           </div>
 
-          <p class="sim-notice">⚠️ This receipt is simulated — no real payment gateway is connected yet, and this isn't a tax invoice.</p>
+          <p class="sim-notice"><mat-icon class="icon-sm">info</mat-icon> This receipt is simulated — no real payment gateway is connected yet, and this isn't a tax invoice.</p>
 
           <div class="actions">
             <a routerLink="/journey" class="btn btn-primary">View My Care Plan</a>
