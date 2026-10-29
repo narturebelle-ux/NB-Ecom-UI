@@ -1,32 +1,41 @@
 /**
- * Phase 5 (Reminders & notifications) — implemented client-side, same reasoning as the
- * other mocked phases. Reminders are derived from the Journey dashboard's nextActions and
- * from Phase 3 bookings — nothing is actually sent over email/SMS/WhatsApp; those channel
- * toggles in Profile are preferences only, with no backend channel adapters behind them yet.
+ * Phase 5 (Reminders & notifications) — real contract, NB-Ecomm-API UI_INTEGRATION_GUIDE.md §12.
+ * Reminders are generated server-side (bookings in the next 24h, journeys with pending next
+ * actions). Message text is deliberately generic — no clinical detail. EMAIL/SMS/WHATSAPP
+ * preferences are stored but no provider is wired in, so nothing is actually sent on them.
  */
 
-export type ReminderSource = 'NEXT_ACTION' | 'BOOKING';
+export type ReminderType = 'BOOKING_UPCOMING' | 'JOURNEY_NEXT_ACTION';
 
 export interface Reminder {
-  id: string;
+  id: number;
+  type: ReminderType;
   title: string;
   body: string;
-  source: ReminderSource;
   dueAt: string;
-  read: boolean;
-  dismissed: boolean;
+  sourceType: 'BOOKING' | 'JOURNEY' | string;
+  sourceId: number | null;
+  status: 'ACTIVE' | string;
+  createdAt: string;
 }
 
-export interface NotificationPreferences {
-  inApp: boolean;
-  email: boolean;
-  sms: boolean;
-  whatsapp: boolean;
+export type NotificationChannel = 'IN_APP' | 'EMAIL' | 'SMS' | 'WHATSAPP';
+
+export interface ChannelPreference {
+  channel: NotificationChannel;
+  enabled: boolean;
 }
 
-export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
-  inApp: true,
-  email: false,
-  sms: false,
-  whatsapp: false
+export const CHANNEL_LABELS: Record<NotificationChannel, string> = {
+  IN_APP: 'In-app reminders',
+  EMAIL: 'Email',
+  SMS: 'SMS',
+  WHATSAPP: 'WhatsApp'
 };
+
+export const DEFAULT_CHANNEL_PREFERENCES: ChannelPreference[] = [
+  { channel: 'IN_APP', enabled: true },
+  { channel: 'EMAIL', enabled: false },
+  { channel: 'SMS', enabled: false },
+  { channel: 'WHATSAPP', enabled: false }
+];

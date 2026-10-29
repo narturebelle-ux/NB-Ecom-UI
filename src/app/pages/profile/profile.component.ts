@@ -8,7 +8,7 @@ import { ApiService } from '../../services/api.service';
 import { FirebaseAuthService } from '../../services/firebase-auth.service';
 import { NotificationService } from '../../services/notification.service';
 import { User, ConsentDocument, ConsentStatus, ConsentDocumentType } from '../../models/maternal.models';
-import { DEFAULT_NOTIFICATION_PREFERENCES, NotificationPreferences } from '../../models/notification.models';
+import { CHANNEL_LABELS, ChannelPreference, DEFAULT_CHANNEL_PREFERENCES, NotificationChannel } from '../../models/notification.models';
 
 @Component({
   selector: 'app-profile',
@@ -166,23 +166,14 @@ import { DEFAULT_NOTIFICATION_PREFERENCES, NotificationPreferences } from '../..
         <!-- Notification Preferences (roadmap §Phase 5 UI) -->
         <div class="consent-center">
           <h2 class="section-title">Notification Preferences</h2>
-          <p class="field-hint prefs-note">Preferences only — no messages are actually sent by any channel yet; only in-app reminders are real right now.</p>
-          <label class="pref-row">
-            <input type="checkbox" [(ngModel)]="notifPrefs.inApp" name="prefInApp" (ngModelChange)="savePrefs()" />
-            In-app reminders
-          </label>
-          <label class="pref-row">
-            <input type="checkbox" [(ngModel)]="notifPrefs.email" name="prefEmail" (ngModelChange)="savePrefs()" />
-            Email
-          </label>
-          <label class="pref-row">
-            <input type="checkbox" [(ngModel)]="notifPrefs.sms" name="prefSms" (ngModelChange)="savePrefs()" />
-            SMS
-          </label>
-          <label class="pref-row">
-            <input type="checkbox" [(ngModel)]="notifPrefs.whatsapp" name="prefWhatsapp" (ngModelChange)="savePrefs()" />
-            WhatsApp
-          </label>
+          <p class="field-hint prefs-note">In-app reminders are live. Email, SMS and WhatsApp aren’t connected yet. Your choice is saved, but no messages are sent on those channels for now.</p>
+          @for (p of notifPrefs(); track p.channel) {
+            <label class="pref-row">
+              <input type="checkbox" [checked]="p.enabled" [disabled]="prefSaving() === p.channel" (change)="setPref(p.channel, $any($event.target).checked)" />
+              {{ channelLabel(p.channel) }}
+              @if (p.channel !== 'IN_APP') { <span class="field-hint">(not connected yet)</span> }
+            </label>
+          }
         </div>
 
         <!-- Self-service export / deletion (roadmap §Phase 6) -->
@@ -533,7 +524,8 @@ export class MyProfileComponent implements OnInit, OnDestroy {
   consentDocuments = signal<ConsentDocument[]>([]);
   consentStatus = signal<ConsentStatus | null>(null);
 
-  notifPrefs: NotificationPreferences = { ...DEFAULT_NOTIFICATION_PREFERENCES };
+  notifPrefs = signal<ChannelPreference[]>(DEFAULT_CHANNEL_PREFERENCES);
+  prefSaving = signal<NotificationChannel | null>(null);
   confirmingDelete = signal(false);
 
   form = {
@@ -578,12 +570,24 @@ export class MyProfileComponent implements OnInit, OnDestroy {
     });
 
     this.loadConsents();
-    this.notifPrefs = { ...DEFAULT_NOTIFICATION_PREFERENCES, ...this.notifications.getPreferences() };
+    this.notifications.getPreferences().subscribe({
+      next: prefs => this.notifPrefs.set(DEFAULT_CHANNEL_PREFERENCES.map(d => prefs.find(p => p.channel === d.channel) ?? d)),
+      error: () => { /* keep defaults; interceptor handles consent/verify */ }
+    });
   }
 
-  savePrefs() {
-    this.notifications.savePreferences(this.notifPrefs);
-    this.api.showToast('Notification preferences saved.');
+  channelLabel(c: NotificationChannel): string {
+    return CHANNEL_LABELS[c];
+  }
+
+  setPref(channel: NotificationChannel, enabled: boolean) {
+    const before = this.notifPrefs();
+    this.notifPrefs.set(before.map(p => (p.channel === channel ? { ...p, enabled } : p)));
+    this.prefSaving.set(channel);
+    this.notifications.setPreference(channel, enabled).subscribe({
+      next: () => { this.prefSaving.set(null); this.api.showToast('Notification preference saved.'); },
+      error: () => { this.prefSaving.set(null); this.notifPrefs.set(before); this.api.showToast('Couldn’t save that preference.'); }
+    });
   }
 
   exportData() {

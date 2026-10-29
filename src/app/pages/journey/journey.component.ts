@@ -6,7 +6,6 @@ import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
 import { ApiService } from '../../services/api.service';
 import { CommerceService } from '../../services/commerce.service';
-import { NotificationService } from '../../services/notification.service';
 import { ProviderService } from '../../services/provider.service';
 import { OnboardingService } from '../../services/onboarding.service';
 import { FeatureToggleService } from '../../services/feature-toggle.service';
@@ -433,7 +432,6 @@ export class JourneyComponent implements OnInit {
   ob = inject(OnboardingService);
   features = inject(FeatureToggleService);
   private commerce = inject(CommerceService);
-  private notifications = inject(NotificationService);
   private providers = inject(ProviderService);
 
   statuses = ALL_STATUSES;
@@ -531,7 +529,6 @@ export class JourneyComponent implements OnInit {
         this.journeySetupRequired.set(dashboard.journeySetupRequired);
         this.activeJourney.set(dashboard.journey);
         this.nextActions.set(dashboard.nextActions || []);
-        this.notifications.syncFromNextActions(dashboard.nextActions || []);
       },
       error: (err) => {
         this.loading.set(false);

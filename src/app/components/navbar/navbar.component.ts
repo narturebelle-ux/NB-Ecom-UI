@@ -1,10 +1,9 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, effect, inject, untracked } from '@angular/core';
 import { RouterLink, RouterLinkActive, Router } from '@angular/router';
 import { ApiService } from '../../services/api.service';
 import { FirebaseAuthService } from '../../services/firebase-auth.service';
 import { NotificationService } from '../../services/notification.service';
 import { OnboardingService } from '../../services/onboarding.service';
-import { Reminder } from '../../models/notification.models';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { FeatureDirective } from '../../directives/feature.directive';
@@ -100,11 +99,11 @@ import { FeatureDirective } from '../../directives/feature.directive';
               </button>
               @if (isBellOpen) {
                 <div class="bell-dropdown">
-                  @if (reminders().length === 0) {
+                  @if (notifications.reminders().length === 0) {
                     <p class="bell-empty">No reminders right now.</p>
                   } @else {
-                    @for (r of reminders(); track r.id) {
-                      <div class="bell-item" [class.unread]="!r.read" (click)="openReminder(r.id)">
+                    @for (r of notifications.reminders(); track r.id) {
+                      <div class="bell-item" [class.unread]="!notifications.isRead(r.id)" (click)="openReminder(r.id)">
                         <strong>{{ r.title }}</strong>
                         <p>{{ r.body }}</p>
                         <button class="dismiss-btn" (click)="dismissReminder($event, r.id)">Dismiss</button>
@@ -574,24 +573,25 @@ export class NavbarComponent {
   isUserMenuOpen = false;
   isBellOpen = false;
 
-  reminders = signal<Reminder[]>([]);
+  constructor() {
+    // Reminders are generated server-side every 15 min; load them once the app is unlocked.
+    effect(() => {
+      if (this.api.currentUser() && this.onboarding.onboarded()) untracked(() => this.notifications.refresh());
+    });
+  }
 
   toggleBell() {
     this.isBellOpen = !this.isBellOpen;
-    if (this.isBellOpen) {
-      this.reminders.set(this.notifications.getReminders());
-    }
+    if (this.isBellOpen) this.notifications.refresh();
   }
 
-  openReminder(id: string) {
+  openReminder(id: number) {
     this.notifications.markRead(id);
-    this.reminders.set(this.notifications.getReminders());
   }
 
-  dismissReminder(event: Event, id: string) {
+  dismissReminder(event: Event, id: number) {
     event.stopPropagation();
     this.notifications.dismiss(id);
-    this.reminders.set(this.notifications.getReminders());
   }
 
   toggleMobileMenu() {

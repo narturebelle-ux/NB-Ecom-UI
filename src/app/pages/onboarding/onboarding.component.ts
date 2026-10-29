@@ -233,7 +233,7 @@ const STAGES: JourneyStatus[] = ['PREGNANCY', 'PRE_DELIVERY', 'POSTPARTUM', 'CHI
                 @if (errorMsg()) { <p class="error-msg">{{ errorMsg() }}</p> }
 
                 <div class="actions split">
-                  <button class="btn-link" (click)="requestCallback()"><mat-icon class="icon-sm">phone_callback</mat-icon> None of these work — call me instead</button>
+                  <button class="btn-link" [disabled]="saving()" (click)="requestCallback()"><mat-icon class="icon-sm">phone_callback</mat-icon> None of these work — call me instead</button>
                   <button class="btn btn-primary btn-lg" [disabled]="!callSlotId() || saving()" (click)="confirmCall()">Confirm call <mat-icon class="icon-sm">arrow_forward</mat-icon></button>
                 </div>
               } @else {
@@ -244,8 +244,9 @@ const STAGES: JourneyStatus[] = ['PREGNANCY', 'PRE_DELIVERY', 'POSTPARTUM', 'CHI
                     <p class="hint">Our care coordinators haven’t published open call times yet. Ask for a call and they’ll ring you on {{ ob.state().intake?.phone ? '+91 ' + ob.state().intake?.phone : 'the number you gave us' }} within one working day.</p>
                   </div>
                 </div>
+                @if (errorMsg()) { <p class="error-msg">{{ errorMsg() }}</p> }
                 <div class="actions">
-                  <button class="btn btn-primary btn-lg" (click)="requestCallback()">Ask for a call <mat-icon class="icon-sm">arrow_forward</mat-icon></button>
+                  <button class="btn btn-primary btn-lg" [disabled]="saving()" (click)="requestCallback()">Ask for a call <mat-icon class="icon-sm">arrow_forward</mat-icon></button>
                 </div>
               }
             }
@@ -640,8 +641,19 @@ export class OnboardingComponent implements OnInit {
   }
 
   requestCallback() {
-    this.ob.requestCallback();
-    this.api.showToast('Thanks — your care coordinator will call you.');
+    this.saving.set(true);
+    this.errorMsg.set(null);
+    this.ob.requestCallback().subscribe({
+      next: () => {
+        this.saving.set(false);
+        this.api.showToast('Thanks. Your care coordinator will call you.');
+      },
+      error: (err) => {
+        this.saving.set(false);
+        if (err?.status === 401 || err?.status === 403) return;
+        this.errorMsg.set('We couldn’t send your request. Please try again.');
+      }
+    });
   }
 
   // ---------- documents ----------

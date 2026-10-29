@@ -6,7 +6,6 @@ import { MatIconModule } from '@angular/material/icon';
 import { forkJoin } from 'rxjs';
 import { ProviderService } from '../../services/provider.service';
 import { ApiService } from '../../services/api.service';
-import { NotificationService } from '../../services/notification.service';
 import { PROFESSIONAL_TYPE_LABELS } from '../../models/maternal.models';
 import { BOOKING_STATUS_LABELS, Booking, Slot } from '../../models/provider.models';
 
@@ -179,7 +178,6 @@ type Panel = { bookingId: number; kind: 'cancel' | 'reschedule' | 'noshow' | 'fe
 export class BookingsComponent implements OnInit {
   private providerService = inject(ProviderService);
   private api = inject(ApiService);
-  private notifications = inject(NotificationService);
 
   loading = signal(true);
   errorMsg = signal<string | null>(null);
@@ -210,7 +208,6 @@ export class BookingsComponent implements OnInit {
         this.names = new Map(providers.map(p => [p.id, p.displayName]));
         const sorted = [...bookings].sort((a, b) => new Date(b.scheduledStart).getTime() - new Date(a.scheduledStart).getTime());
         this.bookings.set(sorted);
-        this.notifications.syncFromBookings(sorted, this.names);
         this.loading.set(false);
       },
       error: (err) => {

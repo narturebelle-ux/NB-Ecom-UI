@@ -118,9 +118,16 @@ export class OnboardingService {
     );
   }
 
-  /** Fallback when the care team hasn't published any call times yet. */
-  requestCallback() {
-    this.patchLocal({ callRequested: true });
+  /**
+   * Fallback when no call slots are open: POST /me/onboarding/callback-request creates a server
+   * record a coordinator acts on. GET /me/onboarding doesn't report it back, so the "requested"
+   * flag that moves the stepper on is remembered locally (no health data in it).
+   */
+  requestCallback(note?: string): Observable<void> {
+    return this.http.post(`${this.baseUrl}/me/onboarding/callback-request`, note ? { note } : {}).pipe(
+      tap(() => this.patchLocal({ callRequested: true })),
+      map(() => undefined)
+    );
   }
 
   /**

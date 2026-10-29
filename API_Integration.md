@@ -398,6 +398,29 @@ consent; `PUT` intake create + replace (including `preferredModality: null`); st
 for PUT from localhost:4200. **Not verified:** a successful call booking, because there are no slots.
 The throwaway user's intake row is still in the stage DB.
 
+## 21. Phase 5 + onboarding follow-ups reconciled (2026-10-29)
+
+- **Reminders:** the client-generated reminder store has been removed, and the old localStorage keys are
+  deleted on next load. The navbar bell reads `GET /me/reminders` once the user is onboarded and
+  whenever it's opened. Dismiss calls `POST /me/reminders/{id}/dismiss`, optimistically, and rolls
+  back on error. The API has no "read" flag, so the unread badge is driven by a per-browser
+  list of **reminder ids only** (no text), pruned to active ids. Journey and Bookings no longer
+  generate reminders.
+- **Channel preferences:** Profile reads `GET /me/notification-preferences` and saves each
+  toggle with `PUT /me/notification-preferences/{channel}`. Email/SMS/WhatsApp are labelled
+  "not connected yet", with copy saying no messages are sent on them.
+- **"Ask for a call"** now calls `POST /me/onboarding/callback-request`. `GET /me/onboarding` doesn't
+  report it back, so the UI still remembers locally that it was requested (to move the stepper on).
+  If you add e.g. `callbackRequestedAt` to the status, the UI will read that instead.
+
+**Verified live** (your c8e3db8 build, real Firebase, throwaway user, deleted afterwards):
+reminders `[]`, 404 on dismissing an unknown id, preference defaults and both PUTs
+read back, 10 seeded call slots, callback-request 200, call booking 200 then 409
+`ONBOARDING_CALL_ALREADY_BOOKED`, status read-back includes the call, and CORS preflights for PUT/POST.
+Side effect: the test booking took the last seeded slot (12 Nov 10:00) on stage.
+**Not verified:** a reminder actually appearing. That needs a booking in the next 24h or a
+consented journey with pending actions, plus a scheduler tick.
+
 ## 9. Open requests to the API agent
 
 *(Running list — mark resolved items with ✅ and a date rather than deleting them, so the history stays visible.)*
@@ -407,6 +430,8 @@ The throwaway user's intake row is still in the stage DB.
 - ✅ **2026-10-29** — Phase 2 contract shipped and the UI is reconciled against it, see §16.
 - ✅ **2026-10-29** — CORS now allows `Idempotency-Key` (API commit f347201); preflight from localhost:4200 confirmed.
 - ✅ **2026-10-29** — Phase 3 contract shipped and the UI is reconciled against it, including the `services` field you added in dc8c0c7. See §17.
-- 🟡 **2026-10-29** — Onboarding API (§18). Part A (intake + call slots) ✅ shipped and reconciled (§20). Still open: **Part B** (documents, e-sign, email, completion), **seed some call slots on stage**, and optionally a callback-request endpoint for the no-slots fallback.
+- 🟡 **2026-10-29** — Onboarding API (§18). Part A (intake + call slots) ✅ shipped and reconciled (§20). Slot seeding + callback-request ✅ (295705d, reconciled in §21). Still open: **Part B** (documents, e-sign, email, completion).
+- ✅ **2026-10-29** — Phase 5 contract shipped and the UI is reconciled against it (§21).
+- 🔵 **2026-10-29** — Turn on `careBooking` and `recordsVault` flags on stage (Phases 3/4 are live, but `GET /features` still returns false, hiding Care/Records).
 - ✅ **2026-10-29** — Phase 4 contract shipped and the UI is reconciled against it (§19). Real uploads still need `SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY` configured.
 - 🔵 **2026-10-28** — Phases 5-6 contracts (see §15) needed to reconcile the UI's self-mocked Providers/booking, Records, Reminders, and Child/vaccination implementations. Phase 7 is intentionally not mocked at all — real decisions needed first (see roadmap).
