@@ -45,21 +45,21 @@ export class NotificationService {
     this.writeJson(this.remindersKey(), existing);
   }
 
-  /** One reminder per upcoming confirmed booking, due 1 day before the session. */
-  syncFromBookings(bookings: Booking[]) {
+  /** One reminder per upcoming BOOKED session, due 1 day before it. providerNames maps providerId → display name. */
+  syncFromBookings(bookings: Booking[], providerNames: Map<number, string> = new Map()) {
     const existing = this.readJson<Reminder[]>(this.remindersKey(), []);
     const existingIds = new Set(existing.map(r => r.id));
 
     for (const booking of bookings) {
-      if (booking.status !== 'CONFIRMED') continue;
+      if (booking.status !== 'BOOKED') continue;
       const id = 'rem_booking_' + booking.id;
       if (existingIds.has(id)) continue;
-      const dueAt = new Date(booking.startsAt);
+      const dueAt = new Date(booking.scheduledStart);
       dueAt.setDate(dueAt.getDate() - 1);
       existing.push({
         id,
-        title: `Upcoming session with ${booking.providerName}`,
-        body: `Your session is coming up on ${new Date(booking.startsAt).toLocaleString()}.`,
+        title: `Upcoming session with ${providerNames.get(booking.providerId) ?? 'your care provider'}`,
+        body: `Your session is coming up on ${new Date(booking.scheduledStart).toLocaleString()}.`,
         source: 'BOOKING',
         dueAt: dueAt.toISOString(),
         read: false,

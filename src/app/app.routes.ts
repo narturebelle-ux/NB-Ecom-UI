@@ -83,13 +83,12 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/order-confirmation/order-confirmation.component').then(m => m.OrderConfirmationComponent)
   },
 
-  // Phase 3 — Providers, booking & sessions. Also client-side mock, same reasoning as
-  // Phase 2 (see API_Integration.md). Booking requires a verified user with an
-  // entitlement session available (checked in provider-profile.component.ts itself).
+  // Phase 3 — Providers, booking & sessions, real API (UI_INTEGRATION_GUIDE.md §9). The
+  // directory is public; booking and the bookings list both require a verified user.
   {
     path: 'care/bookings',
     title: 'My Bookings | NartureBelle',
-    canActivate: [authGuard],
+    canActivate: [verifiedGuard],
     loadComponent: () => import('./pages/bookings/bookings.component').then(m => m.BookingsComponent)
   },
   {

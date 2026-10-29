@@ -1,23 +1,13 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable, tap } from 'rxjs';
-import { ApiService } from './api.service';
 import { environment } from '../../environments/environment';
 import { Entitlement, Order, Payment, PaymentMode, Plan } from '../models/commerce.models';
 
-/**
- * Phase 2 (Plans, checkout & entitlements) against the real API — UI_INTEGRATION_GUIDE.md §8.
- *
- * One deliberate client-side piece remains: session *consumption*. The API's entitlements
- * always report usedSessions=0 because booking/session-completion is its Phase 3, which
- * doesn't exist yet. The UI's Phase 3 booking mock still needs to "spend" a session, so it
- * records usage in a per-user localStorage overlay subtracted from the server's
- * remainingSessions. Drop the overlay once the API consumes sessions itself.
- */
+/** Phase 2 (Plans, checkout & entitlements) against the real API — UI_INTEGRATION_GUIDE.md §8. */
 @Injectable({ providedIn: 'root' })
 export class CommerceService {
   private http = inject(HttpClient);
-  private api = inject(ApiService);
   private readonly baseUrl = environment.apiUrl;
 
   readonly entitlements = signal<Entitlement[]>([]);
@@ -67,57 +57,20 @@ export class CommerceService {
     return globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`;
   }
 
-  // --- Local session-consumption overlay (see class comment) ---
-
+  // Sessions are consumed server-side when a provider completes a booking (API Phase 3),
+  // so remainingSessions is authoritative — no client-side bookkeeping.
   effectiveRemaining(e: Entitlement): number {
-    return Math.max(0, e.remainingSessions - (this.readUsage()[e.id] ?? 0));
+    return e.remainingSessions;
   }
 
   isExpired(e: Entitlement): boolean {
     return new Date(e.expiresAt).getTime() < Date.now();
   }
 
-  /** The soonest-expiring usable entitlement for this professional type, if any. Needs loadEntitlements() first. */
+  /** Soonest-expiring usable entitlement of this professional type, if any. Needs loadEntitlements() first. */
   findAvailable(professionalType: string): Entitlement | undefined {
     return this.entitlements()
-      .filter(e => e.professionalType === professionalType && !this.isExpired(e) && this.effectiveRemaining(e) > 0)
+      .filter(e => e.professionalType === professionalType && !this.isExpired(e) && e.remainingSessions > 0)
       .sort((a, b) => new Date(a.expiresAt).getTime() - new Date(b.expiresAt).getTime())[0];
-  }
-
-  consumeSession(professionalType: string): Entitlement | null {
-    const target = this.findAvailable(professionalType);
-    if (!target) return null;
-    const usage = this.readUsage();
-    usage[target.id] = (usage[target.id] ?? 0) + 1;
-    this.writeUsage(usage);
-    this.entitlements.set([...this.entitlements()]);
-    return target;
-  }
-
-  refundSession(entitlementId: number | string | null) {
-    if (entitlementId === null || entitlementId === undefined) return;
-    const usage = this.readUsage();
-    const key = Number(entitlementId);
-    if (!usage[key]) return;
-    usage[key] -= 1;
-    this.writeUsage(usage);
-    this.entitlements.set([...this.entitlements()]);
-  }
-
-  private usageKey(): string {
-    return `nb_session_usage_${this.api.currentUser()?.id ?? 'guest'}`;
-  }
-
-  private readUsage(): Record<number, number> {
-    try {
-      const raw = localStorage.getItem(this.usageKey());
-      return raw ? JSON.parse(raw) : {};
-    } catch {
-      return {};
-    }
-  }
-
-  private writeUsage(usage: Record<number, number>) {
-    localStorage.setItem(this.usageKey(), JSON.stringify(usage));
   }
 }

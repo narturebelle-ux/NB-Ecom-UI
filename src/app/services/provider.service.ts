@@ -1,111 +1,58 @@
 import { Injectable, inject } from '@angular/core';
-import { ApiService } from './api.service';
-import { CommerceService } from './commerce.service';
-import { Booking, MOCK_PROVIDERS, Provider, Slot, generateUpcomingSlots } from '../models/provider.models';
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
+import { Booking, Provider, ProviderFilters, Slot } from '../models/provider.models';
 
-/**
- * Phase 3 (Providers, booking & sessions) — implemented client-side, same approach as
- * CommerceService. No Provider/Booking endpoints exist on the API yet. Bookings persist to
- * localStorage per signed-in user id; booked/cancelled slot state does too (a real backend
- * would need this shared across users for double-booking prevention — this mock can't
- * enforce that across devices, only within one browser).
- */
+/** Phase 3 (Providers, booking & sessions) against the real API — UI_INTEGRATION_GUIDE.md §9. */
 @Injectable({ providedIn: 'root' })
 export class ProviderService {
-  private api = inject(ApiService);
-  private commerce = inject(CommerceService);
+  private http = inject(HttpClient);
+  private readonly baseUrl = environment.apiUrl;
 
-  getProviders(): Provider[] {
-    return MOCK_PROVIDERS;
-  }
-
-  getProvider(id: number): Provider | undefined {
-    return MOCK_PROVIDERS.find(p => p.id === id);
-  }
-
-  getSlots(providerId: number): Slot[] {
-    const bookedIds = new Set(
-      this.getBookings()
-        .filter(b => b.providerId === providerId && b.status === 'CONFIRMED')
-        .map(b => b.slotId)
-    );
-    return generateUpcomingSlots(providerId).map(s => ({ ...s, booked: bookedIds.has(s.id) }));
-  }
-
-  getBookings(): Booking[] {
-    return this.readJson<Booking[]>(this.bookingsKey(), []);
-  }
-
-  /** Throws if no provider/slot found, or if the user has no entitlement session available. */
-  book(providerId: number, slot: Slot): Booking {
-    const provider = this.getProvider(providerId);
-    if (!provider) {
-      throw new Error('Provider not found.');
+  /** Public; the API only ever lists VERIFIED/ACTIVE providers. Filtering is server-side. */
+  getProviders(filters: ProviderFilters = {}): Observable<Provider[]> {
+    let params = new HttpParams();
+    for (const [key, value] of Object.entries(filters)) {
+      if (value) params = params.set(key, value);
     }
-    // Spends a session from a real GET /entitlements allocation of this provider's type
-    // (caller must have loaded entitlements first); usage is tracked in CommerceService's
-    // local overlay until the API's own Phase 3 consumes sessions server-side.
-    const entitlement = this.commerce.consumeSession(provider.type);
-    if (!entitlement) {
-      throw new Error('NO_SESSIONS_AVAILABLE');
-    }
-
-    const booking: Booking = {
-      id: 'bkg_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
-      providerId: provider.id,
-      providerName: provider.name,
-      providerType: provider.type,
-      slotId: slot.id,
-      startsAt: slot.startsAt,
-      durationMinutes: slot.durationMinutes,
-      status: 'CONFIRMED',
-      entitlementId: entitlement.id,
-      createdAt: new Date().toISOString()
-    };
-
-    const bookings = this.getBookings();
-    bookings.push(booking);
-    this.writeJson(this.bookingsKey(), bookings);
-    return booking;
+    return this.http.get<Provider[]>(`${this.baseUrl}/providers`, { params });
   }
 
-  cancel(bookingId: string) {
-    const bookings = this.getBookings();
-    const booking = bookings.find(b => b.id === bookingId);
-    if (!booking || booking.status !== 'CONFIRMED') return;
-    booking.status = 'CANCELLED';
-    this.writeJson(this.bookingsKey(), bookings);
-    this.commerce.refundSession(booking.entitlementId);
+  getProvider(id: number): Observable<Provider> {
+    return this.http.get<Provider>(`${this.baseUrl}/providers/${id}`);
   }
 
-  /** Cancels the old slot's hold and books a new one, refunding/consuming sessions correctly. */
-  reschedule(bookingId: string, newSlot: Slot): Booking {
-    const bookings = this.getBookings();
-    const booking = bookings.find(b => b.id === bookingId);
-    if (!booking || booking.status !== 'CONFIRMED') {
-      throw new Error('Booking not found or not active.');
-    }
-    booking.slotId = newSlot.id;
-    booking.startsAt = newSlot.startsAt;
-    booking.durationMinutes = newSlot.durationMinutes;
-    this.writeJson(this.bookingsKey(), bookings);
-    return booking;
+  /** OPEN, future-only, ordered. */
+  getSlots(providerId: number): Observable<Slot[]> {
+    return this.http.get<Slot[]>(`${this.baseUrl}/providers/${providerId}/slots`);
   }
 
-  private bookingsKey(): string {
-    return `nb_bookings_${this.api.currentUser()?.id ?? 'guest'}`;
+  /** No Idempotency-Key needed: a duplicate claim on the same slot comes back 409 SLOT_NOT_AVAILABLE. */
+  book(providerId: number, serviceOfferingId: number, slotId: number): Observable<Booking> {
+    return this.http.post<Booking>(`${this.baseUrl}/bookings`, { providerId, serviceOfferingId, slotId });
   }
 
-  private readJson<T>(key: string, fallback: T): T {
-    try {
-      const raw = localStorage.getItem(key);
-      return raw ? JSON.parse(raw) as T : fallback;
-    } catch {
-      return fallback;
-    }
+  getBookings(): Observable<Booking[]> {
+    return this.http.get<Booking[]>(`${this.baseUrl}/bookings`);
   }
 
-  private writeJson(key: string, value: unknown) {
-    localStorage.setItem(key, JSON.stringify(value));
+  cancel(id: number, reason: string): Observable<Booking> {
+    return this.http.post<Booking>(`${this.baseUrl}/bookings/${id}/cancel`, { reason });
+  }
+
+  /** The old booking becomes RESCHEDULED and a new one is returned, linked via rescheduledFromBookingId. */
+  reschedule(id: number, newSlotId: number, reason: string): Observable<Booking> {
+    return this.http.post<Booking>(`${this.baseUrl}/bookings/${id}/reschedule`, { newSlotId, reason });
+  }
+
+  /** A user may only report that the PROVIDER didn't attend; reporting their own side is a 403. */
+  reportProviderNoShow(id: number, reason: string): Observable<Booking> {
+    return this.http.post<Booking>(`${this.baseUrl}/bookings/${id}/no-show`, { party: 'PROVIDER', reason });
+  }
+
+  /** Only after COMPLETED, only once (409 FEEDBACK_NOT_ALLOWED otherwise). */
+  submitFeedback(id: number, rating: number, comment: string): Observable<unknown> {
+    return this.http.post(`${this.baseUrl}/bookings/${id}/feedback`, { rating, comment: comment || null });
   }
 }

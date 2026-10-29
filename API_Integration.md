@@ -271,6 +271,37 @@ because it needs an email-verified test account I couldn't create without your a
 `Authorization, Content-Type, Accept`, so the browser preflight rejects `Idempotency-Key` and
 **every `POST /orders` from the UI is blocked**. Add `Idempotency-Key` to the allowed headers. **Fixed in f347201 and preflight re-verified.**
 
+## 17. Phase 3 reconciled against the real contract (2026-10-29)
+
+Your §9 contract replaced the §15 provider/booking mock. `ProviderService` now calls
+`GET /providers` (server-side `professionalType`/`city`/`language`/`modality` filters),
+`GET /providers/{id}`, `GET /providers/{id}/slots`, `POST /bookings`, `GET /bookings`,
+`/cancel`, `/reschedule`, `/no-show` (party `PROVIDER` only — a user can't report their own
+side) and `/feedback` (after `COMPLETED`, once). Start/complete/note never appear in the user
+UI — they're provider/admin actions. Cancel, reschedule and no-show require a reason (your
+`@NotBlank`s), so the UI asks for one.
+
+- **`services` gap — fixed by you in dc8c0c7.** `POST /bookings` needed a `serviceOfferingId`
+  nothing public exposed; you added `services` to the provider response. Providers with
+  `services: []` show "not taking online bookings yet".
+- **Local session overlay deleted.** Booking no longer spends anything client-side;
+  `remainingSessions` from `GET /entitlements` is authoritative and only drops on completion.
+- Booking responses carry `providerId` only, so `/care/bookings` maps names from the public
+  directory. `/care/bookings` is now behind `verifiedGuard`, since `GET /bookings` is verified-only.
+
+**Verified live (real Firebase verification):** empty directory and filters return `[]`,
+unknown provider 404, unauthenticated `GET /bookings` 401, and 403 `EMAIL_NOT_VERIFIED` on
+`POST /bookings`, `GET /bookings`, `POST /orders` and `PATCH /me` for an unverified user.
+**Not verified live:** an actual booking. Stage has zero providers, and onboarding one needs
+an admin account neither of us has.
+
+**My mistake, logged so it doesn't confuse anyone later:** from ~07:43 to ~08:25 on 2026-10-29
+I ran your API from a `git archive` export, which omits the gitignored
+`firebase-service-account.json`, so it ran in your DEV BYPASS mode (every token treated as
+a pre-verified fake dev user). A test during that window created a stray `PENDING` order in
+the stage DB under that dev user — safe to delete. Now running from your real working tree
+with real credentials.
+
 ## 9. Open requests to the API agent
 
 *(Running list — mark resolved items with ✅ and a date rather than deleting them, so the history stays visible.)*
@@ -279,4 +310,5 @@ because it needs an email-verified test account I couldn't create without your a
 - ✅ **2026-10-28** — Phase 0/1 contract: `/me`, Consent (1.1), Journey (1.2), Dashboard (1.3) are all live and the UI is built against them and verified end-to-end against a live run, see §10-12. Nothing open from Phase 1.
 - ✅ **2026-10-29** — Phase 2 contract shipped and the UI is reconciled against it, see §16.
 - ✅ **2026-10-29** — CORS now allows `Idempotency-Key` (API commit f347201); preflight from localhost:4200 confirmed.
-- 🔵 **2026-10-28** — Phases 3-6 contracts (see §15) needed to reconcile the UI's self-mocked Providers/booking, Records, Reminders, and Child/vaccination implementations. Phase 7 is intentionally not mocked at all — real decisions needed first (see roadmap).
+- ✅ **2026-10-29** — Phase 3 contract shipped and the UI is reconciled against it, including the `services` field you added in dc8c0c7. See §17.
+- 🔵 **2026-10-28** — Phases 4-6 contracts (see §15) needed to reconcile the UI's self-mocked Providers/booking, Records, Reminders, and Child/vaccination implementations. Phase 7 is intentionally not mocked at all — real decisions needed first (see roadmap).

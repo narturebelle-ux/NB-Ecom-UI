@@ -1,7 +1,7 @@
 /**
- * Phase 3 (Providers, booking & sessions) — implemented client-side, same approach as
- * Phase 2's CommerceService: no Provider/Booking endpoints exist on the API yet, so this
- * is a self-authored mock, not synced to any backend. See API_Integration.md.
+ * Phase 3 (Providers, booking & sessions) — real contract, NB-Ecomm-API
+ * UI_INTEGRATION_GUIDE.md §9. `services` (active offerings only) supplies the
+ * serviceOfferingId POST /bookings needs; an empty list means nothing is bookable yet.
  */
 
 export type ProfessionalTypeKey =
@@ -10,81 +10,90 @@ export type ProfessionalTypeKey =
   | 'LACTATION_CONSULTANT'
   | 'PEDIATRICIAN'
   | 'POSTPARTUM_PHYSIOTHERAPIST'
-  | 'CLINICAL_PSYCHOLOGIST';
+  | 'CLINICAL_PSYCHOLOGIST'
+  | 'REGISTERED_NURSE';
+
+export type Modality = 'VIRTUAL' | 'PHYSICAL';
+
+export interface ServiceOffering {
+  id: number;
+  name: string;
+  description?: string | null;
+  modality: Modality;
+  durationMinutes: number;
+}
 
 export interface Provider {
   id: number;
-  name: string;
-  type: ProfessionalTypeKey;
-  credentialsSummary: string;
+  professionalType: ProfessionalTypeKey;
+  displayName: string;
+  bio?: string | null;
+  city?: string | null;
   languages: string[];
-  city: string;
-  virtual: boolean;
-  rating: number;
-  bio: string;
+  services: ServiceOffering[];
 }
 
 export interface Slot {
-  id: string;
-  providerId: number;
-  startsAt: string;
-  durationMinutes: number;
-  booked: boolean;
+  id: number;
+  startAt: string;
+  endAt: string;
+  status: string;
 }
 
-export type BookingStatus = 'CONFIRMED' | 'CANCELLED' | 'COMPLETED';
+export type BookingStatus =
+  | 'BOOKED'
+  | 'CANCELLED'
+  | 'RESCHEDULED'
+  | 'IN_PROGRESS'
+  | 'COMPLETED'
+  | 'NO_SHOW_PROVIDER'
+  | 'NO_SHOW_USER';
 
 export interface Booking {
-  id: string;
+  id: number;
+  userId: number;
   providerId: number;
-  providerName: string;
-  providerType: ProfessionalTypeKey;
-  slotId: string;
-  startsAt: string;
-  durationMinutes: number;
+  serviceOfferingId: number;
+  slotId: number;
+  professionalType: ProfessionalTypeKey;
   status: BookingStatus;
-  entitlementId: number | null;
+  scheduledStart: string;
+  scheduledEnd: string;
+  providerNote?: string | null;
+  noteLockedAt?: string | null;
+  startedAt?: string | null;
+  completedAt?: string | null;
+  noShowAt?: string | null;
+  cancelledAt?: string | null;
+  cancelReason?: string | null;
+  rescheduledFromBookingId?: number | null;
   createdAt: string;
 }
 
-export const MOCK_PROVIDERS: Provider[] = [
-  { id: 1, name: 'Dr. Ananya Sharma', type: 'GYNECOLOGIST', credentialsSummary: 'MD (OB-GYN) · 18 yrs', languages: ['English', 'Hindi'], city: 'Bengaluru', virtual: true, rating: 4.9, bio: 'Senior consultant obstetrician focused on high-risk pregnancy care.' },
-  { id: 2, name: 'Dr. Priya Ramanathan', type: 'GYNECOLOGIST', credentialsSummary: 'MD, DNB · Fetal Medicine', languages: ['English', 'Tamil'], city: 'Mumbai', virtual: true, rating: 4.8, bio: 'Fetal medicine specialist, 4D ultrasound expert.' },
-  { id: 3, name: 'Kavita Rao', type: 'NUTRITIONIST', credentialsSummary: 'RD · Maternal Nutrition', languages: ['English', 'Kannada'], city: 'Bengaluru', virtual: true, rating: 4.7, bio: 'Clinical dietitian specialising in trimester-specific nutrition planning.' },
-  { id: 4, name: 'Sister Meenakshi Sundaram', type: 'LACTATION_CONSULTANT', credentialsSummary: 'RN, RM, IBCLC', languages: ['English', 'Tamil', 'Telugu'], city: 'Hyderabad', virtual: true, rating: 4.9, bio: 'Certified nurse-midwife and international board lactation consultant.' },
-  { id: 5, name: 'Dr. Rohan Mehta', type: 'PEDIATRICIAN', credentialsSummary: 'MD (Pediatrics) · 12 yrs', languages: ['English', 'Hindi'], city: 'Delhi', virtual: true, rating: 4.8, bio: 'Newborn and early-childhood care specialist.' },
-  { id: 6, name: 'Divya Krishnan', type: 'POSTPARTUM_PHYSIOTHERAPIST', credentialsSummary: 'BPT · Postpartum Recovery', languages: ['English', 'Malayalam'], city: 'Kochi', virtual: false, rating: 4.6, bio: 'Postpartum core & pelvic floor recovery specialist.' },
-  { id: 7, name: 'Dr. Arjun Nair', type: 'CLINICAL_PSYCHOLOGIST', credentialsSummary: 'PhD, Clinical Psychology', languages: ['English', 'Malayalam', 'Hindi'], city: 'Bengaluru', virtual: true, rating: 4.9, bio: 'Perinatal mental health support — entirely optional, never required.' }
-];
+export interface ProviderFilters {
+  professionalType?: string | null;
+  language?: string | null;
+  city?: string | null;
+  modality?: Modality | null;
+}
+
+export const BOOKING_STATUS_LABELS: Record<BookingStatus, string> = {
+  BOOKED: 'Booked',
+  CANCELLED: 'Cancelled',
+  RESCHEDULED: 'Rescheduled',
+  IN_PROGRESS: 'In progress',
+  COMPLETED: 'Completed',
+  NO_SHOW_PROVIDER: 'Provider didn’t attend',
+  NO_SHOW_USER: 'Missed'
+};
 
 /** Professional initials for profile circles, ignoring honorifics like 'Dr.'/'Sister'. */
 export function providerInitials(name: string): string {
-  return name
+  return (name || '')
     .replace(/^(Dr\.|Sister)\s+/i, '')
     .split(/\s+/)
     .filter(Boolean)
     .slice(0, 2)
     .map(w => w[0].toUpperCase())
     .join('');
-}
-
-export function generateUpcomingSlots(providerId: number): Slot[] {
-  const slots: Slot[] = [];
-  const now = new Date();
-  for (let day = 1; day <= 10; day++) {
-    const date = new Date(now);
-    date.setDate(date.getDate() + day);
-    // Two slots/day, deterministic per provider so the list doesn't reshuffle on reload.
-    for (const hour of [10, 16]) {
-      date.setHours(hour, 0, 0, 0);
-      slots.push({
-        id: `slot_${providerId}_${date.toISOString()}`,
-        providerId,
-        startsAt: date.toISOString(),
-        durationMinutes: 30,
-        booked: false
-      });
-    }
-  }
-  return slots;
 }
