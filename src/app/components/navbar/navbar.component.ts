@@ -45,7 +45,6 @@ import { FeatureDirective } from '../../directives/feature.directive';
         }
         @if (api.currentUser() && onboarding.onboarded()) {
         <nav class="nav-links">
-          <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="nav-link">Home</a>
           <a routerLink="/journey" routerLinkActive="active" class="nav-link">My Journey</a>
           <a *appFeature="'careBooking'" routerLink="/care" routerLinkActive="active" class="nav-link">Care</a>
           <a *appFeature="'recordsVault'" routerLink="/records" routerLinkActive="active" class="nav-link">Records</a>
@@ -165,7 +164,6 @@ import { FeatureDirective } from '../../directives/feature.directive';
               <mat-icon class="icon-sm">flag</mat-icon> Complete your onboarding
             </a>
           } @else {
-          <a routerLink="/" (click)="isMobileOpen = false" class="mobile-nav-link">Home</a>
 
           @if (api.currentUser()) {
             <a routerLink="/journey" (click)="isMobileOpen = false" class="mobile-nav-link"><mat-icon class="icon-sm">eco</mat-icon> My Journey</a>

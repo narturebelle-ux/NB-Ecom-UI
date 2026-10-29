@@ -11,9 +11,11 @@ import { VerifyEmailComponent } from './pages/verify-email/verify-email.componen
 import { featureGuard } from './guards/feature.guard';
 import { authGuard, verifiedGuard } from './guards/auth.guard';
 import { onboardingGuard } from './guards/onboarding.guard';
+import { landingGuard } from './guards/landing.guard';
 
 export const routes: Routes = [
-  { path: '', component: HomeComponent, title: 'NartureBelle™ | Professional-Led Care, Pregnancy to Postpartum' },
+  // Public landing page for visitors; signed-in users are sent to My Journey (or onboarding).
+  { path: '', component: HomeComponent, title: 'NartureBelle™ | Professional-Led Care, Pregnancy to Postpartum', canActivate: [landingGuard] },
 
   // Store pages — hidden behind productRecommendations (off) until roadmap Phase 6,
   // when they become personalised recommendations rather than a standalone shop.
