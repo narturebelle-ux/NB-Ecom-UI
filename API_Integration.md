@@ -443,6 +443,31 @@ server-backed. Only the plan recommendation and the remembered plan choice stay 
 
 **Not verified live yet.** Only `ng build` was run. No stage run with a throwaway user.
 
+## 23. Phase 6 built against the planned contract (2026-10-29)
+
+Built from the planned contract that nb-ecomm-api-a5 sent on 29 Oct (field names firm unless they say otherwise).
+**None of these endpoints exist on the local API yet** (`/joy-circle/events` returns 401), so none of this has
+been verified live. Only `ng build` was run. Reconcile against UI_INTEGRATION_GUIDE.md once each item ships.
+
+| Area | UI | Endpoints used |
+|---|---|---|
+| Child + vaccines | `/child`: add a child (name, DOB, optional sex), schedule per child with `dueAgeLabel`/`dueDate` and the server's `status` badge (Overdue / Due soon / Upcoming), tick to mark given (today) or untick | `GET/POST /me/children`, `GET /me/children/{id}/vaccinations`, `PUT`/`DELETE .../vaccinations/{scheduleItemId}` |
+| Hospital referrals | Hospital tour request on `/checklists` now creates a real referral and shows its `NB-` code. Name, phone and stage go in `note`, so the hospital can call back. Signed-out users go to sign-in first. | `POST /me/hospital-referrals` |
+| Joy Circle | New `/joy-circle` page with upcoming events, category chips, spots left, "I'll be there", a "You're going" list with `joinUrl`, and "Can't make it". Handles `EVENT_FULL`/`EVENT_NOT_OPEN`. The "not medical care" notice and each event's `disclaimer` are shown. | `GET /joy-circle/events`, `GET /me/joy-circle/rsvps`, `POST`/`DELETE /joy-circle/events/{id}/rsvp` |
+| Product recommendations | New `/recommendations` page. Category and budget chips map to the `category`/`maxPrice` params. Each product card shows `whyRecommended`. The server's `commissionDisclosure` and a "not medical advice" line are shown. "Not for me" dismisses an item; "Show them again" restores all. | `GET /me/product-recommendations?includeDismissed=true`, `POST`/`DELETE .../{productId}/dismiss` |
+| Export + deletion | Profile → Your Data: server JSON export, "Ask to delete my account" (type DELETE), its status, and cancel while it's still REQUESTED. The copy says requests are handled by hand and nothing is erased automatically. "Clear this device" is kept as a separate action. | `GET /me/export`, `GET/POST/DELETE /me/deletion-request` |
+
+Other changes:
+- **Store framing retired.** The Month 3/6/9 pages and `ProductCardComponent` are deleted, and `/products/*` redirects to
+  `/recommendations`. The navbar pills are gone, and the cart shows the category instead of "Must-Have"/"Optional".
+- **Browser-only data is migrated once.** Children and given vaccines from the old browser-only tracker are POSTed
+  (vaccines matched by name), but only if the server has no children yet. Then they're cleared from localStorage.
+  Old browser-only referral codes aren't migrated, because they were never real.
+- **Flags.** `/child`, `/joy-circle` and `/recommendations` each sit behind their flag (`childTracker`, `joyCircle`,
+  `productRecommendations`) plus `onboardingGuard`. The API seeds all three off and won't flip them. They should be turned on
+  once each area is verified live, as a product-owner call. Note that `childTracker` is already off on the API, so the
+  child page is hidden live today.
+
 ## 9. Open requests to the API agent
 
 *(Running list — mark resolved items with ✅ and a date rather than deleting them, so the history stays visible.)*
@@ -456,4 +481,5 @@ server-backed. Only the plan recommendation and the remembered plan choice stay 
 - ✅ **2026-10-29** — Phase 5 contract shipped and the UI is reconciled against it (§21).
 - ✅ **2026-10-29** — `careBooking` and `recordsVault` flags turned on (V14); `GET /features` confirmed. `callbackRequestedAt` added to the onboarding status and read by the UI.
 - ✅ **2026-10-29** — Phase 4 contract shipped and the UI is reconciled against it (§19). Real uploads still need `SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY` configured.
+- 🟡 **2026-10-29** — Phase 6: planned contract received from nb-ecomm-api-a5, UI built against it (§23). Awaiting the API shipping each item, then live verification and flag flips.
 - 🔵 **2026-10-28** — Phases 5-6 contracts (see §15) needed to reconcile the UI's self-mocked Providers/booking, Records, Reminders, and Child/vaccination implementations. Phase 7 is intentionally not mocked at all — real decisions needed first (see roadmap).

@@ -47,9 +47,7 @@ import { ApiService } from '../../services/api.service';
                 <div class="cart-item">
                   <img [src]="item.product.imageUrl" [alt]="item.product.name" class="item-thumb" />
                   <div class="item-info">
-                    <span class="item-tier" [ngClass]="'tier-' + item.product.tier.toLowerCase()">
-                      {{ item.product.tier === 'MANDATORY' ? '🟢 Must-Have' : '🟡 Optional' }}
-                    </span>
+                    <span class="item-tier">{{ item.product.category }}</span>
                     <h4 class="item-name">{{ item.product.name }}</h4>
                     <span class="item-price">₹{{ item.product.price }}</span>
 

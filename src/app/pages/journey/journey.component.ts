@@ -31,7 +31,7 @@ const TRACK_LABELS: Record<JourneyStatus, string> = {
   CHILDCARE_0_7: 'Childcare'
 } as Record<JourneyStatus, string>;
 
-interface QuickAction { icon: string; title: string; text: string; link: string; feature?: 'careBooking' | 'recordsVault' | 'childTracker'; }
+interface QuickAction { icon: string; title: string; text: string; link: string; feature?: 'careBooking' | 'recordsVault' | 'childTracker' | 'joyCircle' | 'productRecommendations'; }
 
 /**
  * My Journey — the signed-in home. Built from GET /me/dashboard (journey + next actions),
@@ -479,6 +479,8 @@ export class JourneyComponent implements OnInit {
       { icon: 'event_note', title: 'My bookings', text: 'Reschedule or cancel', link: '/care/bookings', feature: 'careBooking' },
       { icon: 'folder_shared', title: 'Records vault', text: 'Upload & share securely', link: '/records', feature: 'recordsVault' },
       { icon: 'child_care', title: 'Child & vaccines', text: 'Track your baby’s care', link: '/child', feature: 'childTracker' },
+      { icon: 'diversity_3', title: 'Joy Circle', text: 'Meet other parents', link: '/joy-circle', feature: 'joyCircle' },
+      { icon: 'shopping_bag', title: 'For you', text: 'Products for your stage', link: '/recommendations', feature: 'productRecommendations' },
       { icon: 'checklist', title: 'Checkup checklist', text: 'Scans & tests by stage', link: '/checklists' },
       { icon: 'manage_accounts', title: 'Profile & privacy', text: 'Your details & consents', link: '/profile' }
     ] as QuickAction[]).filter(a => !a.feature || this.features.isEnabled(a.feature)).slice(0, 4)

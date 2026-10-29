@@ -1,6 +1,7 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { ApiService } from '../../services/api.service';
 import { ReferralService } from '../../services/referral.service';
 import { ChecklistTask, HospitalPartner, PregnancyStage } from '../../models/maternal.models';
@@ -165,8 +166,8 @@ import { ChecklistTask, HospitalPartner, PregnancyStage } from '../../models/mat
                 <option value="MONTH_9">Month 7–9 (Delivery Soon)</option>
               </select>
             </div>
-            <button type="submit" class="btn btn-primary btn-lg full-w mt-2">
-              Confirm Free Tour Request
+            <button type="submit" class="btn btn-primary btn-lg full-w mt-2" [disabled]="submittingTour">
+              {{ submittingTour ? 'Sending…' : 'Confirm Free Tour Request' }}
             </button>
           </form>
         </div>
@@ -488,6 +489,7 @@ import { ChecklistTask, HospitalPartner, PregnancyStage } from '../../models/mat
 export class ChecklistsComponent implements OnInit {
   api = inject(ApiService);
   referrals = inject(ReferralService);
+  private router = inject(Router);
 
   allTasks: ChecklistTask[] = [];
   filteredTasks: ChecklistTask[] = [];
@@ -501,6 +503,7 @@ export class ChecklistsComponent implements OnInit {
   tourName = '';
   tourPhone = '';
   tourStage = 'MONTH_6';
+  submittingTour = false;
 
   ngOnInit() {
     this.api.getChecklists().subscribe(tasks => {
@@ -539,14 +542,30 @@ export class ChecklistsComponent implements OnInit {
   }
 
   submitTourRequest() {
-    if (!this.tourPhone || !this.selectedHospitalForTour) return;
-
-    // Referral attribution (roadmap §Phase 6) — client-side mock, not synced to any
-    // backend; a real referral-tracking API would record this lead server-side instead.
-    const referral = this.referrals.createReferral(this.selectedHospitalForTour.id, this.selectedHospitalForTour.name);
-    this.api.showToast(`Tour requested at ${this.selectedHospitalForTour.name}! Referred by NartureBelle (code ${referral.code}) — a hospital coordinator will call you.`);
-    this.selectedHospitalForTour = null;
-    this.tourName = '';
-    this.tourPhone = '';
+    const hosp = this.selectedHospitalForTour;
+    if (!this.tourPhone || !hosp) return;
+    if (!this.api.currentUser()) {
+      this.router.navigate(['/auth/login'], { queryParams: { returnUrl: '/checklists' } });
+      return;
+    }
+    // Referral attribution (roadmap Phase 6): POST /me/hospital-referrals records the lead
+    // server-side so it can be confirmed and attributed back to NartureBelle.
+    const note = `Tour / callback request. Name: ${this.tourName.trim() || '-'}. Phone: ${this.tourPhone.trim()}. Stage: ${this.tourStage}.`;
+    this.submittingTour = true;
+    this.referrals.createReferral(hosp.id, note).subscribe({
+      next: referral => {
+        this.submittingTour = false;
+        this.api.showToast(`Tour requested at ${referral.hospitalName}. Your referral code is ${referral.code}. The hospital will call you to arrange it.`);
+        this.selectedHospitalForTour = null;
+        this.tourName = '';
+        this.tourPhone = '';
+      },
+      error: (err) => {
+        this.submittingTour = false;
+        if (err?.status === 401 || err?.status === 403) return; // interceptor handles sign-in / verify / consent
+        this.api.showToast(err?.error?.message || 'We couldn’t send your request. Please try again.');
+      }
+    });
   }
+
 }

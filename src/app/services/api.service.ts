@@ -10,6 +10,7 @@ import {
   DoctorSession,
   User,
   CartItem,
+  CartProduct,
   PregnancyStage,
   ConsentDocument,
   ConsentDocumentType,
@@ -226,7 +227,7 @@ export class ApiService {
 
   // --- Cart Operations ---
 
-  addToCart(product: Product) {
+  addToCart(product: CartProduct) {
     const current = this.cart();
     const existing = current.find(item => item.product.id === product.id);
 

@@ -1,8 +1,5 @@
 import { Routes } from '@angular/router';
 import { HomeComponent } from './pages/home/home.component';
-import { Month3Component } from './pages/month3/month3.component';
-import { Month6Component } from './pages/month6/month6.component';
-import { Month9Component } from './pages/month9/month9.component';
 import { ChecklistsComponent } from './pages/checklists/checklists.component';
 import { NurseCompanionComponent } from './pages/nurse-companion/nurse-companion.component';
 import { DoctorsLiveComponent } from './pages/doctors-live/doctors-live.component';
@@ -17,12 +14,8 @@ export const routes: Routes = [
   // Public landing page for visitors; signed-in users are sent to My Journey (or onboarding).
   { path: '', component: HomeComponent, title: 'NartureBelle™ | Professional-Led Care, Pregnancy to Postpartum', canActivate: [landingGuard] },
 
-  // Store pages — hidden behind productRecommendations (off) until roadmap Phase 6,
-  // when they become personalised recommendations rather than a standalone shop.
-  // Hidden, not deleted: featureGuard redirects home while the flag is off.
-  { path: 'products/month-3', component: Month3Component, title: 'Month 3 Products (1st Trimester) | NartureBelle', canActivate: [featureGuard('productRecommendations')] },
-  { path: 'products/month-6', component: Month6Component, title: 'Month 6 Products (2nd Trimester) | NartureBelle', canActivate: [featureGuard('productRecommendations')] },
-  { path: 'products/month-9', component: Month9Component, title: 'Month 9 Products (3rd Trimester) | NartureBelle', canActivate: [featureGuard('productRecommendations')] },
+  // The Month 3/6/9 store pages are retired (Phase 6): old links land on personalised recommendations.
+  { path: 'products/:stage', redirectTo: 'recommendations' },
 
   { path: 'checklists', component: ChecklistsComponent, title: 'Prenatal Checkup Checklists & Scan Labs | NartureBelle' },
 
@@ -129,13 +122,25 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/records/records.component').then(m => m.RecordsComponent)
   },
 
-  // Phase 6 — Child profile + vaccination tracker. Client-side mock; schedule is
-  // illustrative and PENDING_CLINICAL_REVIEW (see child.models.ts).
+  // Phase 6 — P1 expansion, against the API's planned contract (see API_Integration.md §23).
+  // Each area sits behind its own feature flag, which the product owner flips once it's live.
   {
     path: 'child',
     title: 'Child & Vaccination Tracker | NartureBelle',
-    canActivate: [onboardingGuard],
+    canActivate: [featureGuard('childTracker'), onboardingGuard],
     loadComponent: () => import('./pages/child/child.component').then(m => m.ChildComponent)
+  },
+  {
+    path: 'recommendations',
+    title: 'Recommended for You | NartureBelle',
+    canActivate: [featureGuard('productRecommendations'), onboardingGuard],
+    loadComponent: () => import('./pages/recommendations/recommendations.component').then(m => m.RecommendationsComponent)
+  },
+  {
+    path: 'joy-circle',
+    title: 'Joy Circle | NartureBelle',
+    canActivate: [featureGuard('joyCircle'), onboardingGuard],
+    loadComponent: () => import('./pages/joy-circle/joy-circle.component').then(m => m.JoyCircleComponent)
   },
 
   // No dedicated /cart route exists yet — cart is a navbar drawer, not a routed page.

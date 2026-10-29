@@ -7,6 +7,7 @@ import { RecaptchaVerifier } from 'firebase/auth';
 import { ApiService } from '../../services/api.service';
 import { FirebaseAuthService } from '../../services/firebase-auth.service';
 import { NotificationService } from '../../services/notification.service';
+import { AccountDataService, DeletionRequest, DeletionStatus } from '../../services/account-data.service';
 import { User, ConsentDocument, ConsentStatus, ConsentDocumentType } from '../../models/maternal.models';
 import { CHANNEL_LABELS, ChannelPreference, DEFAULT_CHANNEL_PREFERENCES, NotificationChannel } from '../../models/notification.models';
 
@@ -176,25 +177,47 @@ import { CHANNEL_LABELS, ChannelPreference, DEFAULT_CHANNEL_PREFERENCES, Notific
           }
         </div>
 
-        <!-- Self-service export / deletion (roadmap §Phase 6) -->
+        <!-- Self-service export / deletion (roadmap Phase 6) -->
         <div class="consent-center">
           <h2 class="section-title">Your Data</h2>
           <p class="field-hint prefs-note">
-            Exports/clears what this prototype keeps on this device only (plan, bookings, records
-            metadata, reminders). It does not delete your real account or server-side data — no
-            DELETE /me endpoint exists yet.
+            Download a copy of everything we hold about you. Uploaded record files aren’t in the download,
+            only their details. You can still download each file from Records.
           </p>
           <div class="data-actions">
-            <button type="button" class="btn-link" (click)="exportData()"><mat-icon class="icon-sm">download</mat-icon> Download my data (JSON)</button>
-            <button type="button" class="btn-link danger" (click)="confirmingDelete.set(true)" [hidden]="confirmingDelete()"><mat-icon class="icon-sm">delete</mat-icon> Delete local data</button>
+            <button type="button" class="btn-link" [disabled]="exporting()" (click)="exportData()">
+              <mat-icon class="icon-sm">download</mat-icon> {{ exporting() ? 'Preparing…' : 'Download my data (JSON)' }}
+            </button>
           </div>
-          @if (confirmingDelete()) {
-            <div class="delete-confirm">
-              <span>This clears everything this prototype stored on this device and signs you out. Are you sure?</span>
-              <button type="button" class="btn-link danger" (click)="deleteLocalData()">Yes, delete it</button>
-              <button type="button" class="btn-link" (click)="confirmingDelete.set(false)">Cancel</button>
-            </div>
+
+          <h3 class="data-subtitle">Delete my account</h3>
+          @if (deletion(); as d) {
+            <p class="field-hint prefs-note">
+              Deletion request {{ deletionLabel(d.status) }} · asked {{ d.requestedAt | date:'mediumDate' }}.
+            </p>
+            @if (d.status === 'REQUESTED') {
+              <button type="button" class="btn-link" [disabled]="deletionBusy()" (click)="cancelDeletion()">Cancel my deletion request</button>
+            }
           }
+          @if (canRequestDeletion()) {
+            <p class="field-hint prefs-note">
+              Our team reviews deletion requests and processes them by hand. Nothing is erased automatically yet,
+              and you can cancel until we start. We’ll show the progress here.
+            </p>
+            @if (!confirmingDelete()) {
+              <button type="button" class="btn-link danger" (click)="confirmingDelete.set(true)"><mat-icon class="icon-sm">delete</mat-icon> Ask to delete my account</button>
+            } @else {
+              <div class="delete-confirm">
+                <label for="delconfirm">Type DELETE to confirm</label>
+                <input id="delconfirm" class="form-control del-input" [(ngModel)]="deleteConfirmText" name="delconfirm" autocomplete="off" />
+                <button type="button" class="btn-link danger" [disabled]="deleteConfirmText !== 'DELETE' || deletionBusy()" (click)="requestDeletion()">Send request</button>
+                <button type="button" class="btn-link" (click)="cancelConfirm()">Cancel</button>
+              </div>
+            }
+          }
+
+          <h3 class="data-subtitle">This device</h3>
+          <button type="button" class="btn-link" (click)="clearDevice()"><mat-icon class="icon-sm">phonelink_erase</mat-icon> Sign out and clear saved data on this device</button>
         </div>
 
         <p class="member-since">Member since {{ memberSince() }}</p>
@@ -451,6 +474,8 @@ import { CHANNEL_LABELS, ChannelPreference, DEFAULT_CHANNEL_PREFERENCES, Notific
     .prefs-note { margin-bottom: 0.85rem; }
     .pref-row { display: flex; align-items: center; gap: 0.6rem; font-size: 0.88rem; color: #4a6355; padding: 0.4rem 0; cursor: pointer; }
     .data-actions { display: flex; gap: 1.25rem; flex-wrap: wrap; }
+    .data-subtitle { font-size: 0.95rem; color: var(--sage-900); margin: 1.25rem 0 0.4rem; }
+    .del-input { max-width: 9rem; padding: 0.35rem 0.6rem; }
     .delete-confirm { margin-top: 0.75rem; padding: 0.85rem 1rem; background: #fdecea; border: 1px solid #f5b7b1; border-radius: 10px; font-size: 0.85rem; color: #a0281c; display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
     .btn-link.danger { color: #a0281c; }
 
@@ -513,6 +538,7 @@ export class MyProfileComponent implements OnInit, OnDestroy {
   api = inject(ApiService);
   firebaseAuth = inject(FirebaseAuthService);
   private notifications = inject(NotificationService);
+  private accountData = inject(AccountDataService);
   router = inject(Router);
 
   saving = signal(false);
@@ -527,6 +553,10 @@ export class MyProfileComponent implements OnInit, OnDestroy {
   notifPrefs = signal<ChannelPreference[]>(DEFAULT_CHANNEL_PREFERENCES);
   prefSaving = signal<NotificationChannel | null>(null);
   confirmingDelete = signal(false);
+  deleteConfirmText = '';
+  deletion = signal<DeletionRequest | null>(null);
+  deletionBusy = signal(false);
+  exporting = signal(false);
 
   form = {
     firstName: '',
@@ -570,6 +600,7 @@ export class MyProfileComponent implements OnInit, OnDestroy {
     });
 
     this.loadConsents();
+    this.refreshDeletion();
     this.notifications.getPreferences().subscribe({
       next: prefs => this.notifPrefs.set(DEFAULT_CHANNEL_PREFERENCES.map(d => prefs.find(p => p.channel === d.channel) ?? d)),
       error: () => { /* keep defaults; interceptor handles consent/verify */ }
@@ -591,30 +622,85 @@ export class MyProfileComponent implements OnInit, OnDestroy {
   }
 
   exportData() {
-    const uid = this.api.currentUser()?.id ?? 'guest';
-    const keys = Object.keys(localStorage).filter(k => k.includes(`_${uid}`) || k === 'nb_user');
-    const data: Record<string, unknown> = {};
-    for (const key of keys) {
-      try {
-        data[key] = JSON.parse(localStorage.getItem(key) || 'null');
-      } catch {
-        data[key] = localStorage.getItem(key);
+    this.exporting.set(true);
+    this.accountData.exportData().subscribe({
+      next: blob => {
+        this.exporting.set(false);
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'narturebelle-my-data.json';
+        a.click();
+        URL.revokeObjectURL(url);
+      },
+      error: () => {
+        this.exporting.set(false);
+        this.api.showToast('Couldn’t prepare your download. Please try again.');
       }
-    }
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `narturebelle-data-${uid}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+    });
   }
 
-  deleteLocalData() {
+  canRequestDeletion(): boolean {
+    const d = this.deletion();
+    return !d || d.status === 'CANCELLED' || d.status === 'REJECTED';
+  }
+
+  deletionLabel(s: DeletionStatus): string {
+    return { REQUESTED: 'received', IN_PROGRESS: 'in progress', COMPLETED: 'completed', REJECTED: 'declined', CANCELLED: 'cancelled' }[s];
+  }
+
+  cancelConfirm() {
+    this.confirmingDelete.set(false);
+    this.deleteConfirmText = '';
+  }
+
+  private refreshDeletion() {
+    this.accountData.getDeletionRequest().subscribe({ next: d => this.deletion.set(d), error: () => {} });
+  }
+
+  requestDeletion() {
+    if (this.deleteConfirmText !== 'DELETE') return;
+    this.deletionBusy.set(true);
+    this.accountData.requestDeletion().subscribe({
+      next: d => {
+        this.deletionBusy.set(false);
+        this.deletion.set(d);
+        this.cancelConfirm();
+        this.api.showToast('Your deletion request has been sent. Our team will process it.');
+      },
+      error: (err) => {
+        this.deletionBusy.set(false);
+        if (err?.error?.code === 'DELETION_ALREADY_REQUESTED') {
+          this.cancelConfirm();
+          this.refreshDeletion();
+          return;
+        }
+        this.api.showToast('Couldn’t send your request. Please try again.');
+      }
+    });
+  }
+
+  cancelDeletion() {
+    this.deletionBusy.set(true);
+    this.accountData.cancelDeletion().subscribe({
+      next: () => {
+        this.deletionBusy.set(false);
+        this.refreshDeletion();
+        this.api.showToast('Your deletion request is cancelled.');
+      },
+      error: () => {
+        this.deletionBusy.set(false);
+        this.refreshDeletion();
+        this.api.showToast('Couldn’t cancel it. It may already be in progress.');
+      }
+    });
+  }
+
+  /** Clears this browser's saved NartureBelle data and signs out. Server data is untouched. */
+  clearDevice() {
     const uid = this.api.currentUser()?.id ?? 'guest';
     const keys = Object.keys(localStorage).filter(k => k.includes(`_${uid}`) || k === 'nb_user');
     keys.forEach(k => localStorage.removeItem(k));
-    this.confirmingDelete.set(false);
     this.firebaseAuth.logout().finally(() => {
       this.api.logout();
       this.router.navigate(['/']);

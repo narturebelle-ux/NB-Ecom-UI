@@ -1,42 +1,36 @@
 import { Injectable, inject } from '@angular/core';
-import { ApiService } from './api.service';
+import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
+
+export type ReferralStatus = 'REQUESTED' | 'CONFIRMED' | 'CANCELLED';
 
 export interface Referral {
+  id: number;
+  /** "NB-" + 8 characters; carries no user id. */
   code: string;
   hospitalId: number;
   hospitalName: string;
+  status: ReferralStatus;
+  note: string | null;
   createdAt: string;
+  confirmedAt: string | null;
 }
 
 /**
- * Phase 6 (Clinics/hospitals + referral attribution) — client-side only. Generates a
- * referral code when a user requests a hospital tour/callback, so a real backend could
- * later attribute that lead back to NartureBelle. Not synced to any backend yet.
+ * Phase 6 — hospital referral attribution via /me/hospital-referrals (verified accounts only).
+ * Idempotent: an open referral to the same hospital returns the existing one.
  */
 @Injectable({ providedIn: 'root' })
 export class ReferralService {
-  private api = inject(ApiService);
+  private http = inject(HttpClient);
+  private readonly baseUrl = `${environment.apiUrl}/me/hospital-referrals`;
 
-  createReferral(hospitalId: number, hospitalName: string): Referral {
-    const uid = this.api.currentUser()?.id ?? 'guest';
-    const code = `NB-${uid}-${hospitalId}-${Date.now().toString(36).toUpperCase()}`;
-    const referral: Referral = { code, hospitalId, hospitalName, createdAt: new Date().toISOString() };
-    const referrals = this.getReferrals();
-    referrals.push(referral);
-    localStorage.setItem(this.key(), JSON.stringify(referrals));
-    return referral;
+  createReferral(hospitalId: number, note?: string): Observable<Referral> {
+    return this.http.post<Referral>(this.baseUrl, { hospitalId, note: note || null });
   }
 
-  getReferrals(): Referral[] {
-    try {
-      const raw = localStorage.getItem(this.key());
-      return raw ? JSON.parse(raw) as Referral[] : [];
-    } catch {
-      return [];
-    }
-  }
-
-  private key(): string {
-    return `nb_referrals_${this.api.currentUser()?.id ?? 'guest'}`;
+  getReferrals(): Observable<Referral[]> {
+    return this.http.get<Referral[]>(this.baseUrl);
   }
 }

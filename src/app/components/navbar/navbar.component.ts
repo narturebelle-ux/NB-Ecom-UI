@@ -48,21 +48,11 @@ import { FeatureDirective } from '../../directives/feature.directive';
           <a *appFeature="'careBooking'" routerLink="/care" routerLinkActive="active" class="nav-link">Care</a>
           <a *appFeature="'recordsVault'" routerLink="/records" routerLinkActive="active" class="nav-link">Records</a>
           <a *appFeature="'childTracker'" routerLink="/child" routerLinkActive="active" class="nav-link">Child</a>
+          <a *appFeature="'joyCircle'" routerLink="/joy-circle" routerLinkActive="active" class="nav-link">Joy Circle</a>
+          <a *appFeature="'productRecommendations'" routerLink="/recommendations" routerLinkActive="active" class="nav-link">For you</a>
           <a *appFeature="'aiAssistant'" routerLink="/ai" routerLinkActive="active" class="nav-link">AI</a>
           <a routerLink="/plans" routerLinkActive="active" class="nav-link">Plans</a>
 
-          <!-- Trimester Stage Pills — hidden behind productRecommendations until roadmap Phase 6 -->
-          <div *appFeature="'productRecommendations'" class="stage-nav-group">
-            <a routerLink="/products/month-3" routerLinkActive="active" class="nav-link stage-pill m3">
-              <span class="pill-dot"></span>Month 3
-            </a>
-            <a routerLink="/products/month-6" routerLinkActive="active" class="nav-link stage-pill m6">
-              <span class="pill-dot"></span>Month 6
-            </a>
-            <a routerLink="/products/month-9" routerLinkActive="active" class="nav-link stage-pill m9">
-              <span class="pill-dot"></span>Month 9
-            </a>
-          </div>
 
           <a routerLink="/checklists" routerLinkActive="active" class="nav-link highlight-link">
             <mat-icon class="icon-sm">fact_check</mat-icon> Checkup Checklist
@@ -169,24 +159,12 @@ import { FeatureDirective } from '../../directives/feature.directive';
             <a *appFeature="'careBooking'" routerLink="/care" (click)="isMobileOpen = false" class="mobile-nav-link">Care</a>
             <a *appFeature="'recordsVault'" routerLink="/records" (click)="isMobileOpen = false" class="mobile-nav-link">Records</a>
             <a *appFeature="'childTracker'" routerLink="/child" (click)="isMobileOpen = false" class="mobile-nav-link">Child</a>
+            <a *appFeature="'joyCircle'" routerLink="/joy-circle" (click)="isMobileOpen = false" class="mobile-nav-link">Joy Circle</a>
+            <a *appFeature="'productRecommendations'" routerLink="/recommendations" (click)="isMobileOpen = false" class="mobile-nav-link">For you</a>
             <a *appFeature="'aiAssistant'" routerLink="/ai" (click)="isMobileOpen = false" class="mobile-nav-link">AI</a>
           }
           <a routerLink="/plans" (click)="isMobileOpen = false" class="mobile-nav-link"><mat-icon class="icon-sm">workspace_premium</mat-icon> Care Plans</a>
 
-          <div *appFeature="'productRecommendations'">
-            <div class="mobile-stages-title">Browse By Pregnancy Milestone:</div>
-            <div class="mobile-stages-grid">
-              <a routerLink="/products/month-3" (click)="isMobileOpen = false" class="mobile-stage-btn m3">
-                <strong>Month 3</strong><span>1st Trimester</span>
-              </a>
-              <a routerLink="/products/month-6" (click)="isMobileOpen = false" class="mobile-stage-btn m6">
-                <strong>Month 6</strong><span>2nd Trimester</span>
-              </a>
-              <a routerLink="/products/month-9" (click)="isMobileOpen = false" class="mobile-stage-btn m9">
-                <strong>Month 9</strong><span>3rd Trimester</span>
-              </a>
-            </div>
-          </div>
           <hr class="mobile-divider">
           <a routerLink="/checklists" (click)="isMobileOpen = false" class="mobile-nav-link">
             <mat-icon class="icon-sm">fact_check</mat-icon> Prenatal Checkup Checklist &amp; Labs

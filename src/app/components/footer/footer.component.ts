@@ -28,9 +28,8 @@ import { FeatureDirective } from '../../directives/feature.directive';
         <div class="footer-col">
           <h4 class="col-title">Your Journey</h4>
           <ul class="footer-links">
-            <li *appFeature="'productRecommendations'"><a routerLink="/products/month-3">Month 3: 1st Trimester Essentials</a></li>
-            <li *appFeature="'productRecommendations'"><a routerLink="/products/month-6">Month 6: 2nd Trimester & Sleep</a></li>
-            <li *appFeature="'productRecommendations'"><a routerLink="/products/month-9">Month 9: Hospital Bag & Delivery</a></li>
+            <li *appFeature="'productRecommendations'"><a routerLink="/recommendations">Recommended for you</a></li>
+            <li *appFeature="'joyCircle'"><a routerLink="/joy-circle">Joy Circle events</a></li>
             <li><a routerLink="/journey">My Journey</a></li>
             <li><a routerLink="/plans">Care Plans</a></li>
             <li><a routerLink="/care">Find a Professional</a></li>

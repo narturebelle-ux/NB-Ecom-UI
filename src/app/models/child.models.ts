@@ -1,41 +1,41 @@
 /**
- * Phase 6 (Child profile + vaccination tracker) — implemented client-side, same reasoning
- * as the other mocked phases. The vaccine schedule below is a standard reference schedule,
- * NOT clinically reviewed for this product — marked PENDING_CLINICAL_REVIEW throughout,
- * same convention as the Journey dashboard's nextActions. Always verify with a pediatrician.
+ * Phase 6 — child profile + vaccination tracker, against the API's planned contract
+ * (nb-ecomm-api-a5, 2026-10-29; final version in UI_INTEGRATION_GUIDE.md).
+ * The vaccine schedule is served by the API as PENDING_CLINICAL_REVIEW — the UI says so and tells
+ * the user to confirm with their pediatrician.
  */
 
+export type ChildSex = 'FEMALE' | 'MALE' | 'UNDISCLOSED';
+
 export interface Child {
-  id: string;
+  id: number;
   name: string;
-  dob: string;
+  dateOfBirth: string;
+  sex: ChildSex | null;
+  createdAt: string;
 }
 
-export interface VaccinationRecord {
-  id: string;
-  childId: string;
+export type VaccinationStatus = 'DONE' | 'OVERDUE' | 'DUE' | 'UPCOMING';
+
+export interface VaccinationItem {
+  scheduleItemId: number;
   vaccineName: string;
-  dueAgeMonths: number;
-  given: boolean;
+  dueAgeDays: number;
+  dueAgeLabel: string;
+  dueDate: string;
+  status: VaccinationStatus;
   givenAt: string | null;
+  givenWhere: string | null;
 }
 
-/** Standard reference schedule (age in months). Illustrative — PENDING_CLINICAL_REVIEW. */
-export const VACCINE_SCHEDULE: { vaccineName: string; dueAgeMonths: number }[] = [
-  { vaccineName: 'BCG', dueAgeMonths: 0 },
-  { vaccineName: 'Hepatitis B (Birth Dose)', dueAgeMonths: 0 },
-  { vaccineName: 'OPV (Birth Dose)', dueAgeMonths: 0 },
-  { vaccineName: 'Pentavalent 1 (DTwP-HepB-Hib)', dueAgeMonths: 1.5 },
-  { vaccineName: 'Rotavirus 1', dueAgeMonths: 1.5 },
-  { vaccineName: 'PCV 1', dueAgeMonths: 1.5 },
-  { vaccineName: 'Pentavalent 2', dueAgeMonths: 2.5 },
-  { vaccineName: 'Rotavirus 2', dueAgeMonths: 2.5 },
-  { vaccineName: 'PCV 2', dueAgeMonths: 2.5 },
-  { vaccineName: 'Pentavalent 3', dueAgeMonths: 3.5 },
-  { vaccineName: 'Rotavirus 3', dueAgeMonths: 3.5 },
-  { vaccineName: 'PCV Booster', dueAgeMonths: 9 },
-  { vaccineName: 'MMR 1', dueAgeMonths: 9 },
-  { vaccineName: 'MMR 2', dueAgeMonths: 15 },
-  { vaccineName: 'DTwP Booster 1', dueAgeMonths: 16 },
-  { vaccineName: 'OPV Booster', dueAgeMonths: 16 }
-];
+export interface VaccinationSchedule {
+  childId: number;
+  schedule: { id: number; version: string; title: string; reviewStatus: string };
+  items: VaccinationItem[];
+}
+
+export const CHILD_SEX_LABELS: Record<ChildSex, string> = {
+  FEMALE: 'Girl',
+  MALE: 'Boy',
+  UNDISCLOSED: 'Prefer not to say'
+};

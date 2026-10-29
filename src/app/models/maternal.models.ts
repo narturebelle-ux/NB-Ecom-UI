@@ -124,8 +124,11 @@ export function isAdminUser(user: User | null | undefined): boolean {
   return !!user?.roles?.some(r => r.endsWith('_ADMIN'));
 }
 
+/** The few product fields the cart needs — filled from the catalog or from a Phase 6 recommendation. */
+export type CartProduct = Pick<Product, 'id' | 'name' | 'price' | 'imageUrl' | 'category'>;
+
 export interface CartItem {
-  product: Product;
+  product: CartProduct;
   quantity: number;
 }
 
