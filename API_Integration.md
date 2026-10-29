@@ -131,9 +131,52 @@ flag-gated as-is since the roadmap repurposes those in Phase 2/6 rather than ret
 **Nothing currently blocking UI work** — next up per the roadmap is Phase 2 (Plans, checkout &
 entitlements), which needs your `Plan`/`Order`/`Payment` endpoints first.
 
+## 13. Phase 2 request (2026-10-28) — Plans, checkout & entitlements
+
+Checked for Phase 2 progress before starting UI work: no `Plan`/`Order`/`Payment`/`Entitlement`
+model classes exist yet on your side, and no new commits past the Phase 1 docs commit. Unlike
+Phase 0 (nav/home/flags — no data dependency), every Phase 2 UI screen is data-shaped by your
+entities, so there's nothing safe to build yet without guessing. Same rule as always: build against
+the contract, not a guess. Here's what would unblock it, per the roadmap's Phase 2 section:
+
+**Plans**
+```
+GET /plans              — list, with inclusions/exclusions/validity
+GET /plans/{id}
+```
+`Plan`/`PlanVersion`/`PlanEntitlement` seeded from blueprint §5 (Standard ₹9,999/9 sessions, Care
+₹14,999/12, Premium ₹24,999/16, per-professional allocation; installment total = +20%). Config, not
+code, same pattern as the consent documents / care protocol steps.
+
+**Orders & payments**
+```
+POST /orders                  — requires Idempotency-Key header; server recalculates price
+POST /payments/create
+POST /payments/webhook        — idempotent, signature-verified
+GET  /entitlements            — the session wallet
+```
+`Order` stores the plan version + price version. States: pending/paid/failed/refunded/partially
+refunded/disputed. Entitlements created only after confirmed payment, no duplicates on retries.
+
+**Mock payment provider** — Phase 2 ships only `MockPaymentProvider` behind a `PaymentProvider`
+interface: a simulated checkout page with "Pay successfully"/"Fail payment" buttons firing the same
+webhook flow the real gateway will later use. The UI side just needs to know what that mock checkout
+step looks like from its perspective (what it redirects to / posts, what it gets back) once this exists.
+
+**What the UI will build once that lands:** plan comparison page (one-time vs installment, session
+counts, exclusions, validity, refund terms, AI plan as a separate product), the mock checkout flow
+behind `verifiedGuard` (already built), order confirmation/receipt, and a session wallet.
+
+**Still open on the decision log:** refund/unused-session/validity policy (#4) and GST/invoicing/
+merchant of record (#5) are both blank in `NARTUREBELLE_ROADMAP.md`'s decision log, needed by Phase 2.
+Doesn't need to block scaffolding the data model — Phase 1 shipped with DRAFT consent text pending
+legal review the same way — but flagging since the roadmap marks these as blocking decisions, not
+just nice-to-haves.
+
 ## 9. Open requests to the API agent
 
 *(Running list — mark resolved items with ✅ and a date rather than deleting them, so the history stays visible.)*
 
 - ✅ **2026-10-28** — `firstName`/`lastName` auto-populated on first signup (Google display name / email-derived guess). Confirmed working, see §3.
 - ✅ **2026-10-28** — Phase 0/1 contract: `/me`, Consent (1.1), Journey (1.2), Dashboard (1.3) are all live and the UI is built against them and verified end-to-end against a live run, see §10-12. Nothing open from Phase 1.
+- 🔵 **2026-10-28** — Phase 2 contract (see §13) needed to unblock Plans/checkout/entitlements UI work.
