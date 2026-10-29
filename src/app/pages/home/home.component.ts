@@ -4,6 +4,7 @@ import { RouterLink } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { ApiService } from '../../services/api.service';
 import { CommerceService } from '../../services/commerce.service';
+import { OnboardingService } from '../../services/onboarding.service';
 import { RevealDirective } from '../../directives/reveal.directive';
 import { Plan } from '../../models/commerce.models';
 
@@ -35,7 +36,7 @@ import { Plan } from '../../models/commerce.models';
           </p>
           <div class="hero-ctas animate-in" style="animation-delay: 180ms">
             @if (api.currentUser()) {
-              <a routerLink="/journey" class="btn btn-primary btn-lg">Go to my journey <mat-icon class="icon-sm">arrow_forward</mat-icon></a>
+              <a [routerLink]="onboarding.onboarded() ? '/journey' : '/onboarding'" class="btn btn-primary btn-lg">{{ onboarding.onboarded() ? 'Go to my journey' : 'Continue onboarding' }} <mat-icon class="icon-sm">arrow_forward</mat-icon></a>
             } @else {
               <a routerLink="/auth/login" class="btn btn-primary btn-lg">Start your journey <mat-icon class="icon-sm">arrow_forward</mat-icon></a>
             }
@@ -243,9 +244,9 @@ import { Plan } from '../../models/commerce.models';
       <div class="container">
         <div class="final-card" appReveal>
           <h2>Wherever you are in your journey, start here.</h2>
-          <p>Create your account in a minute. Your stage and due date can come later.</p>
+          <p>Create your account in a minute, then tell us a little about you so we can suggest the right care.</p>
           @if (api.currentUser()) {
-            <a routerLink="/journey" class="btn btn-light btn-lg">Go to my journey</a>
+            <a [routerLink]="onboarding.onboarded() ? '/journey' : '/onboarding'" class="btn btn-light btn-lg">{{ onboarding.onboarded() ? 'Go to my journey' : 'Continue onboarding' }}</a>
           } @else {
             <a routerLink="/auth/login" class="btn btn-light btn-lg">Get started</a>
           }
@@ -429,6 +430,7 @@ import { Plan } from '../../models/commerce.models';
 export class HomeComponent implements OnInit {
   api = inject(ApiService);
   private commerce = inject(CommerceService);
+  onboarding = inject(OnboardingService);
 
   private plans = signal<Plan[]>([]);
   lowestPrice = computed(() => {
@@ -445,8 +447,8 @@ export class HomeComponent implements OnInit {
 
   readonly steps = [
     { title: 'Create your account', text: 'Sign in with Google, email or your phone number, then review and accept our terms and privacy notice.' },
-    { title: 'Tell us where you are', text: 'Set your stage — and your due date if you like — whenever you’re ready. Your care timeline adapts from there.' },
-    { title: 'Meet your care team', text: 'Choose a plan, book sessions with verified professionals, and keep everything in one place.' }
+    { title: 'Tell us about you', text: 'A short set of questions about your stage, due date and the support you want. We use it to suggest the plan that fits you best.' },
+    { title: 'Meet your care team', text: 'Choose your plan, talk to your care coordinator on a short onboarding call, sign your documents — then book sessions with verified professionals.' }
   ];
 
   readonly team = [
@@ -462,7 +464,7 @@ export class HomeComponent implements OnInit {
     { q: 'Does NartureBelle replace my own doctor?', a: 'No. NartureBelle helps you find and coordinate care with verified professionals, but it isn’t a replacement for your own doctor’s or obstetrician’s clinical advice, and it isn’t a diagnostic service.' },
     { q: 'What should I do in an emergency?', a: 'NartureBelle is not emergency care. In a medical emergency, contact your local emergency services or go to the nearest hospital immediately.' },
     { q: 'Can I join late in pregnancy, or after my baby is born?', a: 'Yes. You can start at any stage — pregnancy, delivery, postpartum or early childhood. Your timeline begins from where you are and never marks earlier stages as missed.' },
-    { q: 'Do I have to share my due date when I sign up?', a: 'No. Sign-up only asks for your account and your agreement to our terms and privacy notice. Your stage and due date are optional, and you can add or change them any time in My Journey.' },
+    { q: 'What happens after I sign up?', a: 'You’ll answer a few questions about your stage and the support you’d like, see a recommended plan, and — once you’ve chosen and paid — schedule a short onboarding call and sign your onboarding documents. Then your full care journey opens up. You can update your details any time.' },
     { q: 'How are professionals verified?', a: 'Every professional’s credentials are reviewed before they can be booked. Only verified, active professionals appear in the directory.' },
     { q: 'Who can see my health records?', a: 'You decide. You can share a record with a specific professional for a set period, revoke access whenever you like, and see a history of who has viewed it.' }
   ];

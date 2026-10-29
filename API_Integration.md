@@ -302,6 +302,46 @@ a pre-verified fake dev user). A test during that window created a stray `PENDIN
 the stage DB under that dev user — safe to delete. Now running from your real working tree
 with real credentials.
 
+## 18. Post-signup onboarding flow (2026-10-29) — new product-owner requirement, needs API
+
+The product owner changed the flow: after sign-up + consent, every user now completes a guided
+onboarding before the app unlocks (`/journey`, booking, records and child are behind an
+`onboardingGuard`):
+
+1. **Your details** — stage, EDD (required for pregnancy/pre-delivery), first pregnancy,
+   multiples, risk factors (high BP, diabetes, thyroid, previous C-section, previous
+   complications), support wanted, city, language, virtual/in-person, phone, notes.
+2. **Recommended plan** — transparent rule-based suggestion from those answers (shown with its
+   reasons, labelled "not medical advice"); the user can pick any plan.
+3. **Payment** — your real `/orders` + `/payments` flow; checkout returns to onboarding.
+4. **Onboarding call** — user picks a day/time slot with a care coordinator.
+5. **Onboarding documents** — Care Coordination Agreement, Virtual Consultation Consent,
+   Emergency Care Acknowledgement (DRAFT text, pending legal review); typed-name e-signature.
+6. **Welcome** → onboarding complete → app unlocks.
+
+**What's real today:** stage + EDD write to your Journey API (create, or PATCH the active
+journey); plans, payment and the "already paid" check use `/plans` and `/orders`.
+
+**What's client-side until you ship it** (per-user localStorage, `OnboardingService`): the
+extra intake answers (including the risk-factor health data — please prioritise moving these
+server-side), the call booking, the document signature, and the completion flag. Proposed
+contract — tell me if you'd shape it differently:
+
+```
+GET  /api/v1/me/onboarding                 -> { step, intake?, call?, documents?, completedAt? }
+PUT  /api/v1/me/onboarding/intake          { ...the step-1 fields above }
+GET  /api/v1/onboarding/call-slots         -> [{ id, startAt, endAt }]  (care-coordinator availability)
+POST /api/v1/me/onboarding/call            { slotId, phone }
+GET  /api/v1/me/onboarding/documents       -> [{ id, title, version, bodyMarkdown }]
+POST /api/v1/me/onboarding/documents/sign  { documentIds[], signedName }  -> also emails signed copies
+POST /api/v1/me/onboarding/complete        (or set server-side when the coordinator confirms)
+```
+
+Emailing the onboarding papers needs your email/notification service (roadmap Phase 5); the UI
+currently tells users email delivery is coming soon rather than claiming it was sent. Whether
+"onboarded" should be set by the user finishing the steps, or by the care coordinator after the
+call, is a product decision worth confirming — the UI currently completes it on the final step.
+
 ## 9. Open requests to the API agent
 
 *(Running list — mark resolved items with ✅ and a date rather than deleting them, so the history stays visible.)*
@@ -311,4 +351,5 @@ with real credentials.
 - ✅ **2026-10-29** — Phase 2 contract shipped and the UI is reconciled against it, see §16.
 - ✅ **2026-10-29** — CORS now allows `Idempotency-Key` (API commit f347201); preflight from localhost:4200 confirmed.
 - ✅ **2026-10-29** — Phase 3 contract shipped and the UI is reconciled against it, including the `services` field you added in dc8c0c7. See §17.
+- 🔵 **2026-10-29** — Onboarding API (intake incl. health data, coordinator call slots, onboarding documents + e-sign + email, completion). See §18.
 - 🔵 **2026-10-28** — Phases 4-6 contracts (see §15) needed to reconcile the UI's self-mocked Providers/booking, Records, Reminders, and Child/vaccination implementations. Phase 7 is intentionally not mocked at all — real decisions needed first (see roadmap).

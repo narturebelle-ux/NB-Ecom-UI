@@ -3,6 +3,7 @@ import { RouterLink, RouterLinkActive, Router } from '@angular/router';
 import { ApiService } from '../../services/api.service';
 import { FirebaseAuthService } from '../../services/firebase-auth.service';
 import { NotificationService } from '../../services/notification.service';
+import { OnboardingService } from '../../services/onboarding.service';
 import { Reminder } from '../../models/notification.models';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
@@ -33,8 +34,16 @@ import { FeatureDirective } from '../../directives/feature.directive';
           </div>
         </a>
 
-        <!-- Desktop Navigation Links — signed-in users only; guests only need sign in / get started -->
-        @if (api.currentUser()) {
+        <!-- Desktop Navigation Links — signed-in users only; guests only need sign in / get started.
+             Until onboarding is complete, the only destination is onboarding itself. -->
+        @if (api.currentUser() && !onboarding.onboarded()) {
+          <nav class="nav-links">
+            <a routerLink="/onboarding" routerLinkActive="active" class="nav-link onboarding-link">
+              <mat-icon class="icon-sm">flag</mat-icon> Complete your onboarding
+            </a>
+          </nav>
+        }
+        @if (api.currentUser() && onboarding.onboarded()) {
         <nav class="nav-links">
           <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="nav-link">Home</a>
           <a routerLink="/journey" routerLinkActive="active" class="nav-link">My Journey</a>
@@ -151,6 +160,11 @@ import { FeatureDirective } from '../../directives/feature.directive';
       <!-- Mobile Navigation Drawer -->
       @if (isMobileOpen && api.currentUser()) {
         <div class="mobile-menu glass">
+          @if (!onboarding.onboarded()) {
+            <a routerLink="/onboarding" (click)="isMobileOpen = false" class="mobile-nav-link onboarding-link">
+              <mat-icon class="icon-sm">flag</mat-icon> Complete your onboarding
+            </a>
+          } @else {
           <a routerLink="/" (click)="isMobileOpen = false" class="mobile-nav-link">Home</a>
 
           @if (api.currentUser()) {
@@ -186,6 +200,7 @@ import { FeatureDirective } from '../../directives/feature.directive';
           <a *appFeature="'legacyLeadForms'" routerLink="/doctors-live" (click)="isMobileOpen = false" class="mobile-nav-link">
             OB-GYN Live Webinars
           </a>
+          }
           <hr class="mobile-divider">
           @if (api.currentUser(); as user) {
             <a routerLink="/profile" (click)="isMobileOpen = false" class="mobile-nav-link profile-link">
@@ -324,6 +339,7 @@ import { FeatureDirective } from '../../directives/feature.directive';
     }
 
     .highlight-link { color: var(--sage-800); font-weight: 700; }
+    .onboarding-link { color: var(--sage-900); font-weight: 700; background: var(--sage-50); border: 1px solid var(--sage-200); border-radius: var(--radius-full); padding: 0.4rem 0.9rem; }
     .nurse-link { color: var(--blush-800); font-weight: 700; }
     .doctor-link { color: #a32222; font-weight: 700; }
 
@@ -553,6 +569,7 @@ export class NavbarComponent {
   api = inject(ApiService);
   firebaseAuth = inject(FirebaseAuthService);
   notifications = inject(NotificationService);
+  onboarding = inject(OnboardingService);
   router = inject(Router);
 
   isMobileOpen = false;

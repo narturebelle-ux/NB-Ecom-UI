@@ -204,7 +204,12 @@ export class CheckoutComponent implements OnInit {
     this.commerce.completeMockPayment(succeed ? payment.mockSucceedPath : payment.mockFailPath).subscribe({
       next: (res) => {
         if (res.status === 'PAYMENT_SUCCEEDED') {
-          this.router.navigate(['/orders', order.id]);
+          // Mid-onboarding purchases continue onboarding (next: schedule the call) instead of the receipt.
+          if (this.route.snapshot.queryParamMap.get('from') === 'onboarding') {
+            this.router.navigate(['/onboarding']);
+          } else {
+            this.router.navigate(['/orders', order.id]);
+          }
         } else {
           this.stage.set('failed');
         }

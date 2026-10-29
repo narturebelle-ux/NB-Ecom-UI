@@ -10,6 +10,7 @@ import { LoginComponent } from './pages/login/login.component';
 import { VerifyEmailComponent } from './pages/verify-email/verify-email.component';
 import { featureGuard } from './guards/feature.guard';
 import { authGuard, verifiedGuard } from './guards/auth.guard';
+import { onboardingGuard } from './guards/onboarding.guard';
 
 export const routes: Routes = [
   { path: '', component: HomeComponent, title: 'NartureBelle™ | Professional-Led Care, Pregnancy to Postpartum' },
@@ -58,13 +59,20 @@ export const routes: Routes = [
   {
     path: 'journey',
     title: 'My Journey | NartureBelle',
-    canActivate: [authGuard],
+    canActivate: [onboardingGuard],
     loadComponent: () => import('./pages/journey/journey.component').then(m => m.JourneyComponent)
   },
 
-  // Phase 2 — Plans, checkout & entitlements. Implemented client-side against a
-  // self-authored mock contract (CommerceService) since the API hasn't shipped
-  // Plan/Order/Payment endpoints yet — see API_Integration.md §13/14.
+  // Post-signup onboarding: details → recommended plan → payment → onboarding call →
+  // signed documents. Journey, booking, records and child stay locked (onboardingGuard) until done.
+  {
+    path: 'onboarding',
+    title: 'Welcome | NartureBelle',
+    canActivate: [verifiedGuard],
+    loadComponent: () => import('./pages/onboarding/onboarding.component').then(m => m.OnboardingComponent)
+  },
+
+  // Phase 2 — Plans, checkout & entitlements, real API (UI_INTEGRATION_GUIDE.md §8).
   {
     path: 'plans',
     title: 'Care Plans | NartureBelle',
@@ -88,13 +96,13 @@ export const routes: Routes = [
   {
     path: 'care/bookings',
     title: 'My Bookings | NartureBelle',
-    canActivate: [verifiedGuard],
+    canActivate: [verifiedGuard, onboardingGuard],
     loadComponent: () => import('./pages/bookings/bookings.component').then(m => m.BookingsComponent)
   },
   {
     path: 'care/:id',
     title: 'Provider Profile | NartureBelle',
-    canActivate: [verifiedGuard],
+    canActivate: [verifiedGuard, onboardingGuard],
     loadComponent: () => import('./pages/provider-profile/provider-profile.component').then(m => m.ProviderProfileComponent)
   },
   {
@@ -108,13 +116,13 @@ export const routes: Routes = [
   {
     path: 'records/access-log',
     title: 'Access History | NartureBelle',
-    canActivate: [authGuard],
+    canActivate: [onboardingGuard],
     loadComponent: () => import('./pages/records-access-log/records-access-log.component').then(m => m.RecordsAccessLogComponent)
   },
   {
     path: 'records',
     title: 'Records Vault | NartureBelle',
-    canActivate: [authGuard],
+    canActivate: [onboardingGuard],
     loadComponent: () => import('./pages/records/records.component').then(m => m.RecordsComponent)
   },
 
@@ -123,7 +131,7 @@ export const routes: Routes = [
   {
     path: 'child',
     title: 'Child & Vaccination Tracker | NartureBelle',
-    canActivate: [authGuard],
+    canActivate: [onboardingGuard],
     loadComponent: () => import('./pages/child/child.component').then(m => m.ChildComponent)
   },
 
