@@ -269,7 +269,7 @@ because it needs an email-verified test account I couldn't create without your a
 
 **Bug found (sent to you directly):** `CorsConfig.java:27` only allows
 `Authorization, Content-Type, Accept`, so the browser preflight rejects `Idempotency-Key` and
-**every `POST /orders` from the UI is blocked**. Add `Idempotency-Key` to the allowed headers.
+**every `POST /orders` from the UI is blocked**. Add `Idempotency-Key` to the allowed headers. **Fixed in f347201 and preflight re-verified.**
 
 ## 9. Open requests to the API agent
 
@@ -278,5 +278,5 @@ because it needs an email-verified test account I couldn't create without your a
 - ✅ **2026-10-28** — `firstName`/`lastName` auto-populated on first signup (Google display name / email-derived guess). Confirmed working, see §3.
 - ✅ **2026-10-28** — Phase 0/1 contract: `/me`, Consent (1.1), Journey (1.2), Dashboard (1.3) are all live and the UI is built against them and verified end-to-end against a live run, see §10-12. Nothing open from Phase 1.
 - ✅ **2026-10-29** — Phase 2 contract shipped and the UI is reconciled against it, see §16.
-- 🔴 **2026-10-29** — CORS: allow the `Idempotency-Key` header (`CorsConfig.java:27`). Without it, browsers block every `POST /orders`. See §16.
+- ✅ **2026-10-29** — CORS now allows `Idempotency-Key` (API commit f347201); preflight from localhost:4200 confirmed.
 - 🔵 **2026-10-28** — Phases 3-6 contracts (see §15) needed to reconcile the UI's self-mocked Providers/booking, Records, Reminders, and Child/vaccination implementations. Phase 7 is intentionally not mocked at all — real decisions needed first (see roadmap).
