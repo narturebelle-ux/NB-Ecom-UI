@@ -27,7 +27,7 @@ export interface PlanRecommendation {
 }
 
 /** Fields that may be kept in the browser — nothing health-related. */
-type LocalState = Pick<OnboardingState, 'callRequested' | 'recommendedPlanCode' | 'paidOrderId' | 'documents' | 'onboardedAt'>;
+type LocalState = Pick<OnboardingState, 'recommendedPlanCode' | 'paidOrderId' | 'documents' | 'onboardedAt'>;
 
 /**
  * Drives the post-signup onboarding flow (see onboarding.models.ts).
@@ -85,6 +85,7 @@ export class OnboardingService {
           ...this.state(),
           intake: status.intake && journey ? this.toAnswers(status.intake, journey) : undefined,
           call: status.call ? this.toCall(status.call, status.intake?.phone ?? '') : undefined,
+          callRequested: !!status.callbackRequestedAt,
           ...(status.completedAt ? { onboardedAt: status.completedAt } : {})
         });
       }),
@@ -119,13 +120,12 @@ export class OnboardingService {
   }
 
   /**
-   * Fallback when no call slots are open: POST /me/onboarding/callback-request creates a server
-   * record a coordinator acts on. GET /me/onboarding doesn't report it back, so the "requested"
-   * flag that moves the stepper on is remembered locally (no health data in it).
+   * Fallback when no call slot suits: POST /me/onboarding/callback-request creates a server record
+   * a coordinator acts on; GET /me/onboarding reports it back as callbackRequestedAt.
    */
   requestCallback(note?: string): Observable<void> {
     return this.http.post(`${this.baseUrl}/me/onboarding/callback-request`, note ? { note } : {}).pipe(
-      tap(() => this.patchLocal({ callRequested: true })),
+      tap(() => this.state.set({ ...this.state(), callRequested: true })),
       map(() => undefined)
     );
   }
@@ -231,7 +231,6 @@ export class OnboardingService {
     this.state.set(next);
     if (!id) return;
     const local: LocalState = {
-      callRequested: next.callRequested,
       recommendedPlanCode: next.recommendedPlanCode,
       paidOrderId: next.paidOrderId,
       documents: next.documents,
@@ -244,7 +243,7 @@ export class OnboardingService {
     try {
       const raw = localStorage.getItem(this.key(id));
       if (!raw) return {};
-      const { intake, call, ...rest } = JSON.parse(raw);
+      const { intake, call, callRequested, ...rest } = JSON.parse(raw);
       return rest;
     } catch {
       return {};

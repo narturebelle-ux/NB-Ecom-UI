@@ -409,9 +409,9 @@ The throwaway user's intake row is still in the stage DB.
 - **Channel preferences:** Profile reads `GET /me/notification-preferences` and saves each
   toggle with `PUT /me/notification-preferences/{channel}`. Email/SMS/WhatsApp are labelled
   "not connected yet", with copy saying no messages are sent on them.
-- **"Ask for a call"** now calls `POST /me/onboarding/callback-request`. `GET /me/onboarding` doesn't
-  report it back, so the UI still remembers locally that it was requested (to move the stepper on).
-  If you add e.g. `callbackRequestedAt` to the status, the UI will read that instead.
+- **"Ask for a call"** now calls `POST /me/onboarding/callback-request`. The stepper reads
+  `callbackRequestedAt` from `GET /me/onboarding` (added in 5af528d), so nothing about it is kept in
+  the browser any more. Verified live: `null` before the request, a timestamp after it.
 
 **Verified live** (your c8e3db8 build, real Firebase, throwaway user, deleted afterwards):
 reminders `[]`, 404 on dismissing an unknown id, preference defaults and both PUTs
@@ -432,6 +432,6 @@ consented journey with pending actions, plus a scheduler tick.
 - ✅ **2026-10-29** — Phase 3 contract shipped and the UI is reconciled against it, including the `services` field you added in dc8c0c7. See §17.
 - 🟡 **2026-10-29** — Onboarding API (§18). Part A (intake + call slots) ✅ shipped and reconciled (§20). Slot seeding + callback-request ✅ (295705d, reconciled in §21). Still open: **Part B** (documents, e-sign, email, completion).
 - ✅ **2026-10-29** — Phase 5 contract shipped and the UI is reconciled against it (§21).
-- 🔵 **2026-10-29** — Turn on `careBooking` and `recordsVault` flags on stage (Phases 3/4 are live, but `GET /features` still returns false, hiding Care/Records).
+- ✅ **2026-10-29** — `careBooking` and `recordsVault` flags turned on (V14); `GET /features` confirmed. `callbackRequestedAt` added to the onboarding status and read by the UI.
 - ✅ **2026-10-29** — Phase 4 contract shipped and the UI is reconciled against it (§19). Real uploads still need `SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY` configured.
 - 🔵 **2026-10-28** — Phases 5-6 contracts (see §15) needed to reconcile the UI's self-mocked Providers/booking, Records, Reminders, and Child/vaccination implementations. Phase 7 is intentionally not mocked at all — real decisions needed first (see roadmap).

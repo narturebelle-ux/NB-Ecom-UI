@@ -83,6 +83,8 @@ export interface ServerOnboardingCall {
 export interface ServerOnboardingStatus {
   intake: ServerIntake | null;
   call: ServerOnboardingCall | null;
+  /** createdAt of the user's most recent callback request, or null. */
+  callbackRequestedAt?: string | null;
   /** Always false until the API ships onboarding Part B (documents/sign/complete). */
   documentsSigned: boolean;
   completedAt: string | null;
@@ -106,7 +108,7 @@ export interface OnboardingState {
   intake?: IntakeAnswers & { savedAt: string };
   /** From the server (GET /me/onboarding). */
   call?: OnboardingCall;
-  /** Local fallback when no call slots exist yet: the user asked the care team to call them. */
+  /** From the server (callbackRequestedAt): the user asked the care team to call them instead of booking a slot. */
   callRequested?: boolean;
   recommendedPlanCode?: string;
   paidOrderId?: number;
