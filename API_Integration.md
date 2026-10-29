@@ -369,6 +369,35 @@ unverified user, and CORS preflights for POST/PATCH/DELETE from localhost:4200.
 **Not verified:** a real upload or download — `SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY`
 aren't configured, as you noted, and testing it would also need an email-verified account.
 
+## 20. Onboarding Part A reconciled (2026-10-29)
+
+Your §11 (commits 7d08f52, e6a1ebd) replaced the browser-only intake and call steps.
+
+- **Intake:** stage + EDD still go to the Journey API. Everything else goes to
+  `PUT /me/onboarding/intake` as a full upsert on every save. Mapping: `supportNeeds` →
+  `supportWanted` (same enum strings), `consultationMode` `VIRTUAL`→`VIRTUAL`,
+  `IN_PERSON`→`PHYSICAL`, `EITHER`→`null`. Empty strings are sent as `null`.
+- **Health answers are no longer stored in the browser.** `/onboarding` calls
+  `GET /me/onboarding` (plus the active journey) every time it opens. Intake answers saved by the
+  old browser-only version are pushed up once, then deleted from localStorage.
+- **Call:** real `GET /onboarding/call-slots` grouped by local day →
+  `POST /me/onboarding/call {slotId}`. `ONBOARDING_CALL_SLOT_NOT_AVAILABLE` reloads the slots
+  with a "that time was just taken" message, and `ONBOARDING_CALL_ALREADY_BOOKED` re-syncs.
+- **Fallback when there are no slots** (which is the case on stage today): "Ask for a call". The care
+  coordinator calls the user on their intake phone number. This is a **browser-only flag**
+  (`callRequested`) for now, and nothing reaches the server. To make it real, either seed slots or
+  add something like `POST /me/onboarding/callback-request` so coordinators can see the request.
+- Plan choice, payment (read from `GET /orders`), document signing and `onboardedAt` are still
+  in the browser until Part B ships. If `GET /me/onboarding` returns a `completedAt`, the UI
+  takes it as the onboarded state.
+
+**Verified live** (your e6a1ebd build, real Firebase verification, throwaway user, deleted
+afterwards): 403 `CONSENT_REQUIRED` with `pending` before consent; 200 empty status after
+consent; `PUT` intake create + replace (including `preferredModality: null`); status read-back;
+`call-slots` → `[]`; 409 `ONBOARDING_CALL_SLOT_NOT_AVAILABLE` for a bogus slot; CORS preflight
+for PUT from localhost:4200. **Not verified:** a successful call booking, because there are no slots.
+The throwaway user's intake row is still in the stage DB.
+
 ## 9. Open requests to the API agent
 
 *(Running list — mark resolved items with ✅ and a date rather than deleting them, so the history stays visible.)*
@@ -378,6 +407,6 @@ aren't configured, as you noted, and testing it would also need an email-verifie
 - ✅ **2026-10-29** — Phase 2 contract shipped and the UI is reconciled against it, see §16.
 - ✅ **2026-10-29** — CORS now allows `Idempotency-Key` (API commit f347201); preflight from localhost:4200 confirmed.
 - ✅ **2026-10-29** — Phase 3 contract shipped and the UI is reconciled against it, including the `services` field you added in dc8c0c7. See §17.
-- 🔵 **2026-10-29** — Onboarding API (intake incl. health data, coordinator call slots, onboarding documents + e-sign + email, completion). See §18.
+- 🟡 **2026-10-29** — Onboarding API (§18). Part A (intake + call slots) ✅ shipped and reconciled (§20). Still open: **Part B** (documents, e-sign, email, completion), **seed some call slots on stage**, and optionally a callback-request endpoint for the no-slots fallback.
 - ✅ **2026-10-29** — Phase 4 contract shipped and the UI is reconciled against it (§19). Real uploads still need `SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY` configured.
 - 🔵 **2026-10-28** — Phases 5-6 contracts (see §15) needed to reconcile the UI's self-mocked Providers/booking, Records, Reminders, and Child/vaccination implementations. Phase 7 is intentionally not mocked at all — real decisions needed first (see roadmap).

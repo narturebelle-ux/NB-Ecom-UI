@@ -4,10 +4,9 @@ import { JourneyStatus } from './maternal.models';
  * Post-signup onboarding (product-owner flow, 2026-10-29):
  * intake → recommended plan → payment → onboarding call → signed documents → onboarded.
  *
- * Stage + EDD persist to the real Journey API and payment to the real Orders API. The rest
- * (extra intake answers, call booking, document signing, completion) has no API yet and is
- * kept client-side per user until the onboarding endpoints requested in API_Integration.md
- * §18 exist.
+ * Stage + EDD persist to the Journey API, the other intake answers and the call booking to the
+ * onboarding API (Part A, UI_INTEGRATION_GUIDE.md §11), payment to the Orders API. Document
+ * signing and completion stay client-side until onboarding Part B ships.
  */
 
 export type OnboardingStep = 'intake' | 'plan' | 'call' | 'documents' | 'welcome' | 'done';
@@ -56,6 +55,46 @@ export interface OnboardingCall {
   phone: string;
 }
 
+// --- Server shapes (UI_INTEGRATION_GUIDE.md §11, onboarding Part A) ---
+
+export interface ServerIntake {
+  id: number;
+  firstPregnancy: boolean | null;
+  multiples: boolean | null;
+  riskFactors: RiskFactor[];
+  supportWanted: string[];
+  city: string | null;
+  language: string | null;
+  preferredModality: 'VIRTUAL' | 'PHYSICAL' | null;
+  phone: string | null;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ServerOnboardingCall {
+  id: number;
+  slotId: number;
+  scheduledStart: string;
+  scheduledEnd: string;
+  createdAt: string;
+}
+
+export interface ServerOnboardingStatus {
+  intake: ServerIntake | null;
+  call: ServerOnboardingCall | null;
+  /** Always false until the API ships onboarding Part B (documents/sign/complete). */
+  documentsSigned: boolean;
+  completedAt: string | null;
+}
+
+export interface OnboardingCallSlot {
+  id: number;
+  startAt: string;
+  endAt: string;
+  status: string;
+}
+
 export interface SignedDocuments {
   signedName: string;
   signedAt: string;
@@ -63,10 +102,15 @@ export interface SignedDocuments {
 }
 
 export interface OnboardingState {
+  /** From the server (GET /me/onboarding + the active Journey) — never persisted in the browser. */
   intake?: IntakeAnswers & { savedAt: string };
+  /** From the server (GET /me/onboarding). */
+  call?: OnboardingCall;
+  /** Local fallback when no call slots exist yet: the user asked the care team to call them. */
+  callRequested?: boolean;
   recommendedPlanCode?: string;
   paidOrderId?: number;
-  call?: OnboardingCall;
+  /** Local until onboarding Part B ships. */
   documents?: SignedDocuments;
   onboardedAt?: string;
 }

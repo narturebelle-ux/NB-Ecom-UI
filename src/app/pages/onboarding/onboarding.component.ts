@@ -13,6 +13,7 @@ import {
   IntakeAnswers,
   ONBOARDING_DOCUMENTS,
   ONBOARDING_STEPS,
+  OnboardingCallSlot,
   RISK_FACTOR_LABELS,
   RiskFactor,
   SUPPORT_NEED_LABELS,
@@ -47,6 +48,15 @@ const STAGES: JourneyStatus[] = ['PREGNANCY', 'PRE_DELIVERY', 'POSTPARTUM', 'CHI
         </ol>
 
         <div class="ob-card glass animate-in">
+          @if (loading()) {
+            <div class="skeleton" style="height: 22px; width: 55%; margin-bottom: 14px"></div>
+            <div class="skeleton" style="height: 14px; width: 80%; margin-bottom: 28px"></div>
+            <div class="skeleton" style="height: 120px"></div>
+          } @else if (loadError()) {
+            <h2>We couldn’t load your progress</h2>
+            <p class="sub">{{ loadError() }}</p>
+            <div class="actions"><button class="btn btn-primary" (click)="load()"><mat-icon class="icon-sm">refresh</mat-icon> Try again</button></div>
+          } @else {
           @switch (current()) {
 
             <!-- ======== 1. INTAKE ======== -->
@@ -199,33 +209,45 @@ const STAGES: JourneyStatus[] = ['PREGNANCY', 'PRE_DELIVERY', 'POSTPARTUM', 'CHI
               <h2>Schedule your onboarding call</h2>
               <p class="sub">A short call with your care coordinator to review your details and plan, and answer your questions.</p>
 
-              <span class="label">Choose a day</span>
-              <div class="chip-row">
-                @for (d of callDays; track d.toISOString()) {
-                  <button type="button" class="day-chip" [class.selected]="sameDay(d, callDay())" (click)="callDay.set(d); callTime.set(null)">
-                    <span>{{ d | date:'EEE' }}</span><strong>{{ d | date:'d' }}</strong><span>{{ d | date:'MMM' }}</span>
-                  </button>
-                }
-              </div>
-
-              @if (callDay()) {
-                <span class="label">Choose a time</span>
-                <div class="chip-row wrap">
-                  @for (t of callTimes; track t.key) {
-                    <button type="button" class="time-chip" [class.selected]="callTime() === t.key" (click)="callTime.set(t.key)">{{ t.label }}</button>
+              @if (slotsLoading()) {
+                <div class="skeleton" style="height: 64px; margin: 16px 0"></div>
+              } @else if (callDays().length) {
+                <span class="label">Choose a day</span>
+                <div class="chip-row">
+                  @for (d of callDays(); track d) {
+                    <button type="button" class="day-chip" [class.selected]="callDay() === d" (click)="callDay.set(d); callSlotId.set(null)">
+                      <span>{{ d | date:'EEE' }}</span><strong>{{ d | date:'d' }}</strong><span>{{ d | date:'MMM' }}</span>
+                    </button>
                   }
                 </div>
+
+                @if (callDay()) {
+                  <span class="label">Choose a time</span>
+                  <div class="chip-row wrap">
+                    @for (s of slotsForDay(); track s.id) {
+                      <button type="button" class="time-chip" [class.selected]="callSlotId() === s.id" (click)="callSlotId.set(s.id)">{{ s.startAt | date:'h:mm a' }}</button>
+                    }
+                  </div>
+                }
+
+                @if (errorMsg()) { <p class="error-msg">{{ errorMsg() }}</p> }
+
+                <div class="actions split">
+                  <button class="btn-link" (click)="requestCallback()"><mat-icon class="icon-sm">phone_callback</mat-icon> None of these work — call me instead</button>
+                  <button class="btn btn-primary btn-lg" [disabled]="!callSlotId() || saving()" (click)="confirmCall()">Confirm call <mat-icon class="icon-sm">arrow_forward</mat-icon></button>
+                </div>
+              } @else {
+                <div class="callback-box">
+                  <mat-icon>phone_callback</mat-icon>
+                  <div>
+                    <strong>We’ll call you to find a time</strong>
+                    <p class="hint">Our care coordinators haven’t published open call times yet. Ask for a call and they’ll ring you on {{ ob.state().intake?.phone ? '+91 ' + ob.state().intake?.phone : 'the number you gave us' }} within one working day.</p>
+                  </div>
+                </div>
+                <div class="actions">
+                  <button class="btn btn-primary btn-lg" (click)="requestCallback()">Ask for a call <mat-icon class="icon-sm">arrow_forward</mat-icon></button>
+                </div>
               }
-
-              <div class="field">
-                <label for="callphone">We’ll call you on</label>
-                <div class="phone-row"><span>+91</span><input id="callphone" class="form-control" maxlength="10" [(ngModel)]="callPhone" /></div>
-              </div>
-              <p class="proto"><mat-icon class="icon-sm">info</mat-icon> Prototype: call booking isn’t connected to the care team’s calendar yet.</p>
-
-              <div class="actions">
-                <button class="btn btn-primary btn-lg" [disabled]="!callDay() || !callTime() || !phoneValid(callPhone)" (click)="confirmCall()">Confirm call <mat-icon class="icon-sm">arrow_forward</mat-icon></button>
-              </div>
             }
 
             <!-- ======== 4. DOCUMENTS ======== -->
@@ -271,13 +293,14 @@ const STAGES: JourneyStatus[] = ['PREGNANCY', 'PRE_DELIVERY', 'POSTPARTUM', 'CHI
               <div class="summary">
                 <div><mat-icon>eco</mat-icon><span>Stage</span><strong>{{ stageLabel(ob.state().intake!.stage) }}</strong></div>
                 <div><mat-icon>workspace_premium</mat-icon><span>Plan</span><strong>Paid · order #{{ ob.state().paidOrderId }}</strong></div>
-                <div><mat-icon>call</mat-icon><span>Onboarding call</span><strong>{{ ob.state().call!.startsAt | date:'EEE, MMM d · h:mm a' }}</strong></div>
+                <div><mat-icon>call</mat-icon><span>Onboarding call</span><strong>{{ ob.state().call ? (ob.state().call!.startsAt | date:'EEE, MMM d · h:mm a') : 'We’ll call you to arrange it' }}</strong></div>
                 <div><mat-icon>draw</mat-icon><span>Documents</span><strong>Signed {{ ob.state().documents!.signedAt | date:'mediumDate' }}</strong></div>
               </div>
               <div class="actions center">
                 <button class="btn btn-primary btn-lg" (click)="finish()">Go to my journey <mat-icon class="icon-sm">arrow_forward</mat-icon></button>
               </div>
             }
+          }
           }
         </div>
       </div>
@@ -356,6 +379,9 @@ const STAGES: JourneyStatus[] = ['PREGNANCY', 'PRE_DELIVERY', 'POSTPARTUM', 'CHI
     .day-chip strong { font-size: 1.2rem; color: var(--sage-900); }
     .day-chip.selected, .time-chip.selected { border-color: var(--sage-700); background: var(--sage-50); box-shadow: var(--shadow-glow-trust); }
     .time-chip { padding: 0.5rem 0.8rem; border-radius: var(--radius-sm); border: 1.5px solid var(--border-light); background: #fff; font-size: 0.82rem; font-weight: 600; color: var(--sage-900); }
+    .callback-box { display: flex; gap: 0.9rem; align-items: flex-start; background: var(--sage-50); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1.1rem 1.25rem; margin: 1rem 0; }
+    .callback-box mat-icon { color: var(--sage-700); }
+    .callback-box p { margin: 0.25rem 0 0; }
     .proto { display: flex; align-items: center; gap: 0.35rem; font-size: 0.78rem; color: #92610a; background: #fff8eb; border: 1px solid #fbd38d; border-radius: var(--radius-md); padding: 0.55rem 0.8rem; }
 
     .doc-list { display: flex; flex-direction: column; gap: 0.6rem; margin-bottom: 1.5rem; }
@@ -418,10 +444,16 @@ export class OnboardingComponent implements OnInit {
   recommendation = signal<PlanRecommendation | null>(null);
   installment = signal(false);
 
-  callDays = this.nextWeekdays(7);
-  callDay = signal<Date | null>(null);
-  callTime = signal<string | null>(null);
-  callPhone = '';
+  loading = signal(true);
+  loadError = signal<string | null>(null);
+
+  slots = signal<OnboardingCallSlot[]>([]);
+  slotsLoading = signal(false);
+  /** Distinct local days (yyyy-MM-dd) that have an open slot. */
+  callDays = computed(() => [...new Set(this.slots().map(s => this.dayKey(s.startAt)))]);
+  callDay = signal<string | null>(null);
+  callSlotId = signal<number | null>(null);
+  slotsForDay = computed(() => this.slots().filter(s => this.dayKey(s.startAt) === this.callDay()));
 
   signName = '';
   signAgree = false;
@@ -431,16 +463,38 @@ export class OnboardingComponent implements OnInit {
       this.router.navigateByUrl('/journey');
       return;
     }
-    const saved = this.ob.state().intake;
-    if (saved) {
-      const { savedAt, ...answers } = saved;
-      this.form = { ...answers, riskFactors: [...answers.riskFactors], supportNeeds: [...answers.supportNeeds] };
-    }
-    this.callPhone = this.form.phone;
     const user = this.api.currentUser();
     this.signName = [user?.firstName, user?.lastName].filter(Boolean).join(' ');
+    this.load();
+  }
 
-    if (this.ob.step() === 'plan') this.enterPlanStep();
+  /** Pulls intake + call from the server, then prepares whichever step the user is on. */
+  load() {
+    this.loading.set(true);
+    this.loadError.set(null);
+    this.ob.sync().subscribe({
+      next: () => {
+        const saved = this.ob.state().intake;
+        if (saved) {
+          const { savedAt, ...answers } = saved;
+          this.form = { ...answers, riskFactors: [...answers.riskFactors], supportNeeds: [...answers.supportNeeds] };
+        }
+        this.loading.set(false);
+        if (this.ob.step() === 'done') { this.router.navigateByUrl('/journey'); return; }
+        this.enterStep();
+      },
+      error: (err) => {
+        this.loading.set(false);
+        if (err?.status === 401 || err?.status === 403) return; // interceptor handles consent/verify redirects
+        this.loadError.set('Please check your connection and try again.');
+      }
+    });
+  }
+
+  private enterStep() {
+    const step = this.ob.step();
+    if (step === 'plan') this.enterPlanStep();
+    if (step === 'call') this.loadSlots();
   }
 
   // ---------- intake ----------
@@ -480,8 +534,7 @@ export class OnboardingComponent implements OnInit {
       next: () => {
         this.saving.set(false);
         this.editing.set(false);
-        this.callPhone = answers.phone;
-        this.enterPlanStep();
+        this.enterStep();
       },
       error: (err) => {
         this.saving.set(false);
@@ -529,51 +582,66 @@ export class OnboardingComponent implements OnInit {
 
   checkPayment() {
     this.ob.refreshPayment().subscribe({
-      next: (paid) => { if (!paid) this.api.showToast('We couldn’t find a completed payment yet.'); },
+      next: (paid) => {
+        if (!paid) this.api.showToast('We couldn’t find a completed payment yet.');
+        else this.enterStep();
+      },
       error: () => this.api.showToast('Couldn’t check your payment right now.')
     });
   }
 
   // ---------- call ----------
-  private nextWeekdays(count: number): Date[] {
-    const days: Date[] = [];
-    const d = new Date();
-    d.setHours(0, 0, 0, 0);
-    while (days.length < count) {
-      d.setDate(d.getDate() + 1);
-      if (d.getDay() !== 0) days.push(new Date(d));
-    }
-    return days;
+  private loadSlots() {
+    this.slotsLoading.set(true);
+    this.ob.getCallSlots().subscribe({
+      next: (slots) => {
+        const now = Date.now();
+        this.slots.set(
+          slots
+            .filter(s => (!s.status || s.status === 'OPEN') && new Date(s.startAt).getTime() > now)
+            .sort((a, b) => a.startAt.localeCompare(b.startAt))
+        );
+        this.callDay.set(this.callDays()[0] ?? null);
+        this.slotsLoading.set(false);
+      },
+      error: () => { this.slots.set([]); this.slotsLoading.set(false); }
+    });
   }
 
-  /** 30-minute call windows, 10:00–17:30 with a lunch gap; key is "HH:MM", label is localised. */
-  readonly callTimes: { key: string; label: string }[] = (() => {
-    const out: { key: string; label: string }[] = [];
-    for (let h = 10; h < 18; h++) {
-      if (h === 13) continue;
-      for (const m of [0, 30]) {
-        out.push({
-          key: `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`,
-          label: new Date(2000, 0, 1, h, m).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' })
-        });
-      }
-    }
-    return out;
-  })();
-
-  sameDay(a: Date, b: Date | null): boolean {
-    return !!b && a.toDateString() === b.toDateString();
+  private dayKey(iso: string): string {
+    const d = new Date(iso);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   }
 
   confirmCall() {
-    const day = this.callDay();
-    const time = this.callTime();
-    if (!day || !time) return;
-    const [h, m] = time.split(':').map(Number);
-    const startsAt = new Date(day);
-    startsAt.setHours(h, m, 0, 0);
-    this.ob.scheduleCall({ startsAt: startsAt.toISOString(), phone: this.callPhone.trim() });
-    this.api.showToast('Your onboarding call is scheduled.');
+    const slotId = this.callSlotId();
+    if (!slotId) return;
+    this.saving.set(true);
+    this.errorMsg.set(null);
+    this.ob.bookCall(slotId).subscribe({
+      next: () => {
+        this.saving.set(false);
+        this.api.showToast('Your onboarding call is booked.');
+      },
+      error: (err) => {
+        this.saving.set(false);
+        const code = err?.error?.code;
+        if (code === 'ONBOARDING_CALL_ALREADY_BOOKED') { this.load(); return; }
+        if (code === 'ONBOARDING_CALL_SLOT_NOT_AVAILABLE') {
+          this.errorMsg.set('That time was just taken. Please pick another.');
+          this.callSlotId.set(null);
+          this.loadSlots();
+          return;
+        }
+        if (err?.status === 401 || err?.status === 403) return;
+        this.errorMsg.set(err?.error?.message || 'We couldn’t book that call. Please try again.');
+      }
+    });
+  }
+
+  requestCallback() {
+    this.ob.requestCallback();
+    this.api.showToast('Thanks — your care coordinator will call you.');
   }
 
   // ---------- documents ----------
