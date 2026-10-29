@@ -458,6 +458,20 @@ button {
   animation: fadeUp 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
+/* Scroll reveal (RevealDirective) */
+.reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.reveal.is-visible {
+  opacity: 1;
+  transform: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .reveal { opacity: 1; transform: none; }
+}
+
 /* Soft shimmer for loading placeholders — calmer than a spinner for a "nothing hidden" feel */
 .skeleton {
   background: linear-gradient(90deg, var(--sage-50) 25%, var(--sage-100) 37%, var(--sage-50) 63%);
