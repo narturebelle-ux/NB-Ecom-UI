@@ -421,6 +421,28 @@ Side effect: the test booking took the last seeded slot (12 Nov 10:00) on stage.
 **Not verified:** a reminder actually appearing. That needs a booking in the next 24h or a
 consented journey with pending actions, plus a scheduler tick.
 
+## 22. Onboarding Part B reconciled (2026-10-29)
+
+Against API commits c12ad24/4d5b6e5 (UI_INTEGRATION_GUIDE.md §11). The whole onboarding flow is now
+server-backed. Only the plan recommendation and the remembered plan choice stay in the browser.
+
+- **Documents:** the hard-coded `ONBOARDING_DOCUMENTS` are gone. The documents step loads
+  `GET /me/onboarding/documents` and shows `bodyMarkdown` as plain text (line breaks kept) with a
+  "drafts pending legal review" note. One typed name and one checkbox sign every unsigned document,
+  one `POST /me/onboarding/documents/sign` each, in sequence. Signing is idempotent, so if a call
+  fails partway the UI reloads the list and a retry only sends the documents still unsigned.
+  Copy says "a copy … will be emailed to you", because email is still a NoOp.
+- **Step logic:** the step after the call uses `documentsSigned` from `GET /me/onboarding`.
+- **Completion:** "Go to my journey" calls `POST /me/onboarding/complete`. On 409
+  `ONBOARDING_INCOMPLETE` the UI lists `missingSteps` and re-syncs, so the stepper goes back to the
+  first unfinished step.
+- **Server is authoritative for `completedAt`.** It is still cached in localStorage so guards can
+  answer immediately. But the first guarded navigation of each session (`onboardingGuard`,
+  `landingGuard`) runs `sync()`, which overwrites the cache with the server value. Users who
+  "completed" in the browser-only version before Part B are sent back to sign the real documents.
+
+**Not verified live yet.** Only `ng build` was run. No stage run with a throwaway user.
+
 ## 9. Open requests to the API agent
 
 *(Running list — mark resolved items with ✅ and a date rather than deleting them, so the history stays visible.)*
@@ -430,7 +452,7 @@ consented journey with pending actions, plus a scheduler tick.
 - ✅ **2026-10-29** — Phase 2 contract shipped and the UI is reconciled against it, see §16.
 - ✅ **2026-10-29** — CORS now allows `Idempotency-Key` (API commit f347201); preflight from localhost:4200 confirmed.
 - ✅ **2026-10-29** — Phase 3 contract shipped and the UI is reconciled against it, including the `services` field you added in dc8c0c7. See §17.
-- 🟡 **2026-10-29** — Onboarding API (§18). Part A (intake + call slots) ✅ shipped and reconciled (§20). Slot seeding + callback-request ✅ (295705d, reconciled in §21). Still open: **Part B** (documents, e-sign, email, completion).
+- ✅ **2026-10-29** — Onboarding API (§18). Part A (intake + call slots) ✅ shipped and reconciled (§20). Slot seeding + callback-request ✅ (295705d, reconciled in §21). Part B (documents, e-sign, completion) ✅ c12ad24, reconciled in §22. Email delivery is still a NoOp on the API side.
 - ✅ **2026-10-29** — Phase 5 contract shipped and the UI is reconciled against it (§21).
 - ✅ **2026-10-29** — `careBooking` and `recordsVault` flags turned on (V14); `GET /features` confirmed. `callbackRequestedAt` added to the onboarding status and read by the UI.
 - ✅ **2026-10-29** — Phase 4 contract shipped and the UI is reconciled against it (§19). Real uploads still need `SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY` configured.

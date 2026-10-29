@@ -11,9 +11,10 @@ import { Plan } from '../../models/commerce.models';
 import {
   ConsultationMode,
   IntakeAnswers,
-  ONBOARDING_DOCUMENTS,
   ONBOARDING_STEPS,
   OnboardingCallSlot,
+  OnboardingDocument,
+  OnboardingMissingStep,
   RISK_FACTOR_LABELS,
   RiskFactor,
   SUPPORT_NEED_LABELS,
@@ -256,18 +257,26 @@ const STAGES: JourneyStatus[] = ['PREGNANCY', 'PRE_DELIVERY', 'POSTPARTUM', 'CHI
               <h2>Review and sign your onboarding documents</h2>
               <p class="sub">Please read each document. Signing confirms you agree to how your care will work.</p>
 
-              <div class="doc-list">
-                @for (d of documents; track d.id) {
-                  <details class="doc">
-                    <summary>
-                      <mat-icon class="doc-icon">description</mat-icon>
-                      <span><strong>{{ d.title }}</strong><span class="hint">{{ d.summary }}</span></span>
-                      <mat-icon class="chev">expand_more</mat-icon>
-                    </summary>
-                    <p>{{ d.body }}</p>
-                  </details>
-                }
-              </div>
+              @if (docsLoading()) {
+                <p class="hint">Loading your documents…</p>
+              } @else if (docsError()) {
+                <div class="error"><mat-icon class="icon-sm">error_outline</mat-icon> {{ docsError() }}
+                  <button class="btn btn-outline btn-sm" (click)="loadDocuments()">Try again</button></div>
+              } @else {
+                <p class="hint draft-note">These documents are drafts pending legal review.</p>
+                <div class="doc-list">
+                  @for (d of documents(); track d.id) {
+                    <details class="doc">
+                      <summary>
+                        <mat-icon class="doc-icon">{{ d.signed ? 'task' : 'description' }}</mat-icon>
+                        <span><strong>{{ d.title }}</strong><span class="hint">Version {{ d.version }}{{ d.signed ? ' · Signed' : '' }}</span></span>
+                        <mat-icon class="chev">expand_more</mat-icon>
+                      </summary>
+                      <p class="doc-body">{{ d.bodyMarkdown }}</p>
+                    </details>
+                  }
+                </div>
+              }
 
               <div class="sign-box">
                 <div class="field">
@@ -278,11 +287,12 @@ const STAGES: JourneyStatus[] = ['PREGNANCY', 'PRE_DELIVERY', 'POSTPARTUM', 'CHI
                   <input type="checkbox" [(ngModel)]="signAgree" />
                   I have read and agree to the documents above.
                 </label>
-                <p class="hint">Signed on {{ today | date:'mediumDate' }}. Email delivery of your signed copies is coming soon.</p>
+                <p class="hint">Signed on {{ today | date:'mediumDate' }}. A copy of your signed documents will be emailed to you.</p>
               </div>
 
+              @if (errorMsg()) { <p class="error-msg">{{ errorMsg() }}</p> }
               <div class="actions">
-                <button class="btn btn-primary btn-lg" [disabled]="signName.trim().length < 3 || !signAgree" (click)="sign()">Sign documents <mat-icon class="icon-sm">draw</mat-icon></button>
+                <button class="btn btn-primary btn-lg" [disabled]="signName.trim().length < 3 || !signAgree || saving() || docsLoading() || !!docsError()" (click)="sign()">{{ saving() ? 'Signing…' : 'Sign documents' }} <mat-icon class="icon-sm">draw</mat-icon></button>
               </div>
             }
 
@@ -295,10 +305,11 @@ const STAGES: JourneyStatus[] = ['PREGNANCY', 'PRE_DELIVERY', 'POSTPARTUM', 'CHI
                 <div><mat-icon>eco</mat-icon><span>Stage</span><strong>{{ stageLabel(ob.state().intake!.stage) }}</strong></div>
                 <div><mat-icon>workspace_premium</mat-icon><span>Plan</span><strong>Paid · order #{{ ob.state().paidOrderId }}</strong></div>
                 <div><mat-icon>call</mat-icon><span>Onboarding call</span><strong>{{ ob.state().call ? (ob.state().call!.startsAt | date:'EEE, MMM d · h:mm a') : 'We’ll call you to arrange it' }}</strong></div>
-                <div><mat-icon>draw</mat-icon><span>Documents</span><strong>Signed {{ ob.state().documents!.signedAt | date:'mediumDate' }}</strong></div>
+                <div><mat-icon>draw</mat-icon><span>Documents</span><strong>Signed</strong></div>
               </div>
+              @if (errorMsg()) { <p class="error-msg center">{{ errorMsg() }}</p> }
               <div class="actions center">
-                <button class="btn btn-primary btn-lg" (click)="finish()">Go to my journey <mat-icon class="icon-sm">arrow_forward</mat-icon></button>
+                <button class="btn btn-primary btn-lg" [disabled]="saving()" (click)="finish()">{{ saving() ? 'Finishing…' : 'Go to my journey' }} <mat-icon class="icon-sm">arrow_forward</mat-icon></button>
               </div>
             }
           }
@@ -395,6 +406,8 @@ const STAGES: JourneyStatus[] = ['PREGNANCY', 'PRE_DELIVERY', 'POSTPARTUM', 'CHI
     .chev { color: var(--text-muted); transition: transform var(--transition-smooth); }
     .doc[open] .chev { transform: rotate(180deg); }
     .doc p { padding: 0 1rem 1rem 3.1rem; font-size: 0.86rem; color: var(--text-secondary); line-height: 1.6; }
+    .doc-body { white-space: pre-line; }
+    .draft-note { margin-bottom: 0.6rem; }
     .sign-box { background: var(--sage-50); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1.25rem; }
     .signature { font-family: var(--font-serif); font-style: italic; font-size: 1.25rem; }
     .agree { display: flex; align-items: center; gap: 0.55rem; font-size: 0.88rem; color: var(--text-secondary); cursor: pointer; }
@@ -428,7 +441,9 @@ export class OnboardingComponent implements OnInit {
     { value: 'IN_PERSON', label: 'In person' },
     { value: 'EITHER', label: 'Either' }
   ];
-  documents = ONBOARDING_DOCUMENTS;
+  documents = signal<OnboardingDocument[]>([]);
+  docsLoading = signal(false);
+  docsError = signal<string | null>(null);
   today = new Date();
 
   // While editing intake from the plan step, show the intake form even though it's saved.
@@ -496,6 +511,7 @@ export class OnboardingComponent implements OnInit {
     const step = this.ob.step();
     if (step === 'plan') this.enterPlanStep();
     if (step === 'call') this.loadSlots();
+    if (step === 'documents') this.loadDocuments();
   }
 
   // ---------- intake ----------
@@ -623,6 +639,7 @@ export class OnboardingComponent implements OnInit {
       next: () => {
         this.saving.set(false);
         this.api.showToast('Your onboarding call is booked.');
+        this.enterStep();
       },
       error: (err) => {
         this.saving.set(false);
@@ -647,6 +664,7 @@ export class OnboardingComponent implements OnInit {
       next: () => {
         this.saving.set(false);
         this.api.showToast('Thanks. Your care coordinator will call you.');
+        this.enterStep();
       },
       error: (err) => {
         this.saving.set(false);
@@ -657,10 +675,36 @@ export class OnboardingComponent implements OnInit {
   }
 
   // ---------- documents ----------
+  loadDocuments() {
+    this.docsLoading.set(true);
+    this.docsError.set(null);
+    this.ob.getDocuments().subscribe({
+      next: docs => { this.documents.set(docs); this.docsLoading.set(false); },
+      error: (err) => {
+        this.docsLoading.set(false);
+        if (err?.status === 401 || err?.status === 403) return;
+        this.docsError.set('We couldn’t load your documents.');
+      }
+    });
+  }
+
   sign() {
     if (this.signName.trim().length < 3 || !this.signAgree) return;
-    this.ob.signDocuments(this.signName.trim());
-    this.api.showToast('Documents signed. Thank you.');
+    this.saving.set(true);
+    this.errorMsg.set(null);
+    this.ob.signDocuments(this.documents(), this.signName.trim()).subscribe({
+      next: () => {
+        this.saving.set(false);
+        this.api.showToast('Documents signed. Thank you.');
+      },
+      error: (err) => {
+        this.saving.set(false);
+        if (err?.status === 401 || err?.status === 403) return;
+        // Some may have been signed before the failure; refresh so the retry only sends the rest.
+        this.loadDocuments();
+        this.errorMsg.set(err?.error?.message || 'We couldn’t record your signature. Please try again.');
+      }
+    });
   }
 
   // ---------- welcome ----------
@@ -669,8 +713,28 @@ export class OnboardingComponent implements OnInit {
   }
 
   finish() {
-    this.ob.complete();
-    this.router.navigateByUrl('/journey');
+    this.saving.set(true);
+    this.errorMsg.set(null);
+    this.ob.complete().subscribe({
+      next: () => {
+        this.saving.set(false);
+        this.router.navigateByUrl('/journey');
+      },
+      error: (err) => {
+        this.saving.set(false);
+        if (err?.status === 401 || err?.status === 403) return;
+        if (err?.error?.code === 'ONBOARDING_INCOMPLETE') {
+          const missing: OnboardingMissingStep[] = err.error.missingSteps ?? [];
+          this.errorMsg.set(missing.length
+            ? `A few steps still need finishing: ${missing.join(', ')}.`
+            : 'A few onboarding steps still need finishing.');
+          // Re-read the server state so the stepper moves back to the first unfinished step.
+          this.load();
+          return;
+        }
+        this.errorMsg.set(err?.error?.message || 'We couldn’t finish onboarding. Please try again.');
+      }
+    });
   }
 
   stageLabel(s: JourneyStatus): string {

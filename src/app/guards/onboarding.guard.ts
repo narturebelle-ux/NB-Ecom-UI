@@ -1,5 +1,6 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
+import { map } from 'rxjs';
 import { ApiService } from '../services/api.service';
 import { OnboardingService } from '../services/onboarding.service';
 
@@ -12,5 +13,8 @@ export const onboardingGuard: CanActivateFn = (_route, state) => {
   if (!api.currentUser()) {
     return router.createUrlTree(['/auth/login'], { queryParams: { returnUrl: state.url } });
   }
-  return onboarding.onboarded() ? true : router.createUrlTree(['/onboarding']);
+  // First guarded navigation of a session confirms completedAt with the server.
+  return onboarding.ensureSynced().pipe(
+    map(() => (onboarding.onboarded() ? true : router.createUrlTree(['/onboarding'])))
+  );
 };

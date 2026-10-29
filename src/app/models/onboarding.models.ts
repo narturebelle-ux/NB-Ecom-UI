@@ -4,9 +4,9 @@ import { JourneyStatus } from './maternal.models';
  * Post-signup onboarding (product-owner flow, 2026-10-29):
  * intake → recommended plan → payment → onboarding call → signed documents → onboarded.
  *
- * Stage + EDD persist to the Journey API, the other intake answers and the call booking to the
- * onboarding API (Part A, UI_INTEGRATION_GUIDE.md §11), payment to the Orders API. Document
- * signing and completion stay client-side until onboarding Part B ships.
+ * Stage + EDD persist to the Journey API, everything else to the onboarding API
+ * (UI_INTEGRATION_GUIDE.md §11: intake + call in Part A, documents + completion in Part B),
+ * payment to the Orders API. Only the plan recommendation is computed client-side.
  */
 
 export type OnboardingStep = 'intake' | 'plan' | 'call' | 'documents' | 'welcome' | 'done';
@@ -85,7 +85,7 @@ export interface ServerOnboardingStatus {
   call: ServerOnboardingCall | null;
   /** createdAt of the user's most recent callback request, or null. */
   callbackRequestedAt?: string | null;
-  /** Always false until the API ships onboarding Part B (documents/sign/complete). */
+  /** True once every active onboarding document is signed by this user (vacuously true if none). */
   documentsSigned: boolean;
   completedAt: string | null;
 }
@@ -97,11 +97,27 @@ export interface OnboardingCallSlot {
   status: string;
 }
 
-export interface SignedDocuments {
-  signedName: string;
-  signedAt: string;
-  documentIds: string[];
+/** GET /me/onboarding/documents. bodyMarkdown is DRAFT text pending legal review — render as-is. */
+export interface OnboardingDocument {
+  id: number;
+  type: string;
+  version: string;
+  title: string;
+  bodyMarkdown: string;
+  effectiveAt: string;
+  signed: boolean;
 }
+
+/** POST /me/onboarding/documents/sign — idempotent; re-signing returns the original signature. */
+export interface OnboardingSignature {
+  id: number;
+  documentId: number;
+  typedName: string;
+  signedAt: string;
+}
+
+/** 409 ONBOARDING_INCOMPLETE from POST /me/onboarding/complete. */
+export type OnboardingMissingStep = 'intake' | 'onboarding call' | 'payment' | 'document signatures';
 
 export interface OnboardingState {
   /** From the server (GET /me/onboarding + the active Journey) — never persisted in the browser. */
@@ -112,8 +128,9 @@ export interface OnboardingState {
   callRequested?: boolean;
   recommendedPlanCode?: string;
   paidOrderId?: number;
-  /** Local until onboarding Part B ships. */
-  documents?: SignedDocuments;
+  /** From the server (documentsSigned). */
+  documentsSigned?: boolean;
+  /** From the server (completedAt); cached locally only so guards can answer before the first sync. */
   onboardedAt?: string;
 }
 
@@ -133,27 +150,3 @@ export const SUPPORT_NEED_LABELS: Record<SupportNeed, string> = {
   EMOTIONAL_WELLBEING: 'Emotional wellbeing',
   BABY_CARE: 'Care for my baby'
 };
-
-/** Onboarding documents — DRAFT placeholder text pending legal review, same as the consent documents. */
-export const ONBOARDING_DOCUMENTS: { id: string; title: string; summary: string; body: string }[] = [
-  {
-    id: 'care-agreement',
-    title: 'Care Coordination Agreement',
-    summary: 'What your plan includes, how sessions are booked, and what we expect of each other.',
-    body: 'DRAFT — pending legal review. NartureBelle coordinates your care with verified professionals under the plan you chose. Sessions are booked through the app and count against your plan when completed. You can cancel or reschedule a booked session before it starts. NartureBelle does not provide emergency care.'
-  },
-  {
-    id: 'telehealth-consent',
-    title: 'Virtual Consultation Consent',
-    summary: 'Your agreement to receive care by video or phone where appropriate.',
-    body: 'DRAFT — pending legal review. Some sessions may take place by video or phone. Virtual consultations have limits — your professional may ask you to attend in person or seek urgent care when needed. You can ask for an in-person alternative where one is available.'
-  },
-  {
-    id: 'emergency-acknowledgement',
-    title: 'Emergency Care Acknowledgement',
-    summary: 'Confirms you understand NartureBelle is not an emergency service.',
-    // Deliberately generic: the roadmap forbids hard-coding clinical emergency wording (it must be
-    // reviewed, versioned config), so no symptom list appears here.
-    body: 'DRAFT — pending legal and clinical review. NartureBelle is not an emergency service. In a medical emergency, contact your local emergency services or go to the nearest hospital immediately. Do not wait for a NartureBelle session.'
-  }
-];

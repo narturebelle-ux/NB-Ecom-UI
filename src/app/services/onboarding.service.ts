@@ -1,6 +1,6 @@
 import { Injectable, computed, effect, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, forkJoin, map, of, switchMap, tap } from 'rxjs';
+import { Observable, catchError, concat, forkJoin, map, of, switchMap, tap, toArray } from 'rxjs';
 import { ApiService } from './api.service';
 import { CommerceService } from './commerce.service';
 import { environment } from '../../environments/environment';
@@ -9,8 +9,9 @@ import { Journey } from '../models/maternal.models';
 import {
   ConsultationMode,
   IntakeAnswers,
-  ONBOARDING_DOCUMENTS,
   OnboardingCallSlot,
+  OnboardingDocument,
+  OnboardingSignature,
   OnboardingState,
   OnboardingStep,
   RISK_FACTOR_LABELS,
@@ -27,14 +28,15 @@ export interface PlanRecommendation {
 }
 
 /** Fields that may be kept in the browser — nothing health-related. */
-type LocalState = Pick<OnboardingState, 'recommendedPlanCode' | 'paidOrderId' | 'documents' | 'onboardedAt'>;
+type LocalState = Pick<OnboardingState, 'recommendedPlanCode' | 'paidOrderId' | 'onboardedAt'>;
 
 /**
  * Drives the post-signup onboarding flow (see onboarding.models.ts).
- * - Stage/EDD: Journey API. Other intake answers + call booking: onboarding API Part A (§11).
+ * - Stage/EDD: Journey API. Intake, call, documents and completion: onboarding API (§11).
  * - Payment: read from the Orders API.
- * - Document signing + completion: browser-local until onboarding Part B ships.
  * Health answers are never written to localStorage; they're re-read from the server via sync().
+ * completedAt is cached locally so guards can answer instantly, but the server stays authoritative:
+ * the first guarded navigation of a session runs sync() (see ensureSynced()).
  */
 @Injectable({ providedIn: 'root' })
 export class OnboardingService {
@@ -51,17 +53,28 @@ export class OnboardingService {
     if (!s.intake) return 'intake';
     if (!s.paidOrderId) return 'plan';
     if (!s.call && !s.callRequested) return 'call';
-    if (!s.documents) return 'documents';
+    if (!s.documentsSigned) return 'documents';
     return 'welcome';
   });
 
   readonly onboarded = computed(() => this.step() === 'done');
 
+  /** User id whose state has been synced from the server this session. */
+  private syncedFor: number | null = null;
+
   constructor() {
     effect(() => {
       const id = this.api.currentUser()?.id;
+      this.syncedFor = null;
       this.state.set(id ? this.readLocal(id) : {});
     });
+  }
+
+  /** Syncs once per session/user; afterwards resolves immediately from memory. Errors fall back to the local cache. */
+  ensureSynced(): Observable<void> {
+    const id = this.api.currentUser()?.id;
+    if (!id || this.syncedFor === id) return of(undefined);
+    return this.sync().pipe(catchError(() => of(undefined)));
   }
 
   /** Loads intake + call from the server and merges them with the local-only progress. */
@@ -86,8 +99,11 @@ export class OnboardingService {
           intake: status.intake && journey ? this.toAnswers(status.intake, journey) : undefined,
           call: status.call ? this.toCall(status.call, status.intake?.phone ?? '') : undefined,
           callRequested: !!status.callbackRequestedAt,
-          ...(status.completedAt ? { onboardedAt: status.completedAt } : {})
+          documentsSigned: status.documentsSigned
         });
+        // Server is authoritative: this also drops a completion recorded only in the browser before Part B.
+        this.patchLocal({ onboardedAt: status.completedAt ?? undefined });
+        this.syncedFor = this.api.currentUser()?.id ?? null;
       }),
       map(() => undefined)
     );
@@ -174,14 +190,31 @@ export class OnboardingService {
     );
   }
 
-  signDocuments(signedName: string) {
-    this.patchLocal({
-      documents: { signedName, signedAt: new Date().toISOString(), documentIds: ONBOARDING_DOCUMENTS.map(d => d.id) }
-    });
+  getDocuments(): Observable<OnboardingDocument[]> {
+    return this.http.get<OnboardingDocument[]>(`${this.baseUrl}/me/onboarding/documents`);
   }
 
-  complete() {
-    this.patchLocal({ onboardedAt: new Date().toISOString() });
+  /** Signs every unsigned document with the same typed name (the API signs one at a time; re-signing is idempotent). */
+  signDocuments(docs: OnboardingDocument[], typedName: string): Observable<void> {
+    const unsigned = docs.filter(d => !d.signed);
+    const signs = unsigned.map(d =>
+      this.http.post<OnboardingSignature>(`${this.baseUrl}/me/onboarding/documents/sign`, { documentId: d.id, typedName })
+    );
+    return (signs.length ? concat(...signs).pipe(toArray()) : of([])).pipe(
+      tap(() => this.state.set({ ...this.state(), documentsSigned: true })),
+      map(() => undefined)
+    );
+  }
+
+  /**
+   * POST /me/onboarding/complete — idempotent. A 409 ONBOARDING_INCOMPLETE carries
+   * error.missingSteps; the caller shows those.
+   */
+  complete(): Observable<void> {
+    return this.http.post<{ completedAt: string }>(`${this.baseUrl}/me/onboarding/complete`, {}).pipe(
+      tap(({ completedAt }) => this.patchLocal({ onboardedAt: completedAt })),
+      map(() => undefined)
+    );
   }
 
   // ---------- mapping ----------
@@ -233,7 +266,6 @@ export class OnboardingService {
     const local: LocalState = {
       recommendedPlanCode: next.recommendedPlanCode,
       paidOrderId: next.paidOrderId,
-      documents: next.documents,
       onboardedAt: next.onboardedAt
     };
     try { localStorage.setItem(this.key(id), JSON.stringify(local)); } catch { /* storage blocked */ }
@@ -243,8 +275,8 @@ export class OnboardingService {
     try {
       const raw = localStorage.getItem(this.key(id));
       if (!raw) return {};
-      const { intake, call, callRequested, ...rest } = JSON.parse(raw);
-      return rest;
+      const { recommendedPlanCode, paidOrderId, onboardedAt } = JSON.parse(raw);
+      return { recommendedPlanCode, paidOrderId, onboardedAt };
     } catch {
       return {};
     }

@@ -1,5 +1,6 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
+import { map } from 'rxjs';
 import { ApiService } from '../services/api.service';
 import { OnboardingService } from '../services/onboarding.service';
 
@@ -13,5 +14,7 @@ export const landingGuard: CanActivateFn = () => {
   const onboarding = inject(OnboardingService);
 
   if (!api.currentUser()) return true;
-  return router.createUrlTree([onboarding.onboarded() ? '/journey' : '/onboarding']);
+  return onboarding.ensureSynced().pipe(
+    map(() => router.createUrlTree([onboarding.onboarded() ? '/journey' : '/onboarding']))
+  );
 };
