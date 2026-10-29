@@ -42,7 +42,10 @@ export class ProviderService {
     if (!provider) {
       throw new Error('Provider not found.');
     }
-    const entitlement = this.commerce.consumeSession();
+    // Spends a session from a real GET /entitlements allocation of this provider's type
+    // (caller must have loaded entitlements first); usage is tracked in CommerceService's
+    // local overlay until the API's own Phase 3 consumes sessions server-side.
+    const entitlement = this.commerce.consumeSession(provider.type);
     if (!entitlement) {
       throw new Error('NO_SESSIONS_AVAILABLE');
     }

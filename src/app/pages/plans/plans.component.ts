@@ -1,14 +1,12 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { CommerceService } from '../../services/commerce.service';
-import { Plan } from '../../models/commerce.models';
+import { PLAN_PRESENTATION, Plan } from '../../models/commerce.models';
+import { PROFESSIONAL_TYPE_LABELS } from '../../models/maternal.models';
 
-/**
- * Plan comparison page (roadmap §Phase 2 UI). Public — no guard — since comparing plans
- * doesn't need a signed-in user; checkout is where verifiedGuard kicks in.
- */
+/** Plan comparison — public (GET /api/v1/plans needs no auth); checkout is where verifiedGuard applies. */
 @Component({
   selector: 'app-plans',
   standalone: true,
@@ -16,50 +14,69 @@ import { Plan } from '../../models/commerce.models';
   template: `
     <div class="plans-page">
       <div class="container">
-        <div class="plans-header">
+        <div class="plans-header animate-in">
           <h1>Choose Your Care Plan</h1>
           <p>Every plan includes access to your care coordination team — pick the level of support that fits you.</p>
         </div>
 
         <div class="draft-notice">
-          <mat-icon class="icon-sm">info</mat-icon> Pricing and inclusions shown here are illustrative, pending final product/legal review.
+          <mat-icon class="icon-sm">info</mat-icon> Session allocations, validity and inclusions are provisional and may change before launch.
           Payments on this prototype are simulated — no real charge is made.
         </div>
 
         <div class="billing-toggle">
           <button type="button" [class.active]="!installment()" (click)="installment.set(false)">Pay in full</button>
-          <button type="button" [class.active]="installment()" (click)="installment.set(true)">Installments (+20%)</button>
+          <button type="button" [class.active]="installment()" (click)="installment.set(true)">Installments</button>
         </div>
 
-        <div class="plans-grid">
-          @for (plan of plans; track plan.id) {
-            <div class="plan-card card" [class.featured]="!!plan.badge">
-              @if (plan.badge) {
-                <span class="plan-badge">{{ plan.badge }}</span>
-              }
-              <h2>{{ plan.name }}</h2>
-              <p class="tagline">{{ plan.tagline }}</p>
+        @if (loading()) {
+          <div class="plans-grid">
+            @for (i of [1, 2, 3]; track i) {
+              <div class="plan-card skeleton-card"><div class="skeleton" style="height: 340px"></div></div>
+            }
+          </div>
+        } @else if (errorMsg()) {
+          <div class="error-box">
+            <mat-icon class="icon-sm">error_outline</mat-icon> {{ errorMsg() }}
+            <button class="btn-link" (click)="load()">Try again</button>
+          </div>
+        } @else {
+          <div class="plans-grid">
+            @for (plan of plans(); track plan.id; let i = $index) {
+              <div class="plan-card card animate-in" [class.featured]="!!badge(plan)" [style.animation-delay.ms]="i * 80">
+                @if (badge(plan)) {
+                  <span class="plan-badge">{{ badge(plan) }}</span>
+                }
+                <h2>{{ plan.name }}</h2>
+                <p class="tagline">{{ tagline(plan) }}</p>
 
-              <div class="price-block">
-                <span class="price">₹{{ (installment() ? commerce.installmentPrice(plan) : plan.priceOneTime) | number }}</span>
-                <span class="price-note">{{ installment() ? 'total, in installments' : 'one-time' }}</span>
+                <div class="price-block">
+                  <span class="price">₹{{ (installment() ? plan.installmentTotalPrice : plan.oneTimePrice) | number:'1.0-0' }}</span>
+                  <span class="price-note">{{ installment() ? 'total, in ' + plan.installmentCount + ' installments' : 'one-time' }}</span>
+                </div>
+
+                <div class="session-count">{{ plan.totalSessions }} sessions · valid {{ validityLabel(plan.validityDays) }}</div>
+
+                <div class="allocations">
+                  @for (a of plan.allocations; track a.professionalType) {
+                    <span class="allocation-chip">{{ a.sessionCount }} × {{ professionalLabel(a.professionalType) }}</span>
+                  }
+                </div>
+
+                <ul class="feature-list">
+                  @for (item of plan.inclusions; track item) {
+                    <li class="included"><mat-icon class="icon-sm">check</mat-icon> <span>{{ item }}</span></li>
+                  }
+                  @for (item of plan.exclusions; track item) {
+                    <li class="excluded"><mat-icon class="icon-sm">remove</mat-icon> <span>{{ item }}</span></li>
+                  }
+                </ul>
+
+                <button class="btn btn-primary full-w" (click)="choosePlan(plan)">Choose {{ plan.name }}</button>
               </div>
-
-              <div class="session-count">{{ plan.totalSessions }} sessions · valid {{ plan.validityMonths }} months</div>
-
-              <ul class="feature-list">
-                @for (item of plan.inclusions; track item) {
-                  <li class="included"><mat-icon class="icon-sm">check</mat-icon> <span>{{ item }}</span></li>
-                }
-                @for (item of plan.exclusions; track item) {
-                  <li class="excluded"><mat-icon class="icon-sm">remove</mat-icon> <span>{{ item }}</span></li>
-                }
-              </ul>
-
-              <button class="btn btn-primary full-w" (click)="choosePlan(plan)">Choose {{ plan.name }}</button>
-            </div>
-          }
-        </div>
+            }
+          </div>
+        }
       </div>
     </div>
   `,
@@ -90,12 +107,13 @@ import { Plan } from '../../models/commerce.models';
     .billing-toggle button {
       padding: 0.6rem 1.25rem;
       border-radius: var(--radius-full);
-      border: 1.5px solid var(--border-color);
-      background: #fff;
+      border: 1.5px solid var(--border-light);
+      background: var(--bg-glass-strong);
       font-size: 0.88rem;
       font-weight: 700;
       color: var(--text-secondary);
       cursor: pointer;
+      transition: background-color var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
     }
     .billing-toggle button.active {
       background: var(--sage-900);
@@ -115,13 +133,16 @@ import { Plan } from '../../models/commerce.models';
       padding: 2rem;
       border-radius: var(--radius-xl);
       border: 1px solid var(--border-light);
-      background: #fff;
+      background: var(--bg-glass-strong);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
       display: flex;
       flex-direction: column;
+      overflow: visible;
     }
     .plan-card.featured {
-      border-color: var(--sage-700);
-      box-shadow: 0 12px 32px rgba(46,79,62,0.12);
+      border-color: var(--sage-600);
+      box-shadow: var(--shadow-lg);
     }
     .plan-badge {
       position: absolute;
@@ -146,7 +167,18 @@ import { Plan } from '../../models/commerce.models';
       font-size: 0.82rem;
       font-weight: 700;
       color: var(--blush-700);
-      margin-bottom: 1.5rem;
+      margin-bottom: 0.85rem;
+    }
+
+    .allocations { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 1.25rem; }
+    .allocation-chip {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--sage-800);
+      background: var(--sage-50);
+      border: 1px solid var(--border-light);
+      padding: 0.25rem 0.6rem;
+      border-radius: var(--radius-full);
     }
 
     .feature-list { list-style: none; display: flex; flex-direction: column; gap: 0.6rem; margin-bottom: 1.75rem; flex: 1; }
@@ -158,19 +190,77 @@ import { Plan } from '../../models/commerce.models';
 
     .full-w { width: 100%; }
 
+    .skeleton-card { padding: 0; border: none; background: transparent; backdrop-filter: none; }
+    .error-box {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+      max-width: 560px;
+      margin: 0 auto;
+      padding: 1rem 1.25rem;
+      border-radius: var(--radius-md);
+      background: #fdecea;
+      color: #a0281c;
+      border: 1px solid #f5b7b1;
+      font-size: 0.9rem;
+    }
+    .btn-link { color: #a0281c; font-weight: 700; text-decoration: underline; }
+
     @media (max-width: 992px) {
       .plans-grid { grid-template-columns: 1fr; }
     }
   `]
 })
-export class PlansComponent {
-  commerce = inject(CommerceService);
-  router = inject(Router);
+export class PlansComponent implements OnInit {
+  private commerce = inject(CommerceService);
+  private router = inject(Router);
 
-  plans = this.commerce.getPlans();
+  plans = signal<Plan[]>([]);
+  loading = signal(true);
+  errorMsg = signal<string | null>(null);
   installment = signal(false);
 
+  ngOnInit() {
+    this.load();
+  }
+
+  load() {
+    this.loading.set(true);
+    this.errorMsg.set(null);
+    this.commerce.getPlans().subscribe({
+      next: (plans) => {
+        this.plans.set(plans);
+        this.loading.set(false);
+      },
+      error: () => {
+        this.loading.set(false);
+        this.errorMsg.set("We couldn't load care plans right now.");
+      }
+    });
+  }
+
+  badge(plan: Plan): string | undefined {
+    return PLAN_PRESENTATION[plan.code]?.badge;
+  }
+
+  tagline(plan: Plan): string {
+    return PLAN_PRESENTATION[plan.code]?.tagline ?? '';
+  }
+
+  validityLabel(days: number): string {
+    const months = Math.round(days / 30.4);
+    return months >= 1 ? `${months} months` : `${days} days`;
+  }
+
+  professionalLabel(type: string): string {
+    return (PROFESSIONAL_TYPE_LABELS as Record<string, string>)[type] ?? type;
+  }
+
   choosePlan(plan: Plan) {
-    this.router.navigate(['/checkout'], { queryParams: { plan: plan.id, installment: this.installment() } });
+    this.router.navigate(['/checkout'], {
+      queryParams: { plan: plan.id, mode: this.installment() ? 'INSTALLMENT' : 'ONE_TIME' }
+    });
   }
 }

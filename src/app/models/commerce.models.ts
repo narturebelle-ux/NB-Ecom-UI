@@ -1,105 +1,81 @@
 /**
- * Phase 2 (Plans, checkout & entitlements) — implemented client-side against a
- * self-authored mock contract since the API hasn't shipped Plan/Order/Payment endpoints
- * yet (see API_Integration.md §13/14). Prices and session counts match the roadmap's
- * blueprint §5 figures; inclusions/exclusions/validity are illustrative placeholders,
- * same spirit as the consent documents' DRAFT text pending legal/product review.
- * Swap this whole file and CommerceService for real HTTP calls once GET /plans etc. ship.
+ * Phase 2 (Plans, checkout & entitlements) — real contract, NB-Ecomm-API
+ * UI_INTEGRATION_GUIDE.md §8. Plan allocations, validity and inclusion copy are the API's
+ * own provisional placeholders (not final blueprint §5 numbers) — the UI says so on screen.
  */
+
+export type PaymentMode = 'ONE_TIME' | 'INSTALLMENT';
+export type OrderStatus = 'PENDING' | 'PAID' | 'FAILED' | 'REFUNDED' | 'PARTIALLY_REFUNDED' | 'DISPUTED';
+
+export interface PlanAllocation {
+  professionalType: string;
+  sessionCount: number;
+}
 
 export interface Plan {
   id: number;
+  code: string;
   name: string;
-  tagline: string;
-  priceOneTime: number;
+  oneTimePrice: number;
+  installmentTotalPrice: number;
+  installmentCount: number;
   totalSessions: number;
-  validityMonths: number;
-  badge?: string;
+  validityDays: number;
   inclusions: string[];
   exclusions: string[];
+  allocations: PlanAllocation[];
 }
 
-export type OrderStatus = 'PENDING' | 'PAID' | 'FAILED';
+export interface InstallmentScheduleItem {
+  installmentNumber: number;
+  amount: number;
+  dueDate: string;
+}
 
 export interface Order {
-  id: string;
-  planId: number;
-  planName: string;
-  amount: number;
-  installment: boolean;
+  id: number;
+  planVersionId: number;
+  planCode: string;
   status: OrderStatus;
+  paymentMode: PaymentMode;
+  price: number;
+  installmentSchedule: InstallmentScheduleItem[];
+  refunds: unknown[];
   createdAt: string;
-  paidAt?: string;
+}
+
+export interface Payment {
+  id: number;
+  orderId: number;
+  status: string;
+  amount: number;
+  provider: string;
+  mockSucceedPath: string;
+  mockFailPath: string;
 }
 
 export interface Entitlement {
-  id: string;
-  planId: number;
-  planName: string;
+  id: number;
+  orderId: number;
+  professionalType: string;
   totalSessions: number;
   usedSessions: number;
-  purchasedAt: string;
+  remainingSessions: number;
   expiresAt: string;
+  planCode: string;
 }
 
-/** Installment total = one-time price + 20%, per the roadmap. */
-export function installmentTotal(plan: Plan): number {
-  return Math.round(plan.priceOneTime * 1.2);
-}
+/**
+ * Presentation-only copy keyed by plan code (taglines/badges aren't part of the API's plan
+ * model — they're marketing framing, so they live in the UI). Unknown codes just render
+ * without a tagline/badge.
+ */
+export const PLAN_PRESENTATION: Record<string, { tagline: string; badge?: string }> = {
+  STANDARD: { tagline: 'Essential care coordination for a straightforward pregnancy.' },
+  CARE: { tagline: 'Broader coverage through delivery and early postpartum.', badge: 'Most Popular' },
+  PREMIUM: { tagline: 'Complete coverage from pregnancy through early childcare.', badge: 'Complete Care' }
+};
 
-export const MOCK_PLANS: Plan[] = [
-  {
-    id: 1,
-    name: 'Standard',
-    tagline: 'Essential care coordination for a straightforward pregnancy.',
-    priceOneTime: 9999,
-    totalSessions: 9,
-    validityMonths: 12,
-    inclusions: [
-      '9 sessions across your assigned care team',
-      'WhatsApp support during business hours',
-      'Full access to your Journey timeline & next actions'
-    ],
-    exclusions: [
-      'No priority scheduling',
-      'No lactation consultant or postpartum physiotherapy sessions',
-      'No 24/7 helpline'
-    ]
-  },
-  {
-    id: 2,
-    name: 'Care',
-    tagline: 'Our most popular plan — broader coverage through delivery and early postpartum.',
-    priceOneTime: 14999,
-    totalSessions: 12,
-    validityMonths: 12,
-    badge: 'Most Popular',
-    inclusions: [
-      '12 sessions across your assigned care team',
-      'Includes lactation consultant & postpartum physiotherapist sessions',
-      'Priority scheduling',
-      'WhatsApp support during business hours'
-    ],
-    exclusions: [
-      'No 24/7 care-coordinator helpline',
-      'No dedicated care coordinator'
-    ]
-  },
-  {
-    id: 3,
-    name: 'Premium',
-    tagline: 'Complete, white-glove coverage from pregnancy through early childcare.',
-    priceOneTime: 24999,
-    totalSessions: 16,
-    validityMonths: 12,
-    badge: 'Complete Care',
-    inclusions: [
-      '16 sessions across your assigned care team',
-      'Dedicated care coordinator',
-      '24/7 care-coordinator helpline',
-      'Priority scheduling',
-      'Includes lactation consultant & postpartum physiotherapist sessions'
-    ],
-    exclusions: []
-  }
-];
+export function planDisplayName(code: string): string {
+  return code ? code.charAt(0) + code.slice(1).toLowerCase() : code;
+}

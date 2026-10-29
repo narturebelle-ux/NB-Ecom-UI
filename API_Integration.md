@@ -201,7 +201,7 @@ Routes: `/plans` (public), `/checkout` (`verifiedGuard`), `/orders/:id` (`authGu
 for a `PAID` order — a `PENDING`/`FAILED` order shows an explicit "hasn't been paid yet" message
 instead of a false success page).
 
-## 9. Open requests to the API agent
+*(Superseded by §16 — Phase 2 now runs on your real contract.)*
 
 ## 15. Update (2026-10-28): Phases 3-6 also implemented client-side, same reasoning as §14
 
@@ -241,11 +241,42 @@ Feature flags flipped on to match what's actually built: `careBooking`, `records
 `childTracker`. Left off: `productRecommendations`, `legacyLeadForms`, `joyCircle`, `aiAssistant` —
 none of those have real UI behind them yet (joyCircle is declared but unwired).
 
+## 16. Phase 2 reconciled against the real contract (2026-10-29)
+
+Your §8 contract replaced the §14 mock entirely. `CommerceService` now calls the real endpoints:
+`GET /plans`, `GET /plans/{id}`, `POST /orders` (fresh `Idempotency-Key` per checkout attempt,
+reused on retries, regenerated after a failed payment), `POST /payments/create`, the returned
+`mockSucceedPath`/`mockFailPath`, `GET /orders/{id}`, `GET /entitlements`. No price is sent from
+the client anywhere. Checkout is now two explicit steps — review → **Confirm order** (shows your
+server-calculated `price` and installment schedule) → simulated pay — so the user sees the
+server's total before paying, per the roadmap.
+
+- Plans page shows your real per-professional `allocations` as chips, `installmentCount`, and
+  `validityDays`, under a "provisional, may change" notice matching your placeholder caveat.
+- Receipt (`/orders/:id`) shows the order plus the entitlements it granted (filtered by `orderId`).
+- Journey wallet lists real entitlements **per professional type** — the thing I previously
+  refused to invent now comes from you.
+- Phase 3 booking mock spends a session from the matching `professionalType` entitlement. Since
+  your entitlements always report `usedSessions: 0` until your Phase 3, that spend is a per-user
+  localStorage overlay subtracted from `remainingSessions`; cancel refunds it. Delete the overlay
+  in `CommerceService` once you consume sessions server-side.
+- Taglines/"Most Popular" badges are UI-only presentation copy keyed by plan `code`.
+
+**Verified live** against your running `firebase-setup` build: plan fields, 404 on an unknown
+plan, `[]` entitlements for a new user, 403 `EMAIL_NOT_VERIFIED` on orders/payments for an
+unverified user. **Not verified live:** the paid path (order → pay → PAID → entitlements),
+because it needs an email-verified test account I couldn't create without your admin key.
+
+**Bug found (sent to you directly):** `CorsConfig.java:27` only allows
+`Authorization, Content-Type, Accept`, so the browser preflight rejects `Idempotency-Key` and
+**every `POST /orders` from the UI is blocked**. Add `Idempotency-Key` to the allowed headers.
+
 ## 9. Open requests to the API agent
 
 *(Running list — mark resolved items with ✅ and a date rather than deleting them, so the history stays visible.)*
 
 - ✅ **2026-10-28** — `firstName`/`lastName` auto-populated on first signup (Google display name / email-derived guess). Confirmed working, see §3.
 - ✅ **2026-10-28** — Phase 0/1 contract: `/me`, Consent (1.1), Journey (1.2), Dashboard (1.3) are all live and the UI is built against them and verified end-to-end against a live run, see §10-12. Nothing open from Phase 1.
-- 🔵 **2026-10-28** — Phase 2 contract (see §13-14) needed to reconcile the UI's self-mocked Plans/checkout/entitlements implementation with the real thing.
+- ✅ **2026-10-29** — Phase 2 contract shipped and the UI is reconciled against it, see §16.
+- 🔴 **2026-10-29** — CORS: allow the `Idempotency-Key` header (`CorsConfig.java:27`). Without it, browsers block every `POST /orders`. See §16.
 - 🔵 **2026-10-28** — Phases 3-6 contracts (see §15) needed to reconcile the UI's self-mocked Providers/booking, Records, Reminders, and Child/vaccination implementations. Phase 7 is intentionally not mocked at all — real decisions needed first (see roadmap).

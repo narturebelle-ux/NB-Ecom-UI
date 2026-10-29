@@ -43,7 +43,7 @@ export interface Booking {
   startsAt: string;
   durationMinutes: number;
   status: BookingStatus;
-  entitlementId: string | null;
+  entitlementId: number | null;
   createdAt: string;
 }
 

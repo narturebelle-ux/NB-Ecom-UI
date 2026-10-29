@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -34,12 +34,18 @@ import { Provider, Slot, providerInitials } from '../../models/provider.models';
             </div>
           </div>
 
-          @if (!commerce.hasAvailableSession()) {
+          @if (entitlementsLoading()) {
+            <div class="skeleton" style="height: 120px"></div>
+          } @else if (!availableEntitlement()) {
             <div class="status-banner is-warning">
-              You don't have any sessions left on your current care plan.
-              <a routerLink="/plans">Choose a plan</a> to book a session.
+              Your care plan doesn't have any {{ label(provider()!.type) }} sessions left.
+              <a routerLink="/plans">See care plans</a> to add sessions.
             </div>
           } @else {
+            <p class="sessions-left">
+              <mat-icon class="icon-sm">event_available</mat-icon>
+              {{ commerce.effectiveRemaining(availableEntitlement()!) }} {{ label(provider()!.type) }} session(s) left on your plan
+            </p>
             <h2 class="slots-title">Pick a Time</h2>
             @if (bookedMsg()) {
               <div class="status-banner is-success">{{ bookedMsg() }}</div>
@@ -79,6 +85,7 @@ import { Provider, Slot, providerInitials } from '../../models/provider.models';
     .status-banner.is-success { background: #e8f5ec; color: #1b6b3a; border: 1px solid #b2dfca; }
 
     .slots-title { font-size: 1.15rem; color: var(--primary-deep); margin-bottom: 1rem; }
+    .sessions-left { display: flex; align-items: center; gap: 0.4rem; font-size: 0.88rem; font-weight: 600; color: var(--trust-700); background: var(--trust-50); border: 1px solid var(--trust-200); border-radius: var(--radius-md); padding: 0.65rem 0.9rem; margin-bottom: 1.25rem; }
     .slots-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; }
     .slot-btn { padding: 0.75rem; border-radius: var(--radius-md); border: 1.5px solid var(--border-color); background: #fff; font-size: 0.82rem; font-weight: 600; color: var(--sage-900); cursor: pointer; }
     .slot-btn:hover:not(:disabled) { border-color: var(--sage-700); background: var(--sage-50); }
@@ -99,6 +106,13 @@ export class ProviderProfileComponent implements OnInit {
   slots = signal<Slot[]>([]);
   booking = signal(false);
   bookedMsg = signal<string | null>(null);
+  entitlementsLoading = signal(true);
+
+  // Re-evaluates whenever CommerceService.entitlements changes (load, or a booking spending a session).
+  availableEntitlement = computed(() => {
+    const p = this.provider();
+    return p ? this.commerce.findAvailable(p.type) : undefined;
+  });
 
   ngOnInit() {
     const id = Number(this.route.snapshot.paramMap.get('id'));
@@ -107,6 +121,10 @@ export class ProviderProfileComponent implements OnInit {
     if (provider) {
       this.slots.set(this.providerService.getSlots(id));
     }
+    this.commerce.loadEntitlements().subscribe({
+      next: () => this.entitlementsLoading.set(false),
+      error: () => this.entitlementsLoading.set(false)
+    });
   }
 
   initials(name: string): string {

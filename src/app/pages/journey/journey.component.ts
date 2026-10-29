@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
@@ -13,7 +13,7 @@ import {
   NextAction,
   PROFESSIONAL_TYPE_LABELS
 } from '../../models/maternal.models';
-import { Entitlement } from '../../models/commerce.models';
+import { Entitlement, planDisplayName } from '../../models/commerce.models';
 
 const ALL_STATUSES: JourneyStatus[] = [
   'PREGNANCY',
@@ -106,27 +106,28 @@ const ALL_STATUSES: JourneyStatus[] = [
             <button class="btn btn-outline" (click)="startEdit(journey)">Edit Stage / EDD</button>
           </div>
 
-          <!-- Session wallet (roadmap §Phase 2 UI) — client-side only, see CommerceService -->
+          <!-- Session wallet (roadmap §Phase 2 UI) — GET /api/v1/entitlements, per professional type -->
           <div class="card glass wallet-card">
             <h3>My Care Plan</h3>
-            @if (entitlements().length === 0) {
+            @if (activeEntitlements().length === 0) {
               <p class="field-hint">No active care plan yet.</p>
               <a routerLink="/plans" class="btn btn-primary">Choose a Plan</a>
             } @else {
+              <p class="field-hint wallet-sub">{{ planName(activeEntitlements()[0].planCode) }} plan · valid until {{ activeEntitlements()[0].expiresAt | date:'mediumDate' }}</p>
               <div class="wallet-list">
-                @for (e of entitlements(); track e.purchasedAt) {
+                @for (e of activeEntitlements(); track e.id) {
                   <div class="wallet-row">
                     <div class="wallet-head">
-                      <strong>{{ e.planName }}</strong>
-                      <span class="field-hint">Expires {{ e.expiresAt | date:'mediumDate' }}</span>
+                      <strong>{{ professionalLabel(e.professionalType) }}</strong>
+                      <span class="field-hint">{{ remaining(e) }} of {{ e.totalSessions }} left</span>
                     </div>
                     <div class="wallet-bar">
-                      <div class="wallet-bar-fill" [style.width.%]="(e.usedSessions / e.totalSessions) * 100"></div>
+                      <div class="wallet-bar-fill" [style.width.%]="((e.totalSessions - remaining(e)) / e.totalSessions) * 100"></div>
                     </div>
-                    <span class="field-hint">{{ e.totalSessions - e.usedSessions }} of {{ e.totalSessions }} sessions remaining</span>
                   </div>
                 }
               </div>
+              <a routerLink="/care" class="btn btn-outline wallet-cta">Book a session</a>
             }
           </div>
 
@@ -236,7 +237,9 @@ const ALL_STATUSES: JourneyStatus[] = [
     .wallet-head { display: flex; justify-content: space-between; align-items: baseline; }
     .wallet-head strong { font-size: 0.95rem; color: var(--sage-900); }
     .wallet-bar { height: 8px; border-radius: var(--radius-full); background: var(--sage-50); overflow: hidden; }
-    .wallet-bar-fill { height: 100%; background: var(--blush-700); border-radius: var(--radius-full); }
+    .wallet-bar-fill { height: 100%; background: linear-gradient(90deg, var(--sage-500), var(--sage-700)); border-radius: var(--radius-full); transition: width var(--transition-smooth); }
+    .wallet-sub { margin: -0.5rem 0 1rem; }
+    .wallet-cta { margin-top: 1.25rem; }
 
     .timeline-card { padding: 2rem; }
     .timeline-card h3 { font-size: 1.15rem; color: var(--primary-deep); margin-bottom: 0.5rem; }
@@ -304,7 +307,19 @@ export class JourneyComponent implements OnInit {
   private notifications = inject(NotificationService);
 
   statuses = ALL_STATUSES;
-  entitlements = signal<Entitlement[]>([]);
+  // Non-expired entitlements from GET /entitlements; remaining() also subtracts the
+  // UI's local booking overlay (see CommerceService) until the API consumes sessions itself.
+  activeEntitlements = computed(() =>
+    this.commerce.entitlements().filter((e: Entitlement) => !this.commerce.isExpired(e))
+  );
+
+  remaining(e: Entitlement): number {
+    return this.commerce.effectiveRemaining(e);
+  }
+
+  planName(code: string): string {
+    return planDisplayName(code);
+  }
 
   loading = signal(true);
   errorMsg = signal<string | null>(null);
@@ -329,13 +344,13 @@ export class JourneyComponent implements OnInit {
     return JOURNEY_STATUS_LABELS[status];
   }
 
-  professionalLabel(type: NextAction['professionalType']): string {
-    return PROFESSIONAL_TYPE_LABELS[type] || type;
+  professionalLabel(type: string): string {
+    return (PROFESSIONAL_TYPE_LABELS as Record<string, string>)[type] || type;
   }
 
   ngOnInit() {
     this.loadDashboard();
-    this.entitlements.set(this.commerce.getEntitlements());
+    this.commerce.loadEntitlements().subscribe({ error: () => { /* wallet just shows "no plan" */ } });
   }
 
   private loadDashboard() {

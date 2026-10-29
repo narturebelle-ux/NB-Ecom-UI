@@ -1,154 +1,123 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { Observable, tap } from 'rxjs';
 import { ApiService } from './api.service';
-import { Entitlement, MOCK_PLANS, Order, Plan, installmentTotal } from '../models/commerce.models';
+import { environment } from '../../environments/environment';
+import { Entitlement, Order, Payment, PaymentMode, Plan } from '../models/commerce.models';
 
 /**
- * Phase 2 (Plans, checkout & entitlements), implemented entirely client-side — no
- * GET /plans, POST /orders, POST /payments/* or GET /entitlements exist on the API yet
- * (requested, see API_Integration.md §13/14). Orders/entitlements persist to localStorage,
- * scoped per signed-in user id, same pattern as ApiService's cart. This is a real,
- * usable prototype of the roadmap's "MockPaymentProvider" — not a placeholder — but it is
- * NOT synced to any backend; it disappears if the user clears site data, and nothing here
- * should be treated as a source of truth once the real Order/Payment API ships.
+ * Phase 2 (Plans, checkout & entitlements) against the real API — UI_INTEGRATION_GUIDE.md §8.
+ *
+ * One deliberate client-side piece remains: session *consumption*. The API's entitlements
+ * always report usedSessions=0 because booking/session-completion is its Phase 3, which
+ * doesn't exist yet. The UI's Phase 3 booking mock still needs to "spend" a session, so it
+ * records usage in a per-user localStorage overlay subtracted from the server's
+ * remainingSessions. Drop the overlay once the API consumes sessions itself.
  */
 @Injectable({ providedIn: 'root' })
 export class CommerceService {
+  private http = inject(HttpClient);
   private api = inject(ApiService);
+  private readonly baseUrl = environment.apiUrl;
 
-  getPlans(): Plan[] {
-    return MOCK_PLANS;
+  readonly entitlements = signal<Entitlement[]>([]);
+
+  getPlans(): Observable<Plan[]> {
+    return this.http.get<Plan[]>(`${this.baseUrl}/plans`);
   }
 
-  getPlan(id: number): Plan | undefined {
-    return MOCK_PLANS.find(p => p.id === id);
+  getPlan(id: number): Observable<Plan> {
+    return this.http.get<Plan>(`${this.baseUrl}/plans/${id}`);
   }
 
-  installmentPrice(plan: Plan): number {
-    return installmentTotal(plan);
+  /** Reuse the same idempotencyKey when retrying the same attempt; the server returns the original order. */
+  createOrder(planId: number, paymentMode: PaymentMode, idempotencyKey: string): Observable<Order> {
+    return this.http.post<Order>(
+      `${this.baseUrl}/orders`,
+      { planId, paymentMode },
+      { headers: new HttpHeaders({ 'Idempotency-Key': idempotencyKey }) }
+    );
   }
 
-  getOrders(): Order[] {
-    return this.readJson<Order[]>(this.ordersKey(), []);
+  getOrder(id: number): Observable<Order> {
+    return this.http.get<Order>(`${this.baseUrl}/orders/${id}`);
   }
 
-  getOrder(id: string): Order | undefined {
-    return this.getOrders().find(o => o.id === id);
+  getOrders(): Observable<Order[]> {
+    return this.http.get<Order[]>(`${this.baseUrl}/orders`);
   }
 
-  getEntitlements(): Entitlement[] {
-    return this.readJson<Entitlement[]>(this.entitlementsKey(), []);
+  createPayment(orderId: number): Observable<Payment> {
+    return this.http.post<Payment>(`${this.baseUrl}/payments/create`, { orderId });
   }
 
-  createOrder(planId: number, installment: boolean): Order {
-    const plan = this.getPlan(planId);
-    if (!plan) {
-      throw new Error('Unknown plan.');
-    }
-    const order: Order = {
-      id: 'ord_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
-      planId: plan.id,
-      planName: plan.name,
-      amount: installment ? this.installmentPrice(plan) : plan.priceOneTime,
-      installment,
-      status: 'PENDING',
-      createdAt: new Date().toISOString()
-    };
-    const orders = this.getOrders();
-    orders.push(order);
-    this.writeJson(this.ordersKey(), orders);
-    return order;
+  /** Posts to the mockSucceedPath/mockFailPath the API handed back (temporary until Phase 7's real gateway). */
+  completeMockPayment(apiPath: string): Observable<{ status: string }> {
+    const origin = this.baseUrl.replace(/\/api\/v1\/?$/, '');
+    return this.http.post<{ status: string }>(`${origin}${apiPath}`, {});
   }
 
-  /** Simulates the webhook flow a real PaymentProvider would fire — succeed=false models "Fail payment". */
-  completePayment(orderId: string, succeed: boolean): Order {
-    const orders = this.getOrders();
-    const order = orders.find(o => o.id === orderId);
-    if (!order) {
-      throw new Error('Order not found.');
-    }
-    order.status = succeed ? 'PAID' : 'FAILED';
-    if (succeed) {
-      order.paidAt = new Date().toISOString();
-      this.grantEntitlement(order);
-    }
-    this.writeJson(this.ordersKey(), orders);
-    return order;
+  loadEntitlements(): Observable<Entitlement[]> {
+    return this.http.get<Entitlement[]>(`${this.baseUrl}/entitlements`).pipe(
+      tap(list => this.entitlements.set(list))
+    );
   }
 
-  private grantEntitlement(order: Order) {
-    const plan = this.getPlan(order.planId);
-    if (!plan) return;
-    const purchasedAt = new Date();
-    const expiresAt = new Date(purchasedAt);
-    expiresAt.setMonth(expiresAt.getMonth() + plan.validityMonths);
-
-    const entitlements = this.getEntitlements();
-    entitlements.push({
-      id: 'ent_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
-      planId: plan.id,
-      planName: plan.name,
-      totalSessions: plan.totalSessions,
-      usedSessions: 0,
-      purchasedAt: purchasedAt.toISOString(),
-      expiresAt: expiresAt.toISOString()
-    });
-    this.writeJson(this.entitlementsKey(), entitlements);
+  newIdempotencyKey(): string {
+    return globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`;
   }
 
-  /** True if any non-expired entitlement still has at least one session left. */
-  hasAvailableSession(): boolean {
-    return this.getEntitlements().some(e => this.sessionsRemaining(e) > 0 && !this.isExpired(e));
-  }
+  // --- Local session-consumption overlay (see class comment) ---
 
-  sessionsRemaining(e: Entitlement): number {
-    return e.totalSessions - e.usedSessions;
+  effectiveRemaining(e: Entitlement): number {
+    return Math.max(0, e.remainingSessions - (this.readUsage()[e.id] ?? 0));
   }
 
   isExpired(e: Entitlement): boolean {
     return new Date(e.expiresAt).getTime() < Date.now();
   }
 
-  /** Consumes one session from the oldest non-expired entitlement that still has one. Used when a booking is confirmed. */
-  consumeSession(): Entitlement | null {
-    const entitlements = this.getEntitlements();
-    const target = entitlements
-      .filter(e => this.sessionsRemaining(e) > 0 && !this.isExpired(e))
-      .sort((a, b) => new Date(a.purchasedAt).getTime() - new Date(b.purchasedAt).getTime())[0];
+  /** The soonest-expiring usable entitlement for this professional type, if any. Needs loadEntitlements() first. */
+  findAvailable(professionalType: string): Entitlement | undefined {
+    return this.entitlements()
+      .filter(e => e.professionalType === professionalType && !this.isExpired(e) && this.effectiveRemaining(e) > 0)
+      .sort((a, b) => new Date(a.expiresAt).getTime() - new Date(b.expiresAt).getTime())[0];
+  }
+
+  consumeSession(professionalType: string): Entitlement | null {
+    const target = this.findAvailable(professionalType);
     if (!target) return null;
-    target.usedSessions += 1;
-    this.writeJson(this.entitlementsKey(), entitlements);
+    const usage = this.readUsage();
+    usage[target.id] = (usage[target.id] ?? 0) + 1;
+    this.writeUsage(usage);
+    this.entitlements.set([...this.entitlements()]);
     return target;
   }
 
-  /** Reverses consumeSession() — used when a booking is cancelled. */
-  refundSession(entitlementId: string | null) {
-    if (!entitlementId) return;
-    const entitlements = this.getEntitlements();
-    const target = entitlements.find(e => e.id === entitlementId);
-    if (target && target.usedSessions > 0) {
-      target.usedSessions -= 1;
-      this.writeJson(this.entitlementsKey(), entitlements);
-    }
+  refundSession(entitlementId: number | string | null) {
+    if (entitlementId === null || entitlementId === undefined) return;
+    const usage = this.readUsage();
+    const key = Number(entitlementId);
+    if (!usage[key]) return;
+    usage[key] -= 1;
+    this.writeUsage(usage);
+    this.entitlements.set([...this.entitlements()]);
   }
 
-  private ordersKey(): string {
-    return `nb_orders_${this.api.currentUser()?.id ?? 'guest'}`;
+  private usageKey(): string {
+    return `nb_session_usage_${this.api.currentUser()?.id ?? 'guest'}`;
   }
 
-  private entitlementsKey(): string {
-    return `nb_entitlements_${this.api.currentUser()?.id ?? 'guest'}`;
-  }
-
-  private readJson<T>(key: string, fallback: T): T {
+  private readUsage(): Record<number, number> {
     try {
-      const raw = localStorage.getItem(key);
-      return raw ? JSON.parse(raw) as T : fallback;
+      const raw = localStorage.getItem(this.usageKey());
+      return raw ? JSON.parse(raw) : {};
     } catch {
-      return fallback;
+      return {};
     }
   }
 
-  private writeJson(key: string, value: unknown) {
-    localStorage.setItem(key, JSON.stringify(value));
+  private writeUsage(usage: Record<number, number>) {
+    localStorage.setItem(this.usageKey(), JSON.stringify(usage));
   }
 }
