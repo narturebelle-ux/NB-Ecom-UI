@@ -1,152 +1,97 @@
 import { Injectable, inject } from '@angular/core';
-import { ApiService } from './api.service';
-import { AccessAction, AccessLogEntry, RecordCategory, RecordDoc, RecordShare } from '../models/records.models';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { Observable, forkJoin, map, of, switchMap } from 'rxjs';
+import { environment } from '../../environments/environment';
+import {
+  AccessLogEntry,
+  HealthRecord,
+  RecordCategory,
+  RecordDownloadUrl,
+  RecordShare,
+  RecordUploadUrl,
+  ShareTargetType
+} from '../models/records.models';
 
-/**
- * Phase 4 (Records vault & sharing) — client-side only. See records.models.ts for why
- * this never persists actual file content, only metadata. Not synced to any backend.
- */
+/** Phase 4 (Records vault & sharing) against the real API — UI_INTEGRATION_GUIDE.md §10. */
 @Injectable({ providedIn: 'root' })
 export class RecordsService {
-  private api = inject(ApiService);
+  private http = inject(HttpClient);
+  private readonly baseUrl = environment.apiUrl;
 
-  getRecords(): RecordDoc[] {
-    return this.readJson<RecordDoc[]>(this.recordsKey(), []);
+  getRecords(): Observable<HealthRecord[]> {
+    return this.http.get<HealthRecord[]>(`${this.baseUrl}/records`);
   }
 
-  getRecord(id: string): RecordDoc | undefined {
-    return this.getRecords().find(r => r.id === id);
+  /** Every call is audited server-side as a VIEW — use it when the user actually opens a record. */
+  viewRecord(id: number): Observable<HealthRecord> {
+    return this.http.get<HealthRecord>(`${this.baseUrl}/records/${id}`);
   }
 
-  /** Captures only metadata from the File object — never reads its content. */
-  addRecord(file: File, category: RecordCategory): RecordDoc {
-    const record: RecordDoc = {
-      id: 'rec_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
-      name: file.name,
-      category,
-      mimeType: file.type || 'unknown',
-      sizeBytes: file.size,
-      uploadedAt: new Date().toISOString()
-    };
-    const records = this.getRecords();
-    records.push(record);
-    this.writeJson(this.recordsKey(), records);
-    this.logAccess(record.id, record.name, 'UPLOAD');
-    return record;
+  /**
+   * Two-call upload: get a signed Supabase Storage URL, PUT the raw bytes there (straight to
+   * storage — never through our API, and without our Firebase token, since the URL isn't under
+   * environment.apiUrl), then confirm so the API creates the record after verifying the object.
+   */
+  upload(file: File, category: RecordCategory): Observable<HealthRecord> {
+    const mimeType = file.type || 'application/octet-stream';
+    return this.http.post<RecordUploadUrl>(`${this.baseUrl}/records/upload-url`, {
+      category, fileName: file.name, mimeType, sizeBytes: file.size
+    }).pipe(
+      switchMap(signed => {
+        const url = signed.uploadUrl.includes('token=')
+          ? signed.uploadUrl
+          : `${signed.uploadUrl}${signed.uploadUrl.includes('?') ? '&' : '?'}token=${encodeURIComponent(signed.token)}`;
+        return this.http.put(url, file, { headers: new HttpHeaders({ 'Content-Type': mimeType }) }).pipe(
+          map(() => signed)
+        );
+      }),
+      switchMap(signed => this.http.post<HealthRecord>(`${this.baseUrl}/records`, {
+        category, objectPath: signed.objectPath, originalFileName: file.name, mimeType, sizeBytes: file.size
+      }))
+    );
   }
 
-  updateMetadata(id: string, name: string, category: RecordCategory) {
-    const records = this.getRecords();
-    const record = records.find(r => r.id === id);
-    if (!record) return;
-    record.name = name;
-    record.category = category;
-    this.writeJson(this.recordsKey(), records);
+  updateCategory(id: number, category: RecordCategory): Observable<HealthRecord> {
+    return this.http.patch<HealthRecord>(`${this.baseUrl}/records/${id}`, { category });
   }
 
-  deleteRecord(id: string) {
-    const record = this.getRecord(id);
-    if (!record) return;
-    const records = this.getRecords().filter(r => r.id !== id);
-    this.writeJson(this.recordsKey(), records);
-    const shares = this.getShares().filter(s => s.recordId !== id);
-    this.writeJson(this.sharesKey(), shares);
-    this.logAccess(id, record.name, 'DELETE');
+  /** Soft delete; the API also revokes every share of the record. */
+  deleteRecord(id: number): Observable<unknown> {
+    return this.http.delete(`${this.baseUrl}/records/${id}`);
   }
 
-  recordViewed(id: string) {
-    const record = this.getRecord(id);
-    if (record) this.logAccess(id, record.name, 'VIEW');
+  getDownloadUrl(id: number): Observable<RecordDownloadUrl> {
+    return this.http.post<RecordDownloadUrl>(`${this.baseUrl}/records/${id}/download-url`, {});
   }
 
-  recordDownloaded(id: string) {
-    const record = this.getRecord(id);
-    if (record) this.logAccess(id, record.name, 'DOWNLOAD');
+  getShares(recordId: number): Observable<RecordShare[]> {
+    return this.http.get<RecordShare[]>(`${this.baseUrl}/records/${recordId}/shares`);
   }
 
-  getShares(): RecordShare[] {
-    return this.readJson<RecordShare[]>(this.sharesKey(), []);
+  share(recordId: number, type: ShareTargetType, targetId: number, expiresAt: string): Observable<RecordShare> {
+    const body = type === 'PROVIDER'
+      ? { shareTargetType: type, targetProviderId: targetId, expiresAt }
+      : { shareTargetType: type, targetBookingId: targetId, expiresAt };
+    return this.http.post<RecordShare>(`${this.baseUrl}/records/${recordId}/shares`, body);
   }
 
-  getSharesForRecord(recordId: string): RecordShare[] {
-    return this.getShares().filter(s => s.recordId === recordId);
+  revokeShare(shareId: number, reason?: string): Observable<RecordShare> {
+    return this.http.post<RecordShare>(`${this.baseUrl}/records/shares/${shareId}/revoke`, reason ? { reason } : {});
   }
 
-  shareRecord(recordId: string, sharedWithLabel: string, expiryDays: number): RecordShare {
-    const record = this.getRecord(recordId);
-    if (!record) throw new Error('Record not found.');
-    const createdAt = new Date();
-    const expiresAt = new Date(createdAt);
-    expiresAt.setDate(expiresAt.getDate() + expiryDays);
-
-    const share: RecordShare = {
-      id: 'shr_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
-      recordId,
-      sharedWithLabel,
-      createdAt: createdAt.toISOString(),
-      expiresAt: expiresAt.toISOString(),
-      revokedAt: null
-    };
-    const shares = this.getShares();
-    shares.push(share);
-    this.writeJson(this.sharesKey(), shares);
-    this.logAccess(recordId, record.name, 'SHARE', `with ${sharedWithLabel} for ${expiryDays} day(s)`);
-    return share;
+  getAccessLog(recordId: number): Observable<AccessLogEntry[]> {
+    return this.http.get<AccessLogEntry[]>(`${this.baseUrl}/records/${recordId}/access-log`);
   }
 
-  revokeShare(shareId: string) {
-    const shares = this.getShares();
-    const share = shares.find(s => s.id === shareId);
-    if (!share) return;
-    share.revokedAt = new Date().toISOString();
-    this.writeJson(this.sharesKey(), shares);
+  /** The API's access log is per record; this merges all of the user's records into one timeline. */
+  getAllAccessLogs(): Observable<AccessLogEntry[]> {
+    return this.getRecords().pipe(
+      switchMap(records => records.length ? forkJoin(records.map(r => this.getAccessLog(r.id))) : of([] as AccessLogEntry[][])),
+      map(lists => lists.flat().sort((a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime()))
+    );
   }
 
   isShareActive(share: RecordShare): boolean {
     return !share.revokedAt && new Date(share.expiresAt).getTime() > Date.now();
-  }
-
-  getAccessLog(): AccessLogEntry[] {
-    return this.readJson<AccessLogEntry[]>(this.logKey(), [])
-      .sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime());
-  }
-
-  private logAccess(recordId: string, recordName: string, action: AccessAction, detail?: string) {
-    const entry: AccessLogEntry = {
-      id: 'log_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
-      recordId,
-      recordName,
-      action,
-      at: new Date().toISOString(),
-      detail
-    };
-    const log = this.readJson<AccessLogEntry[]>(this.logKey(), []);
-    log.push(entry);
-    this.writeJson(this.logKey(), log);
-  }
-
-  private recordsKey(): string {
-    return `nb_records_${this.api.currentUser()?.id ?? 'guest'}`;
-  }
-
-  private sharesKey(): string {
-    return `nb_record_shares_${this.api.currentUser()?.id ?? 'guest'}`;
-  }
-
-  private logKey(): string {
-    return `nb_record_access_log_${this.api.currentUser()?.id ?? 'guest'}`;
-  }
-
-  private readJson<T>(key: string, fallback: T): T {
-    try {
-      const raw = localStorage.getItem(key);
-      return raw ? JSON.parse(raw) as T : fallback;
-    } catch {
-      return fallback;
-    }
-  }
-
-  private writeJson(key: string, value: unknown) {
-    localStorage.setItem(key, JSON.stringify(value));
   }
 }

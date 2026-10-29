@@ -1,14 +1,6 @@
 /**
- * Phase 4 (Records vault & sharing) — implemented client-side, same reasoning as Phases 2/3.
- *
- * IMPORTANT SAFETY NOTE: this mock deliberately never reads or stores actual file content —
- * only metadata (name, category, size, type, timestamp) captured from the browser's File
- * object. The real Phase 4 API spec calls for encrypted object storage with short-lived
- * signed URLs; faking that client-side (e.g. stuffing file bytes into localStorage,
- * unencrypted, on a device) would be actively misleading about how a health-document
- * feature handles sensitive data. Every page built against this shows an explicit
- * "not secure storage yet" notice — do not remove it when the real API lands either,
- * until that real storage is actually wired up.
+ * Phase 4 (Records vault & sharing) — real contract, NB-Ecomm-API UI_INTEGRATION_GUIDE.md §10.
+ * Files go to Supabase Storage via short-lived signed URLs; no permanent public URLs exist.
  */
 
 export type RecordCategory = 'SCAN' | 'LAB_REPORT' | 'PRESCRIPTION' | 'DISCHARGE_SUMMARY' | 'OTHER';
@@ -21,31 +13,58 @@ export const RECORD_CATEGORY_LABELS: Record<RecordCategory, string> = {
   OTHER: 'Other'
 };
 
-export interface RecordDoc {
-  id: string;
-  name: string;
+export interface HealthRecord {
+  id: number;
+  userId: number;
   category: RecordCategory;
+  originalFileName: string;
   mimeType: string;
   sizeBytes: number;
-  uploadedAt: string;
+  status: string;
+  /** Always NOT_SCANNED today — the API has no real malware scanning yet. */
+  scanStatus: string;
+  createdAt: string;
+  updatedAt: string;
 }
+
+export interface RecordUploadUrl {
+  objectPath: string;
+  uploadUrl: string;
+  token: string;
+  expiresAt: string;
+}
+
+export interface RecordDownloadUrl {
+  downloadUrl: string;
+  expiresAt: string;
+}
+
+export type ShareTargetType = 'PROVIDER' | 'BOOKING';
 
 export interface RecordShare {
-  id: string;
-  recordId: string;
-  sharedWithLabel: string;
+  id: number;
+  recordId: number;
+  shareTargetType: ShareTargetType;
+  targetProviderId?: number | null;
+  targetBookingId?: number | null;
   createdAt: string;
   expiresAt: string;
-  revokedAt: string | null;
+  revokedAt?: string | null;
 }
 
-export type AccessAction = 'UPLOAD' | 'VIEW' | 'DOWNLOAD' | 'SHARE' | 'DELETE';
+export type AccessAction = 'UPLOAD' | 'VIEW' | 'DOWNLOAD' | 'SHARE' | 'REVOKE_SHARE' | 'DELETE';
 
 export interface AccessLogEntry {
-  id: string;
-  recordId: string;
+  id: number;
+  recordId: number;
   recordName: string;
   action: AccessAction;
-  at: string;
-  detail?: string;
+  actorRelationship: string;
+  occurredAt: string;
+}
+
+/** Formats a Date as a zone-less local "yyyy-MM-ddTHH:mm:ss" — the API's LocalDateTime shape. */
+export function toLocalDateTime(d: Date): string {
+  const p = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
 }

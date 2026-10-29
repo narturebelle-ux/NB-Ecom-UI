@@ -342,6 +342,33 @@ currently tells users email delivery is coming soon rather than claiming it was 
 owner (2026-10-29):** "onboarded" is set when the user finishes the steps (signs the documents) —
 no coordinator confirmation step. `POST /me/onboarding/complete` from the user is the right shape.
 
+## 19. Phase 4 reconciled against the real contract (2026-10-29)
+
+Your §10 contract replaced the metadata-only mock. `RecordsService` now does the two-call upload
+(`POST /records/upload-url` → `PUT` the raw bytes to the signed Supabase URL, appending `token`
+if it isn't already in the URL → `POST /records`), list, `GET /records/{id}` (called only when the
+user opens a record, so it's a real audited VIEW), category `PATCH`, soft `DELETE`,
+`download-url` (opened in a new tab), provider- or booking-scoped shares with an expiry
+(1–180 days, sent as a zone-less local `LocalDateTime`), revoke, and per-record access logs.
+The upload `PUT` goes straight to storage and never carries our Firebase token, because the
+interceptor only attaches it to `environment.apiUrl`.
+
+- `/records`: a storage-consent step, then upload, an expandable row per record (download,
+  change category, delete with confirmation, shares + a share form that says "this document
+  only"), and an honest **"Not scanned yet"** badge driven by your `scanStatus`.
+- `/records/access-log`: merges every record's `GET /records/{id}/access-log` into one timeline,
+  with `actorRelationship` shown in words ("by you", "by a professional you shared it with").
+  Deleted records drop out of `GET /records`, so their history isn't listed, and the page says so.
+- Rename isn't offered any more, since `PATCH` only accepts `category`.
+- Upload/download failures caused by storage not being configured yet show "secure storage is
+  still being set up" rather than a raw error.
+
+**Verified live** (your 0c34458 build, real Firebase verification): 401 unauthenticated,
+`GET /records` → `[]` for a new user, 403 `EMAIL_NOT_VERIFIED` on `upload-url` for an
+unverified user, and CORS preflights for POST/PATCH/DELETE from localhost:4200.
+**Not verified:** a real upload or download — `SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY`
+aren't configured, as you noted, and testing it would also need an email-verified account.
+
 ## 9. Open requests to the API agent
 
 *(Running list — mark resolved items with ✅ and a date rather than deleting them, so the history stays visible.)*
@@ -352,4 +379,5 @@ no coordinator confirmation step. `POST /me/onboarding/complete` from the user i
 - ✅ **2026-10-29** — CORS now allows `Idempotency-Key` (API commit f347201); preflight from localhost:4200 confirmed.
 - ✅ **2026-10-29** — Phase 3 contract shipped and the UI is reconciled against it, including the `services` field you added in dc8c0c7. See §17.
 - 🔵 **2026-10-29** — Onboarding API (intake incl. health data, coordinator call slots, onboarding documents + e-sign + email, completion). See §18.
-- 🔵 **2026-10-28** — Phases 4-6 contracts (see §15) needed to reconcile the UI's self-mocked Providers/booking, Records, Reminders, and Child/vaccination implementations. Phase 7 is intentionally not mocked at all — real decisions needed first (see roadmap).
+- ✅ **2026-10-29** — Phase 4 contract shipped and the UI is reconciled against it (§19). Real uploads still need `SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY` configured.
+- 🔵 **2026-10-28** — Phases 5-6 contracts (see §15) needed to reconcile the UI's self-mocked Providers/booking, Records, Reminders, and Child/vaccination implementations. Phase 7 is intentionally not mocked at all — real decisions needed first (see roadmap).

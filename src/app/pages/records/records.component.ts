@@ -4,12 +4,22 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { RecordsService } from '../../services/records.service';
+import { ProviderService } from '../../services/provider.service';
 import { ApiService } from '../../services/api.service';
-import { RECORD_CATEGORY_LABELS, RecordCategory, RecordDoc, RecordShare } from '../../models/records.models';
+import {
+  HealthRecord,
+  RECORD_CATEGORY_LABELS,
+  RecordCategory,
+  RecordShare,
+  ShareTargetType,
+  toLocalDateTime
+} from '../../models/records.models';
+import { Booking, Provider } from '../../models/provider.models';
 
 const CONSENT_KEY = 'nb_records_storage_consent';
 const CATEGORIES: RecordCategory[] = ['SCAN', 'LAB_REPORT', 'PRESCRIPTION', 'DISCHARGE_SUMMARY', 'OTHER'];
 
+/** Records vault against the real API (UI_INTEGRATION_GUIDE.md §10). */
 @Component({
   selector: 'app-records',
   standalone: true,
@@ -17,171 +27,263 @@ const CATEGORIES: RecordCategory[] = ['SCAN', 'LAB_REPORT', 'PRESCRIPTION', 'DIS
   template: `
     <div class="records-page">
       <div class="container">
-        <div class="records-header">
-          <h1>Records Vault</h1>
-          <a routerLink="/records/access-log" class="btn btn-outline">Access History</a>
-        </div>
-
-        <div class="danger-notice">
-          <mat-icon class="icon-sm">gpp_maybe</mat-icon> <strong>Not secure storage yet.</strong> This prototype only remembers a filename, category
-          and size on this device — it does NOT upload, encrypt, or store the actual file content anywhere.
-          Please don't add real medical documents here until this is replaced with real encrypted storage.
+        <div class="records-header animate-in">
+          <div>
+            <h1>Records Vault</h1>
+            <p class="lead">Keep your reports and scans in one private place, and share them only when you choose.</p>
+          </div>
+          <a routerLink="/records/access-log" class="btn btn-outline btn-sm"><mat-icon class="icon-sm">history</mat-icon> Access history</a>
         </div>
 
         @if (!hasConsented()) {
-          <div class="consent-box card">
-            <h2>Before you add anything</h2>
+          <div class="card glass consent-box">
+            <mat-icon class="hero-icon">lock</mat-icon>
+            <h2>Before you add documents</h2>
+            <ul class="consent-points">
+              <li><mat-icon class="icon-sm">cloud_upload</mat-icon> Files are stored in our secure cloud storage and opened only through short-lived links.</li>
+              <li><mat-icon class="icon-sm">visibility</mat-icon> Only you can see them, unless you share a document with a professional for a set time.</li>
+              <li><mat-icon class="icon-sm">history</mat-icon> Every view, download and share is recorded in your access history.</li>
+            </ul>
             <label class="consent-row">
               <input type="checkbox" [(ngModel)]="consentChecked" />
-              I understand this is a prototype and no real file content is stored securely anywhere.
+              I agree to NartureBelle storing the documents I upload, as described above.
             </label>
             <button class="btn btn-primary" [disabled]="!consentChecked" (click)="giveConsent()">Continue</button>
           </div>
         } @else {
-          <div class="upload-box card">
-            <h2>Add a Record</h2>
-            <div class="form-row">
-              <input type="file" (change)="onFileSelected($event)" #fileInput />
-              <select class="form-control" [(ngModel)]="uploadCategory">
-                @for (c of categories; track c) {
-                  <option [ngValue]="c">{{ categoryLabel(c) }}</option>
-                }
+          <div class="card glass upload-box">
+            <h2>Add a document</h2>
+            <div class="upload-row">
+              <label class="file-pick">
+                <mat-icon>upload_file</mat-icon>
+                <span>{{ selectedFile()?.name || 'Choose a file (PDF or photo)' }}</span>
+                <input type="file" accept=".pdf,image/*" (change)="onFileSelected($event)" #fileInput hidden />
+              </label>
+              <select class="form-control category-select" [(ngModel)]="uploadCategory">
+                @for (c of categories; track c) { <option [ngValue]="c">{{ categoryLabel(c) }}</option> }
               </select>
-              <button class="btn btn-primary" [disabled]="!selectedFile()" (click)="upload(fileInput)">Add</button>
+              <button class="btn btn-primary" [disabled]="!selectedFile() || uploading()" (click)="upload(fileInput)">
+                @if (uploading()) { Uploading… } @else { <mat-icon class="icon-sm">cloud_upload</mat-icon> Upload }
+              </button>
             </div>
+            @if (uploadError()) { <p class="error"><mat-icon class="icon-sm">error_outline</mat-icon> {{ uploadError() }}</p> }
           </div>
 
-          <div class="record-list">
-            @for (r of records(); track r.id) {
-              <div class="record-card card">
-                @if (editingId() === r.id) {
-                  <div class="edit-row">
-                    <input class="form-control" [(ngModel)]="editName" />
-                    <select class="form-control" [(ngModel)]="editCategory">
-                      @for (c of categories; track c) {
-                        <option [ngValue]="c">{{ categoryLabel(c) }}</option>
-                      }
-                    </select>
-                    <button class="btn btn-primary btn-sm" (click)="saveEdit(r)">Save</button>
-                  </div>
-                } @else {
-                  <div class="record-info" (click)="view(r)">
-                    <mat-icon class="icon">description</mat-icon>
-                    <div>
-                      <strong>{{ r.name }}</strong>
-                      <span class="field-hint">{{ categoryLabel(r.category) }} · {{ formatSize(r.sizeBytes) }} · {{ r.uploadedAt | date:'mediumDate' }}</span>
+          @if (loading()) {
+            @for (i of [1, 2]; track i) { <div class="skeleton" style="height: 84px; margin-bottom: 1rem"></div> }
+          } @else if (list().length === 0) {
+            <div class="empty">
+              <mat-icon class="hero-icon">folder_open</mat-icon>
+              <p>No documents yet. Scans, lab reports and prescriptions you add will appear here.</p>
+            </div>
+          } @else {
+            <div class="record-list">
+              @for (r of list(); track r.id) {
+                <div class="record-card card glass" [class.open]="openId() === r.id">
+                  <div class="record-head" (click)="toggleOpen(r)">
+                    <mat-icon class="doc-icon">{{ r.mimeType === 'application/pdf' ? 'picture_as_pdf' : 'image' }}</mat-icon>
+                    <div class="record-meta">
+                      <strong>{{ r.originalFileName }}</strong>
+                      <span class="hint">{{ categoryLabel(r.category) }} · {{ formatSize(r.sizeBytes) }} · {{ r.createdAt | date:'mediumDate' }}</span>
                     </div>
-                  </div>
-                  <div class="record-actions">
-                    <button class="btn-link" (click)="startEdit(r)">Edit</button>
-                    <button class="btn-link" (click)="download(r)">Download</button>
-                    <button class="btn-link" (click)="sharingId.set(sharingId() === r.id ? null : r.id)">Share</button>
-                    <button class="btn-link danger" (click)="remove(r)">Delete</button>
-                  </div>
-                }
-
-                @if (sharingId() === r.id) {
-                  <div class="share-panel">
-                    <div class="share-form">
-                      <input class="form-control" placeholder="Share with (e.g. Dr. Sharma)" [(ngModel)]="shareLabel" />
-                      <input class="form-control" type="number" min="1" max="90" [(ngModel)]="shareDays" />
-                      <span class="field-hint">days</span>
-                      <button class="btn btn-primary btn-sm" (click)="createShare(r)">Share</button>
-                    </div>
-                    @for (s of shares(r.id); track s.id) {
-                      <div class="share-row">
-                        <span>Shared with <strong>{{ s.sharedWithLabel }}</strong> until {{ s.expiresAt | date:'mediumDate' }}</span>
-                        @if (recordsService.isShareActive(s)) {
-                          <button class="btn-link danger" (click)="revoke(s)">Revoke</button>
-                        } @else {
-                          <span class="field-hint">{{ s.revokedAt ? 'Revoked' : 'Expired' }}</span>
-                        }
-                      </div>
+                    @if (r.scanStatus === 'NOT_SCANNED') {
+                      <span class="scan-badge" title="Virus scanning isn't enabled yet">Not scanned yet</span>
                     }
+                    <mat-icon class="chev">expand_more</mat-icon>
                   </div>
-                }
-              </div>
-            } @empty {
-              <p class="field-hint">No records added yet.</p>
-            }
-          </div>
+
+                  @if (openId() === r.id) {
+                    <div class="record-body">
+                      <div class="action-row">
+                        <button class="btn-link" (click)="download(r)"><mat-icon class="icon-sm">download</mat-icon> Download</button>
+                        <label class="inline-select">
+                          <mat-icon class="icon-sm">label</mat-icon>
+                          <select [ngModel]="r.category" (ngModelChange)="changeCategory(r, $event)">
+                            @for (c of categories; track c) { <option [ngValue]="c">{{ categoryLabel(c) }}</option> }
+                          </select>
+                        </label>
+                        <button class="btn-link danger" (click)="confirmDeleteId.set(r.id)"><mat-icon class="icon-sm">delete</mat-icon> Delete</button>
+                      </div>
+
+                      @if (confirmDeleteId() === r.id) {
+                        <div class="confirm-box">
+                          Delete “{{ r.originalFileName }}”? Any active shares will be revoked.
+                          <button class="btn-link danger" (click)="remove(r)">Yes, delete</button>
+                          <button class="btn-link" (click)="confirmDeleteId.set(null)">Cancel</button>
+                        </div>
+                      }
+
+                      <div class="share-section">
+                        <h3><mat-icon class="icon-sm">share</mat-icon> Sharing</h3>
+                        @for (s of shares(); track s.id) {
+                          <div class="share-row">
+                            <span>
+                              {{ shareTargetLabel(s) }}
+                              <span class="hint">
+                                @if (records.isShareActive(s)) { until {{ s.expiresAt | date:'mediumDate' }} }
+                                @else { {{ s.revokedAt ? 'revoked' : 'expired' }} }
+                              </span>
+                            </span>
+                            @if (records.isShareActive(s)) {
+                              <button class="btn-link danger" (click)="revoke(s)">Revoke</button>
+                            }
+                          </div>
+                        } @empty {
+                          <p class="hint">Not shared with anyone.</p>
+                        }
+
+                        <div class="share-form">
+                          <p class="share-what">Share <strong>this document only</strong> — nothing else in your vault.</p>
+                          <div class="share-controls">
+                            <select class="form-control" [(ngModel)]="shareType">
+                              <option value="PROVIDER">With a professional</option>
+                              <option value="BOOKING">With a booked session</option>
+                            </select>
+                            @if (shareType === 'PROVIDER') {
+                              <select class="form-control" [(ngModel)]="shareTargetId">
+                                <option [ngValue]="null">Choose a professional</option>
+                                @for (p of providers(); track p.id) { <option [ngValue]="p.id">{{ p.displayName }}</option> }
+                              </select>
+                            } @else {
+                              <select class="form-control" [(ngModel)]="shareTargetId">
+                                <option [ngValue]="null">Choose a booking</option>
+                                @for (b of bookings(); track b.id) {
+                                  <option [ngValue]="b.id">{{ providerName(b.providerId) }} · {{ b.scheduledStart | date:'MMM d, h:mm a' }}</option>
+                                }
+                              </select>
+                            }
+                            <div class="days">
+                              <input type="number" class="form-control" min="1" max="180" [(ngModel)]="shareDays" />
+                              <span>days</span>
+                            </div>
+                            <button class="btn btn-primary btn-sm" [disabled]="!shareTargetId || !shareDays || sharing()" (click)="createShare(r)">Share</button>
+                          </div>
+                          @if (shareType === 'PROVIDER' && providers().length === 0) { <p class="hint">No verified professionals are available yet.</p> }
+                          @if (shareType === 'BOOKING' && bookings().length === 0) { <p class="hint">You don't have any active bookings.</p> }
+                        </div>
+                      </div>
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+          }
         }
       </div>
     </div>
   `,
   styles: [`
-    .records-page { padding: 3rem 0 5rem; max-width: 760px; margin: 0 auto; }
-    .records-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; }
-    .records-header h1 { font-size: 1.85rem; color: var(--sage-900); }
+    .records-page { padding: 3rem 0 5rem; max-width: 820px; margin: 0 auto; }
+    .records-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; margin-bottom: 1.75rem; flex-wrap: wrap; }
+    .records-header h1 { font-size: 1.9rem; }
+    .lead { color: var(--text-secondary); margin-top: 0.25rem; }
+    .card { border-radius: var(--radius-xl); padding: 1.5rem; margin-bottom: 1.25rem; }
+    .card:hover { transform: none; }
+    h2 { font-size: 1.15rem; margin-bottom: 1rem; }
 
-    .danger-notice { font-size: 0.82rem; color: #a0281c; background: #fdecea; border: 1px solid #f5b7b1; border-radius: var(--radius-md); padding: 0.85rem 1rem; margin-bottom: 1.5rem; line-height: 1.5; }
+    .consent-box { text-align: center; padding: 2.25rem; }
+    .consent-points { list-style: none; text-align: left; max-width: 520px; margin: 0 auto 1.5rem; display: flex; flex-direction: column; gap: 0.65rem; }
+    .consent-points li { display: flex; gap: 0.6rem; align-items: flex-start; font-size: 0.9rem; color: var(--text-secondary); }
+    .consent-points mat-icon { color: var(--trust-700); margin-top: 0.15rem; }
+    .consent-row { display: flex; gap: 0.6rem; justify-content: center; font-size: 0.88rem; color: var(--text-secondary); margin-bottom: 1.25rem; align-items: center; }
 
-    .card { border-radius: var(--radius-xl); background: #fff; border: 1px solid var(--border-light); padding: 1.5rem; margin-bottom: 1.25rem; }
-    .consent-box h2 { font-size: 1.1rem; color: var(--primary-deep); margin-bottom: 1rem; }
-    .consent-row { display: flex; gap: 0.6rem; font-size: 0.88rem; color: var(--text-secondary); margin-bottom: 1.25rem; align-items: flex-start; }
+    .upload-row { display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center; }
+    .file-pick { flex: 1; min-width: 220px; display: flex; align-items: center; gap: 0.6rem; padding: 0.7rem 1rem; border: 1.5px dashed var(--sage-200); border-radius: var(--radius-md); background: var(--sage-50); color: var(--sage-800); cursor: pointer; font-size: 0.88rem; overflow: hidden; }
+    .file-pick span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .file-pick:hover { border-color: var(--sage-500); }
+    .category-select { width: auto; }
+    .error { display: flex; align-items: center; gap: 0.35rem; margin-top: 0.85rem; font-size: 0.85rem; color: #a0281c; }
 
-    .upload-box h2 { font-size: 1.05rem; color: var(--primary-deep); margin-bottom: 1rem; }
-    .form-row { display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center; }
-    .form-control { padding: 0.55rem 0.75rem; border: 1.5px solid var(--border-color); border-radius: var(--radius-md); font-size: 0.88rem; }
-
-    .record-card { display: flex; flex-direction: column; gap: 0.75rem; }
-    .record-info { display: flex; gap: 0.75rem; align-items: center; cursor: pointer; }
-    .icon { font-size: 1.6rem; width: 1.6rem; height: 1.6rem; color: var(--trust-700); }
-    .record-info strong { display: block; color: var(--sage-900); font-size: 0.95rem; }
-    .record-actions { display: flex; gap: 0.9rem; flex-wrap: wrap; }
-    .btn-link { background: none; border: none; color: var(--text-secondary); font-size: 0.8rem; font-weight: 600; text-decoration: underline; cursor: pointer; padding: 0; }
+    .empty { text-align: center; padding: 2.5rem 1rem; color: var(--text-secondary); }
+    .record-list { display: flex; flex-direction: column; gap: 0.85rem; }
+    .record-card { padding: 0; margin: 0; overflow: hidden; }
+    .record-head { display: flex; align-items: center; gap: 0.85rem; padding: 1rem 1.25rem; cursor: pointer; }
+    .doc-icon { color: var(--trust-700); }
+    .record-meta { flex: 1; min-width: 0; }
+    .record-meta strong { display: block; color: var(--sage-900); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .hint { font-size: 0.78rem; color: var(--text-muted); }
+    .scan-badge { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: #92610a; background: #fff8eb; border: 1px solid #fbd38d; padding: 0.15rem 0.5rem; border-radius: var(--radius-full); white-space: nowrap; }
+    .chev { color: var(--text-muted); transition: transform var(--transition-smooth); }
+    .record-card.open .chev { transform: rotate(180deg); }
+    .record-body { border-top: 1px solid var(--border-light); padding: 1.1rem 1.25rem 1.25rem; animation: fadeUp 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+    .action-row { display: flex; gap: 1.25rem; align-items: center; flex-wrap: wrap; margin-bottom: 1rem; }
+    .btn-link { font-size: 0.84rem; font-weight: 600; color: var(--sage-800); }
     .btn-link.danger { color: #a0281c; }
-    .edit-row { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+    .inline-select { display: inline-flex; align-items: center; gap: 0.25rem; color: var(--sage-800); font-size: 0.84rem; }
+    .inline-select select { border: none; background: transparent; font-weight: 600; color: var(--sage-800); cursor: pointer; }
+    .confirm-box { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; padding: 0.75rem 1rem; border-radius: var(--radius-md); background: #fdecea; border: 1px solid #f5b7b1; color: #a0281c; font-size: 0.85rem; margin-bottom: 1rem; }
 
-    .share-panel { border-top: 1px solid var(--border-light); padding-top: 0.85rem; display: flex; flex-direction: column; gap: 0.6rem; }
-    .share-form { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
-    .share-form input[type="number"] { width: 70px; }
-    .share-row { display: flex; justify-content: space-between; align-items: center; font-size: 0.82rem; color: var(--text-secondary); }
-
-    .btn { padding: 0.65rem 1.1rem; border-radius: 8px; font-weight: 700; font-size: 0.88rem; cursor: pointer; border: none; }
-    .btn-primary { background: #2e4f3e; color: #fff; }
-    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
-    .btn-outline { background: transparent; border: 1.5px solid var(--border-color); color: var(--text-secondary); text-decoration: none; display: inline-block; }
-    .btn-sm { padding: 0.45rem 0.8rem; font-size: 0.8rem; }
+    .share-section h3 { display: flex; align-items: center; gap: 0.35rem; font-family: var(--font-sans); font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-secondary); margin-bottom: 0.6rem; }
+    .share-row { display: flex; justify-content: space-between; align-items: center; padding: 0.45rem 0; border-bottom: 1px solid var(--border-subtle); font-size: 0.86rem; color: var(--sage-900); }
+    .share-form { margin-top: 0.9rem; padding: 0.9rem; border-radius: var(--radius-md); background: var(--trust-50); border: 1px solid var(--trust-200); }
+    .share-what { font-size: 0.82rem; color: var(--trust-900); margin-bottom: 0.6rem; }
+    .share-controls { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; }
+    .share-controls .form-control { width: auto; padding: 0.5rem 0.7rem; font-size: 0.85rem; }
+    .days { display: flex; align-items: center; gap: 0.35rem; font-size: 0.82rem; color: var(--text-secondary); }
+    .days .form-control { width: 70px; }
+    .btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
   `]
 })
 export class RecordsComponent implements OnInit {
-  recordsService = inject(RecordsService);
+  records = inject(RecordsService);
+  private providerService = inject(ProviderService);
   private api = inject(ApiService);
 
   categories = CATEGORIES;
   hasConsented = signal(false);
   consentChecked = false;
 
-  records = signal<RecordDoc[]>([]);
+  loading = signal(true);
+  list = signal<HealthRecord[]>([]);
   selectedFile = signal<File | null>(null);
   uploadCategory: RecordCategory = 'OTHER';
+  uploading = signal(false);
+  uploadError = signal<string | null>(null);
 
-  editingId = signal<string | null>(null);
-  editName = '';
-  editCategory: RecordCategory = 'OTHER';
-
-  sharingId = signal<string | null>(null);
-  shareLabel = '';
+  openId = signal<number | null>(null);
+  confirmDeleteId = signal<number | null>(null);
+  shares = signal<RecordShare[]>([]);
+  providers = signal<Provider[]>([]);
+  bookings = signal<Booking[]>([]);
+  shareType: ShareTargetType = 'PROVIDER';
+  shareTargetId: number | null = null;
   shareDays = 7;
+  sharing = signal(false);
+
+  private providerNames = new Map<number, string>();
 
   ngOnInit() {
-    this.hasConsented.set(localStorage.getItem(CONSENT_KEY) === 'true');
+    try { this.hasConsented.set(localStorage.getItem(CONSENT_KEY) === 'true'); } catch { /* blocked storage */ }
     this.refresh();
+    this.providerService.getProviders().subscribe({
+      next: (ps) => {
+        this.providers.set(ps);
+        this.providerNames = new Map(ps.map(p => [p.id, p.displayName]));
+      },
+      error: () => {}
+    });
+    this.providerService.getBookings().subscribe({
+      next: (bs) => this.bookings.set(bs.filter(b => b.status === 'BOOKED' || b.status === 'IN_PROGRESS')),
+      error: () => {}
+    });
   }
 
   private refresh() {
-    this.records.set(this.recordsService.getRecords());
+    this.loading.set(true);
+    this.records.getRecords().subscribe({
+      next: (rs) => { this.list.set(rs); this.loading.set(false); },
+      error: () => this.loading.set(false)
+    });
   }
 
   giveConsent() {
     if (!this.consentChecked) return;
-    localStorage.setItem(CONSENT_KEY, 'true');
+    try { localStorage.setItem(CONSENT_KEY, 'true'); } catch { /* ignore */ }
     this.hasConsented.set(true);
   }
 
   categoryLabel(c: RecordCategory): string {
-    return RECORD_CATEGORY_LABELS[c];
+    return RECORD_CATEGORY_LABELS[c] ?? c;
   }
 
   formatSize(bytes: number): string {
@@ -190,60 +292,116 @@ export class RecordsComponent implements OnInit {
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   }
 
+  providerName(id: number): string {
+    return this.providerNames.get(id) ?? 'your care provider';
+  }
+
+  shareTargetLabel(s: RecordShare): string {
+    if (s.shareTargetType === 'PROVIDER') return `Shared with ${this.providerName(s.targetProviderId!)}`;
+    const b = this.bookings().find(x => x.id === s.targetBookingId);
+    return b ? `Shared for your session with ${this.providerName(b.providerId)}` : 'Shared with a booked session';
+  }
+
   onFileSelected(event: Event) {
     const input = event.target as HTMLInputElement;
     this.selectedFile.set(input.files?.[0] || null);
+    this.uploadError.set(null);
   }
 
   upload(fileInput: HTMLInputElement) {
     const file = this.selectedFile();
     if (!file) return;
-    this.recordsService.addRecord(file, this.uploadCategory);
-    this.selectedFile.set(null);
-    fileInput.value = '';
-    this.refresh();
-    this.api.showToast(`Added "${file.name}" (metadata only — see the notice above).`);
+    this.uploading.set(true);
+    this.uploadError.set(null);
+    this.records.upload(file, this.uploadCategory).subscribe({
+      next: (rec) => {
+        this.uploading.set(false);
+        this.selectedFile.set(null);
+        fileInput.value = '';
+        this.list.set([rec, ...this.list()]);
+        this.api.showToast(`“${rec.originalFileName}” added to your vault.`);
+      },
+      error: (err) => {
+        this.uploading.set(false);
+        if (err?.status === 401 || err?.status === 403) return;
+        if (err?.error?.code === 'VALIDATION_FAILED') {
+          this.uploadError.set(err.error.message || 'That file type or size isn’t supported.');
+        } else if (err?.status === 0 || err?.status >= 500) {
+          // Includes storage not being configured yet on the server (see API §10).
+          this.uploadError.set('Uploads aren’t available right now — our secure storage is still being set up. Please try again later.');
+        } else {
+          this.uploadError.set(err?.error?.message || 'Upload failed. Please try again.');
+        }
+      }
+    });
   }
 
-  view(r: RecordDoc) {
-    this.recordsService.recordViewed(r.id);
+  toggleOpen(r: HealthRecord) {
+    if (this.openId() === r.id) {
+      this.openId.set(null);
+      return;
+    }
+    this.openId.set(r.id);
+    this.confirmDeleteId.set(null);
+    this.shareTargetId = null;
+    this.shares.set([]);
+    // Opening a record is a real VIEW and is audited server-side.
+    this.records.viewRecord(r.id).subscribe({ error: () => {} });
+    this.records.getShares(r.id).subscribe({ next: s => this.shares.set(s), error: () => {} });
   }
 
-  download(r: RecordDoc) {
-    this.recordsService.recordDownloaded(r.id);
-    this.api.showToast('Nothing to download — no real file content is stored in this prototype.');
+  download(r: HealthRecord) {
+    this.records.getDownloadUrl(r.id).subscribe({
+      next: (res) => window.open(res.downloadUrl, '_blank', 'noopener'),
+      error: (err) => {
+        if (err?.status === 401 || err?.status === 403) return;
+        this.api.showToast('Downloads aren’t available right now — our secure storage is still being set up.');
+      }
+    });
   }
 
-  startEdit(r: RecordDoc) {
-    this.editingId.set(r.id);
-    this.editName = r.name;
-    this.editCategory = r.category;
+  changeCategory(r: HealthRecord, category: RecordCategory) {
+    this.records.updateCategory(r.id, category).subscribe({
+      next: (updated) => this.list.set(this.list().map(x => x.id === updated.id ? updated : x)),
+      error: () => this.api.showToast('Could not update the category.')
+    });
   }
 
-  saveEdit(r: RecordDoc) {
-    this.recordsService.updateMetadata(r.id, this.editName.trim() || r.name, this.editCategory);
-    this.editingId.set(null);
-    this.refresh();
+  remove(r: HealthRecord) {
+    this.records.deleteRecord(r.id).subscribe({
+      next: () => {
+        this.list.set(this.list().filter(x => x.id !== r.id));
+        this.openId.set(null);
+        this.api.showToast(`Deleted “${r.originalFileName}”.`);
+      },
+      error: () => this.api.showToast('Could not delete the document.')
+    });
   }
 
-  remove(r: RecordDoc) {
-    this.recordsService.deleteRecord(r.id);
-    this.refresh();
-    this.api.showToast(`Deleted "${r.name}".`);
+  createShare(r: HealthRecord) {
+    if (!this.shareTargetId || !this.shareDays) return;
+    const days = Math.min(180, Math.max(1, Math.round(this.shareDays)));
+    const expires = new Date();
+    expires.setDate(expires.getDate() + days);
+    this.sharing.set(true);
+    this.records.share(r.id, this.shareType, this.shareTargetId, toLocalDateTime(expires)).subscribe({
+      next: (s) => {
+        this.sharing.set(false);
+        this.shares.set([s, ...this.shares()]);
+        this.shareTargetId = null;
+        this.api.showToast(`Shared for ${days} day${days === 1 ? '' : 's'}.`);
+      },
+      error: (err) => {
+        this.sharing.set(false);
+        this.api.showToast(err?.error?.message || 'Could not share the document.');
+      }
+    });
   }
 
-  shares(recordId: string): RecordShare[] {
-    return this.recordsService.getSharesForRecord(recordId);
-  }
-
-  createShare(r: RecordDoc) {
-    if (!this.shareLabel.trim()) return;
-    this.recordsService.shareRecord(r.id, this.shareLabel.trim(), this.shareDays);
-    this.shareLabel = '';
-    this.shareDays = 7;
-  }
-
-  revoke(share: RecordShare) {
-    this.recordsService.revokeShare(share.id);
+  revoke(s: RecordShare) {
+    this.records.revokeShare(s.id).subscribe({
+      next: (updated) => this.shares.set(this.shares().map(x => x.id === updated.id ? updated : x)),
+      error: () => this.api.showToast('Could not revoke access.')
+    });
   }
 }
