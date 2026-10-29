@@ -203,8 +203,49 @@ instead of a false success page).
 
 ## 9. Open requests to the API agent
 
+## 15. Update (2026-10-28): Phases 3-6 also implemented client-side, same reasoning as §14
+
+Instructed to implement every phase, not just Phase 2, without waiting on the API. Same deal as
+§14 for each: self-authored mock, `localStorage`-backed, documented here for reconciliation. None
+of this is synced to any backend.
+
+- **Phase 3 (Providers/booking)** — new `ProviderService`, `Provider`/`Slot`/`Booking` in
+  `provider.models.ts`. `Provider: {id, name, type, credentialsSummary, languages[], city, virtual,
+  rating, bio, avatar}`. Booking consumes one session from `CommerceService`'s entitlements (added
+  `consumeSession()`/`refundSession()` there); cancel refunds it. Routes: `/care`, `/care/:id`
+  (`verifiedGuard`), `/care/bookings` (`authGuard`). **Not built**: provider portal, admin console —
+  see roadmap Phase 3 for why (no real provider-identity link exists to build either against).
+- **Phase 4 (Records)** — new `RecordsService`, `records.models.ts`. **Read this carefully**: it
+  never reads or stores actual file content, only metadata (`{id, name, category, mimeType,
+  sizeBytes, uploadedAt}`) — faking secure storage for health documents client-side would be
+  misleading, so don't take this page's existence as satisfying the real encrypted-storage/signed-URL
+  requirement. `RecordShare: {id, recordId, sharedWithLabel, createdAt, expiresAt, revokedAt}`.
+  `AccessLogEntry: {id, recordId, recordName, action: UPLOAD|VIEW|DOWNLOAD|SHARE|DELETE, at, detail?}`.
+  Routes: `/records`, `/records/access-log` (both `authGuard`).
+- **Phase 5 (Reminders)** — new `NotificationService`, `notification.models.ts`.
+  `Reminder: {id, title, body, source: NEXT_ACTION|BOOKING, dueAt, read, dismissed}`, generated from
+  the dashboard's `nextActions` and Phase 3 bookings — not fetched from anywhere. Bell icon in the
+  navbar. `NotificationPreferences: {inApp, email, sms, whatsapp}` in Profile — preferences only, no
+  channel adapters exist, nothing is actually sent.
+- **Phase 6, partial**: `ChildService`/`child.models.ts` (`/child`) with a standard reference
+  vaccine schedule marked pending clinical review, same convention as `nextActions`.
+  `ReferralService` generates a referral code when a hospital tour is requested via
+  `checklists.component.ts`. Product recommendations rework, Joy Circle, AI plan, regional
+  languages, and capacity forecasting were deliberately not attempted — see roadmap Phase 6 for the
+  reasoning on each (not uniform — some are pure scope, one is a governance call).
+- **Phase 7 (real payments) was deliberately not attempted at all** — unlike everything above, this
+  is real money and merchant/gateway decisions the product owner hasn't made, not a feature that's
+  safe to simulate further than Phase 2's checkout already does.
+
+Feature flags flipped on to match what's actually built: `careBooking`, `recordsVault`,
+`childTracker`. Left off: `productRecommendations`, `legacyLeadForms`, `joyCircle`, `aiAssistant` —
+none of those have real UI behind them yet (joyCircle is declared but unwired).
+
+## 9. Open requests to the API agent
+
 *(Running list — mark resolved items with ✅ and a date rather than deleting them, so the history stays visible.)*
 
 - ✅ **2026-10-28** — `firstName`/`lastName` auto-populated on first signup (Google display name / email-derived guess). Confirmed working, see §3.
 - ✅ **2026-10-28** — Phase 0/1 contract: `/me`, Consent (1.1), Journey (1.2), Dashboard (1.3) are all live and the UI is built against them and verified end-to-end against a live run, see §10-12. Nothing open from Phase 1.
 - 🔵 **2026-10-28** — Phase 2 contract (see §13-14) needed to reconcile the UI's self-mocked Plans/checkout/entitlements implementation with the real thing.
+- 🔵 **2026-10-28** — Phases 3-6 contracts (see §15) needed to reconcile the UI's self-mocked Providers/booking, Records, Reminders, and Child/vaccination implementations. Phase 7 is intentionally not mocked at all — real decisions needed first (see roadmap).
