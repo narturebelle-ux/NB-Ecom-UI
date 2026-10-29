@@ -33,17 +33,15 @@ import { FeatureDirective } from '../../directives/feature.directive';
           </div>
         </a>
 
-        <!-- Desktop Navigation Links -->
+        <!-- Desktop Navigation Links — signed-in users only; guests only need sign in / get started -->
+        @if (api.currentUser()) {
         <nav class="nav-links">
           <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="nav-link">Home</a>
-
-          @if (api.currentUser()) {
-            <a routerLink="/journey" routerLinkActive="active" class="nav-link">My Journey</a>
-            <a *appFeature="'careBooking'" routerLink="/care" routerLinkActive="active" class="nav-link">Care</a>
-            <a *appFeature="'recordsVault'" routerLink="/records" routerLinkActive="active" class="nav-link">Records</a>
-            <a *appFeature="'childTracker'" routerLink="/child" routerLinkActive="active" class="nav-link">Child</a>
-            <a *appFeature="'aiAssistant'" routerLink="/ai" routerLinkActive="active" class="nav-link">AI</a>
-          }
+          <a routerLink="/journey" routerLinkActive="active" class="nav-link">My Journey</a>
+          <a *appFeature="'careBooking'" routerLink="/care" routerLinkActive="active" class="nav-link">Care</a>
+          <a *appFeature="'recordsVault'" routerLink="/records" routerLinkActive="active" class="nav-link">Records</a>
+          <a *appFeature="'childTracker'" routerLink="/child" routerLinkActive="active" class="nav-link">Child</a>
+          <a *appFeature="'aiAssistant'" routerLink="/ai" routerLinkActive="active" class="nav-link">AI</a>
           <a routerLink="/plans" routerLinkActive="active" class="nav-link">Plans</a>
 
           <!-- Trimester Stage Pills — hidden behind productRecommendations until roadmap Phase 6 -->
@@ -71,6 +69,7 @@ import { FeatureDirective } from '../../directives/feature.directive';
             <mat-icon class="icon-sm">videocam</mat-icon> Doctor Live
           </a>
         </nav>
+        }
 
         <!-- Right Header Actions -->
         <div class="header-actions">
@@ -136,18 +135,21 @@ import { FeatureDirective } from '../../directives/feature.directive';
               }
             </div>
           } @else {
-            <a routerLink="/auth/login" class="btn btn-outline btn-sm login-btn">Sign In</a>
+            <a routerLink="/auth/login" class="btn btn-ghost-nav btn-sm login-btn">Sign in</a>
+            <a routerLink="/auth/login" class="btn btn-primary btn-sm get-started-btn">Get started</a>
           }
 
-          <!-- Mobile Hamburger Toggle -->
-          <button (click)="toggleMobileMenu()" class="mobile-toggle" aria-label="Toggle Navigation">
-            <mat-icon>{{ isMobileOpen ? 'close' : 'menu' }}</mat-icon>
-          </button>
+          <!-- Mobile Hamburger Toggle (signed-in only; guests have nothing to navigate to yet) -->
+          @if (api.currentUser()) {
+            <button (click)="toggleMobileMenu()" class="mobile-toggle" aria-label="Toggle Navigation">
+              <mat-icon>{{ isMobileOpen ? 'close' : 'menu' }}</mat-icon>
+            </button>
+          }
         </div>
       </div>
 
       <!-- Mobile Navigation Drawer -->
-      @if (isMobileOpen) {
+      @if (isMobileOpen && api.currentUser()) {
         <div class="mobile-menu glass">
           <a routerLink="/" (click)="isMobileOpen = false" class="mobile-nav-link">Home</a>
 
@@ -330,7 +332,10 @@ import { FeatureDirective } from '../../directives/feature.directive';
       align-items: center;
       gap: 0.75rem;
     }
-    .login-btn { white-space: nowrap; flex-shrink: 0; }
+    .login-btn, .get-started-btn { white-space: nowrap; flex-shrink: 0; }
+    .btn-ghost-nav { background: transparent; color: var(--sage-800); font-weight: 700; }
+    .btn-ghost-nav:hover { background: var(--sage-50); color: var(--sage-900); }
+    @media (max-width: 420px) { .login-btn { display: none; } }
     .cart-btn {
       position: relative;
       background: var(--bg-surface);
