@@ -84,6 +84,7 @@ export class CommerceService {
 
     const entitlements = this.getEntitlements();
     entitlements.push({
+      id: 'ent_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
       planId: plan.id,
       planName: plan.name,
       totalSessions: plan.totalSessions,
@@ -92,6 +93,42 @@ export class CommerceService {
       expiresAt: expiresAt.toISOString()
     });
     this.writeJson(this.entitlementsKey(), entitlements);
+  }
+
+  /** True if any non-expired entitlement still has at least one session left. */
+  hasAvailableSession(): boolean {
+    return this.getEntitlements().some(e => this.sessionsRemaining(e) > 0 && !this.isExpired(e));
+  }
+
+  sessionsRemaining(e: Entitlement): number {
+    return e.totalSessions - e.usedSessions;
+  }
+
+  isExpired(e: Entitlement): boolean {
+    return new Date(e.expiresAt).getTime() < Date.now();
+  }
+
+  /** Consumes one session from the oldest non-expired entitlement that still has one. Used when a booking is confirmed. */
+  consumeSession(): Entitlement | null {
+    const entitlements = this.getEntitlements();
+    const target = entitlements
+      .filter(e => this.sessionsRemaining(e) > 0 && !this.isExpired(e))
+      .sort((a, b) => new Date(a.purchasedAt).getTime() - new Date(b.purchasedAt).getTime())[0];
+    if (!target) return null;
+    target.usedSessions += 1;
+    this.writeJson(this.entitlementsKey(), entitlements);
+    return target;
+  }
+
+  /** Reverses consumeSession() — used when a booking is cancelled. */
+  refundSession(entitlementId: string | null) {
+    if (!entitlementId) return;
+    const entitlements = this.getEntitlements();
+    const target = entitlements.find(e => e.id === entitlementId);
+    if (target && target.usedSessions > 0) {
+      target.usedSessions -= 1;
+      this.writeJson(this.entitlementsKey(), entitlements);
+    }
   }
 
   private ordersKey(): string {

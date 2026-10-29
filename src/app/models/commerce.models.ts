@@ -33,6 +33,7 @@ export interface Order {
 }
 
 export interface Entitlement {
+  id: string;
   planId: number;
   planName: string;
   totalSessions: number;
