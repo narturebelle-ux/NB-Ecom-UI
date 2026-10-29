@@ -83,6 +83,51 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/order-confirmation/order-confirmation.component').then(m => m.OrderConfirmationComponent)
   },
 
+  // Phase 3 — Providers, booking & sessions. Also client-side mock, same reasoning as
+  // Phase 2 (see API_Integration.md). Booking requires a verified user with an
+  // entitlement session available (checked in provider-profile.component.ts itself).
+  {
+    path: 'care/bookings',
+    title: 'My Bookings | NartureBelle',
+    canActivate: [authGuard],
+    loadComponent: () => import('./pages/bookings/bookings.component').then(m => m.BookingsComponent)
+  },
+  {
+    path: 'care/:id',
+    title: 'Provider Profile | NartureBelle',
+    canActivate: [verifiedGuard],
+    loadComponent: () => import('./pages/provider-profile/provider-profile.component').then(m => m.ProviderProfileComponent)
+  },
+  {
+    path: 'care',
+    title: 'Find Your Care Team | NartureBelle',
+    loadComponent: () => import('./pages/care-directory/care-directory.component').then(m => m.CareDirectoryComponent)
+  },
+
+  // Phase 4 — Records vault & sharing. Client-side, metadata-only mock — see
+  // records.models.ts for why no actual file content is ever stored. Not synced to a backend.
+  {
+    path: 'records/access-log',
+    title: 'Access History | NartureBelle',
+    canActivate: [authGuard],
+    loadComponent: () => import('./pages/records-access-log/records-access-log.component').then(m => m.RecordsAccessLogComponent)
+  },
+  {
+    path: 'records',
+    title: 'Records Vault | NartureBelle',
+    canActivate: [authGuard],
+    loadComponent: () => import('./pages/records/records.component').then(m => m.RecordsComponent)
+  },
+
+  // Phase 6 — Child profile + vaccination tracker. Client-side mock; schedule is
+  // illustrative and PENDING_CLINICAL_REVIEW (see child.models.ts).
+  {
+    path: 'child',
+    title: 'Child & Vaccination Tracker | NartureBelle',
+    canActivate: [authGuard],
+    loadComponent: () => import('./pages/child/child.component').then(m => m.ChildComponent)
+  },
+
   // No dedicated /cart route exists yet — cart is a navbar drawer, not a routed page.
   { path: '**', redirectTo: '' }
 ];

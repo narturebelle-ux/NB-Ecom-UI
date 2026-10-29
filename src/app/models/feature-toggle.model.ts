@@ -23,9 +23,9 @@ export const DEFAULT_FEATURES: FeatureFlags = {
   babyCareProducts: false,
   productRecommendations: false,
   legacyLeadForms: false,
-  careBooking: false,
-  recordsVault: false,
-  childTracker: false,
+  careBooking: true,
+  recordsVault: true,
+  childTracker: true,
   aiAssistant: false,
   joyCircle: false
 };

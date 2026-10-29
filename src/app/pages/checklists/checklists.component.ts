@@ -2,6 +2,7 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../services/api.service';
+import { ReferralService } from '../../services/referral.service';
 import { ChecklistTask, HospitalPartner, PregnancyStage } from '../../models/maternal.models';
 
 @Component({
@@ -486,6 +487,7 @@ import { ChecklistTask, HospitalPartner, PregnancyStage } from '../../models/mat
 })
 export class ChecklistsComponent implements OnInit {
   api = inject(ApiService);
+  referrals = inject(ReferralService);
 
   allTasks: ChecklistTask[] = [];
   filteredTasks: ChecklistTask[] = [];
@@ -537,9 +539,12 @@ export class ChecklistsComponent implements OnInit {
   }
 
   submitTourRequest() {
-    if (!this.tourPhone) return;
+    if (!this.tourPhone || !this.selectedHospitalForTour) return;
 
-    this.api.showToast(`Tour requested at ${this.selectedHospitalForTour?.name}! A hospital coordinator will call you.`);
+    // Referral attribution (roadmap §Phase 6) — client-side mock, not synced to any
+    // backend; a real referral-tracking API would record this lead server-side instead.
+    const referral = this.referrals.createReferral(this.selectedHospitalForTour.id, this.selectedHospitalForTour.name);
+    this.api.showToast(`Tour requested at ${this.selectedHospitalForTour.name}! Referred by NartureBelle (code ${referral.code}) — a hospital coordinator will call you.`);
     this.selectedHospitalForTour = null;
     this.tourName = '';
     this.tourPhone = '';
