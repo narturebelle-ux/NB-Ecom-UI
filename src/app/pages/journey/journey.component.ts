@@ -1,4 +1,5 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { CareRecommendationsComponent } from '../../components/care-recommendations/care-recommendations.component';
 import { MatIconModule } from '@angular/material/icon';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
@@ -40,7 +41,7 @@ interface QuickAction { icon: string; title: string; text: string; link: string;
 @Component({
   selector: 'app-journey',
   standalone: true,
-  imports: [MatIconModule, CommonModule, RouterLink, FormsModule, RevealDirective],
+  imports: [MatIconModule, CommonModule, RouterLink, FormsModule, RevealDirective, CareRecommendationsComponent],
   template: `
     <div class="journey-page">
       <div class="container wide">
@@ -246,6 +247,9 @@ interface QuickAction { icon: string; title: string; text: string; link: string;
                   </div>
                 }
               </section>
+
+              <!-- Products recommended by her professionals after completed sessions -->
+              <app-care-recommendations />
 
               <!-- Onboarding call -->
               @if (ob.state().call || ob.state().callRequested) {

@@ -296,7 +296,8 @@ export class OnboardingService {
     }).pipe(
       switchMap(({ docs, mine }) => {
         const doc = docs.find(d => d.type === 'HEALTH_DATA');
-        const granted = mine.history.some(c => c.documentType === 'HEALTH_DATA' && !c.revokedAt);
+        // Current version only: a new version (e.g. adding care-team access) must be re-confirmed.
+        const granted = !!doc && mine.history.some(c => c.documentType === 'HEALTH_DATA' && !c.revokedAt && c.documentVersion === doc.version);
         this.healthConsent.set({ supported: !!doc, granted, version: doc?.version ?? null, title: doc?.title ?? '', body: doc?.bodyMarkdown ?? '' });
         if (!doc || !granted) return of(null);
         return this.http.get<HealthProfile>(`${this.baseUrl}/me/health-profile`).pipe(catchError(() => of(null)));

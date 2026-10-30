@@ -3,6 +3,7 @@ import { CanActivateFn, Router } from '@angular/router';
 import { map } from 'rxjs';
 import { ApiService } from '../services/api.service';
 import { OnboardingService } from '../services/onboarding.service';
+import { isProfessionalUser } from '../models/maternal.models';
 
 /**
  * The public landing page is for visitors. Signed-in users go to their own home instead:
@@ -14,6 +15,7 @@ export const landingGuard: CanActivateFn = () => {
   const onboarding = inject(OnboardingService);
 
   if (!api.currentUser()) return true;
+  if (isProfessionalUser(api.currentUser())) return router.createUrlTree(['/provider']);
   return onboarding.ensureSynced().pipe(
     map(() => router.createUrlTree([onboarding.onboarded() ? '/journey' : '/onboarding']))
   );

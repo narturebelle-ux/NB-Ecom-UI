@@ -124,6 +124,22 @@ export function isAdminUser(user: User | null | undefined): boolean {
   return !!user?.roles?.some(r => r.endsWith('_ADMIN'));
 }
 
+/** Professional roles granted when an admin verifies a provider (API Phase 3). */
+export const PROFESSIONAL_ROLES = [
+  'GYNECOLOGIST', 'NUTRITIONIST', 'LACTATION_CONSULTANT', 'PEDIATRICIAN',
+  'POSTPARTUM_PHYSIOTHERAPIST', 'CLINICAL_PSYCHOLOGIST', 'REGISTERED_NURSE'
+];
+
+/** True for a verified care professional; they use the provider portal (/provider), not the mother's onboarding. */
+export function isProfessionalUser(user: User | null | undefined): boolean {
+  return !!user?.roles?.some(r => PROFESSIONAL_ROLES.includes(r));
+}
+
+/** Can open the product health-rule review queue: MEDICAL_REVIEWER, or a verified GYNECOLOGIST / NUTRITIONIST / REGISTERED_NURSE. */
+export function isReviewerUser(user: User | null | undefined): boolean {
+  return !!user?.roles?.some(r => ['MEDICAL_REVIEWER', 'GYNECOLOGIST', 'NUTRITIONIST', 'REGISTERED_NURSE'].includes(r));
+}
+
 /** The few product fields the cart needs — filled from the catalog or from a Phase 6 recommendation. */
 export type CartProduct = Pick<Product, 'id' | 'name' | 'price' | 'imageUrl' | 'category'>;
 

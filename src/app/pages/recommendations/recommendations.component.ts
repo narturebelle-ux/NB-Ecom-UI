@@ -5,6 +5,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { forkJoin } from 'rxjs';
 import { ApiService } from '../../services/api.service';
 import { RecommendationService } from '../../services/recommendation.service';
+import { CareRecommendationsComponent } from '../../components/care-recommendations/care-recommendations.component';
 import { PregnancyStage } from '../../models/maternal.models';
 import { BUDGET_OPTIONS, Budget, ProductRecommendation, RECO_STAGE_LABELS } from '../../models/recommendation.models';
 
@@ -12,7 +13,7 @@ import { BUDGET_OPTIONS, Budget, ProductRecommendation, RECO_STAGE_LABELS } from
 @Component({
   selector: 'app-recommendations',
   standalone: true,
-  imports: [CommonModule, RouterLink, MatIconModule],
+  imports: [CommonModule, RouterLink, MatIconModule, CareRecommendationsComponent],
   template: `
     <div class="reco-page">
       <div class="container narrow">
@@ -21,6 +22,8 @@ import { BUDGET_OPTIONS, Budget, ProductRecommendation, RECO_STAGE_LABELS } from
           <h1>Recommended for your stage</h1>
           @if (stageLabel()) { <p>A short list picked for {{ stageLabel() }}. Narrow it down by category and budget.</p> }
         </header>
+
+        <app-care-recommendations />
 
         <div class="disclosure">
           <mat-icon class="icon-sm">info</mat-icon>

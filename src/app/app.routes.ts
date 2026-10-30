@@ -6,7 +6,7 @@ import { DoctorsLiveComponent } from './pages/doctors-live/doctors-live.componen
 import { LoginComponent } from './pages/login/login.component';
 import { VerifyEmailComponent } from './pages/verify-email/verify-email.component';
 import { featureGuard } from './guards/feature.guard';
-import { authGuard, verifiedGuard } from './guards/auth.guard';
+import { authGuard, providerGuard, reviewerGuard, verifiedGuard } from './guards/auth.guard';
 import { onboardingGuard } from './guards/onboarding.guard';
 import { landingGuard } from './guards/landing.guard';
 
@@ -140,6 +140,27 @@ export const routes: Routes = [
     title: 'Joy Circle | NartureBelle',
     canActivate: [featureGuard('joyCircle'), onboardingGuard],
     loadComponent: () => import('./pages/joy-circle/joy-circle.component').then(m => m.JoyCircleComponent)
+  },
+
+  // Professional portal: sessions, in-session product recommendations (Essential / Optional).
+  {
+    path: 'provider/sessions/:id',
+    title: 'Session | NartureBelle',
+    canActivate: [providerGuard],
+    loadComponent: () => import('./pages/provider-session/provider-session.component').then(m => m.ProviderSessionComponent)
+  },
+  {
+    path: 'provider',
+    title: 'Your Sessions | NartureBelle',
+    canActivate: [providerGuard],
+    loadComponent: () => import('./pages/provider-sessions/provider-sessions.component').then(m => m.ProviderSessionsComponent)
+  },
+  // Clinical review of product health rules (Part D).
+  {
+    path: 'review/health-rules',
+    title: 'Health Rule Review | NartureBelle',
+    canActivate: [reviewerGuard],
+    loadComponent: () => import('./pages/health-rule-review/health-rule-review.component').then(m => m.HealthRuleReviewComponent)
   },
 
   // No dedicated /cart route exists yet — cart is a navbar drawer, not a routed page.

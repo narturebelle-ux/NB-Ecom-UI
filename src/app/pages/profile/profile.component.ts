@@ -147,14 +147,14 @@ import { CHANNEL_LABELS, ChannelPreference, DEFAULT_CHANNEL_PREFERENCES, Notific
                   <strong>{{ doc.title || doc.type }}</strong>
                   <span class="field-hint">
                     v{{ doc.version }} ·
-                    @if (isGranted(doc.type)) {
+                    @if (isGranted(doc)) {
                       Granted {{ grantedDate(doc.type) }}
                     } @else {
                       Not granted
                     }
                   </span>
                 </div>
-                @if (isGranted(doc.type)) {
+                @if (isGranted(doc)) {
                   <button class="btn-link" [disabled]="consentActionBusy()" (click)="revoke(doc.type)">Revoke</button>
                 } @else {
                   <button class="btn-link" [disabled]="consentActionBusy()" (click)="grant(doc)">Grant</button>
@@ -729,8 +729,12 @@ export class MyProfileComponent implements OnInit, OnDestroy {
     });
   }
 
-  isGranted(type: ConsentDocumentType): boolean {
-    return !this.consentStatus()?.pending.includes(type);
+  /**
+   * Granted = an unrevoked grant of this document's current version. (`pending` only ever lists the required
+   * sign-up consents, so it can't be used for optional ones like RECORDS_STORAGE / HEALTH_DATA.)
+   */
+  isGranted(doc: ConsentDocument): boolean {
+    return !!this.consentStatus()?.history.some(c => c.documentType === doc.type && !c.revokedAt && c.documentVersion === doc.version);
   }
 
   grantedDate(type: ConsentDocumentType): string {

@@ -1,4 +1,5 @@
-import { Component, effect, inject, untracked } from '@angular/core';
+import { Component, computed, effect, inject, untracked } from '@angular/core';
+import { isProfessionalUser, isReviewerUser } from '../../models/maternal.models';
 import { RouterLink, RouterLinkActive, Router } from '@angular/router';
 import { ApiService } from '../../services/api.service';
 import { FirebaseAuthService } from '../../services/firebase-auth.service';
@@ -35,14 +36,20 @@ import { FeatureDirective } from '../../directives/feature.directive';
 
         <!-- Desktop Navigation Links — signed-in users only; guests only need sign in / get started.
              Until onboarding is complete, the only destination is onboarding itself. -->
-        @if (api.currentUser() && !onboarding.onboarded()) {
+        @if (isProfessional()) {
+          <nav class="nav-links">
+            <a routerLink="/provider" routerLinkActive="active" class="nav-link">My sessions</a>
+            @if (isReviewer()) { <a routerLink="/review/health-rules" routerLinkActive="active" class="nav-link">Rule review</a> }
+          </nav>
+        }
+        @if (api.currentUser() && !isProfessional() && !onboarding.onboarded()) {
           <nav class="nav-links">
             <a routerLink="/onboarding" routerLinkActive="active" class="nav-link onboarding-link">
               <mat-icon class="icon-sm">flag</mat-icon> Complete your onboarding
             </a>
           </nav>
         }
-        @if (api.currentUser() && onboarding.onboarded()) {
+        @if (api.currentUser() && !isProfessional() && onboarding.onboarded()) {
         <nav class="nav-links">
           <a routerLink="/journey" routerLinkActive="active" class="nav-link">My Journey</a>
           <a *appFeature="'careBooking'" routerLink="/care" routerLinkActive="active" class="nav-link">Care</a>
@@ -148,7 +155,10 @@ import { FeatureDirective } from '../../directives/feature.directive';
       <!-- Mobile Navigation Drawer -->
       @if (isMobileOpen && api.currentUser()) {
         <div class="mobile-menu glass">
-          @if (!onboarding.onboarded()) {
+          @if (isProfessional()) {
+            <a routerLink="/provider" (click)="isMobileOpen = false" class="mobile-nav-link"><mat-icon class="icon-sm">event_note</mat-icon> My sessions</a>
+            @if (isReviewer()) { <a routerLink="/review/health-rules" (click)="isMobileOpen = false" class="mobile-nav-link"><mat-icon class="icon-sm">fact_check</mat-icon> Rule review</a> }
+          } @else if (!onboarding.onboarded()) {
             <a routerLink="/onboarding" (click)="isMobileOpen = false" class="mobile-nav-link onboarding-link">
               <mat-icon class="icon-sm">flag</mat-icon> Complete your onboarding
             </a>
@@ -545,6 +555,9 @@ export class NavbarComponent {
   firebaseAuth = inject(FirebaseAuthService);
   notifications = inject(NotificationService);
   onboarding = inject(OnboardingService);
+  isProfessional = computed(() => isProfessionalUser(this.api.currentUser()));
+  /** Reviewers include MEDICAL_REVIEWER staff, who aren't professionals, so they get the link even outside the portal. */
+  isReviewer = computed(() => isReviewerUser(this.api.currentUser()));
   router = inject(Router);
 
   isMobileOpen = false;

@@ -1,5 +1,6 @@
 import { Router } from '@angular/router';
 import { ApiService } from './api.service';
+import { isProfessionalUser } from '../models/maternal.models';
 
 /**
  * Shared landing logic for the moment a user becomes signed-in-and-verified — used by both
@@ -18,7 +19,8 @@ export function goToPostAuthDestination(api: ApiService, router: Router, returnU
       if (me.pendingConsents && me.pendingConsents.length > 0) {
         router.navigate(['/auth/consent'], { queryParams: returnUrl ? { returnUrl } : {} });
       } else {
-        router.navigateByUrl(returnUrl || '/journey');
+        // Care professionals use the provider portal, not the mother's onboarding/journey.
+        router.navigateByUrl(returnUrl || (isProfessionalUser(me) ? '/provider' : '/journey'));
       }
     },
     error: () => {
