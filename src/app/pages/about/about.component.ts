@@ -152,7 +152,9 @@ export class AboutComponent {
   ];
 
   nonExecutiveBoard: Person[] = [
-    { name: 'Mitul Patel', role: 'Non-Executive Board Member' }
+    { name: 'Mitul Patel', role: 'Non-Executive Board Member' },
+    { name: 'Sai Kumar', role: 'Non-Executive Board Member' },
+    { name: 'Prem Kumar', role: 'Non-Executive Board Member' }
   ];
 
   pillars = [
