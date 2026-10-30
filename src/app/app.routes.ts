@@ -17,6 +17,7 @@ export const routes: Routes = [
   // The Month 3/6/9 store pages are retired (Phase 6): old links land on personalised recommendations.
   { path: 'products/:stage', redirectTo: 'recommendations' },
 
+  { path: 'about', title: 'About Us | NartureBelle', loadComponent: () => import('./pages/about/about.component').then(m => m.AboutComponent) },
   { path: 'checklists', component: ChecklistsComponent, title: 'Prenatal Checkup Checklists & Scan Labs | NartureBelle' },
 
   // Legacy lead-gen flows — hidden behind legacyLeadForms (off) per the roadmap's

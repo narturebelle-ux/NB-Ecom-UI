@@ -139,6 +139,7 @@ import { FeatureDirective } from '../../directives/feature.directive';
               }
             </div>
           } @else {
+            <a routerLink="/about" class="btn btn-ghost-nav btn-sm about-link">About us</a>
             <a routerLink="/auth/login" class="btn btn-ghost-nav btn-sm login-btn">Sign in</a>
             <a routerLink="/auth/signup" class="btn btn-primary btn-sm get-started-btn">Get started</a>
           }
@@ -546,6 +547,7 @@ import { FeatureDirective } from '../../directives/feature.directive';
 
     @media (max-width: 1024px) {
       .nav-links { display: none; }
+      .about-link { display: none; }
       .mobile-toggle { display: block; }
     }
   `]
