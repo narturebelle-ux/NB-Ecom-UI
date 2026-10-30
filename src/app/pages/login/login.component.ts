@@ -111,9 +111,6 @@ import { RecaptchaVerifier, GoogleAuthProvider, AuthCredential } from 'firebase/
                     <input type="text" [(ngModel)]="otpCode" name="otp" placeholder="Enter 6-digit OTP" class="form-control text-center text-lg" required maxlength="6" />
                     <small class="form-hint">
                       Code sent to +91 {{ phone }}.
-                      @if (!firebaseAuth.isConfigured()) {
-                        (Testing code: <strong>123456</strong>)
-                      }
                     </small>
                   </div>
 
@@ -781,9 +778,7 @@ export class LoginComponent implements OnInit, OnDestroy {
       },
       error: (err) => {
         this.isSubmitting = false;
-        // A real HTTP error means the backend rejected the token — never fabricate a
-        // session on a real rejection (ApiService's own catchError already handles the
-        // true-network-failure dev fallback before this error callback ever runs).
+        // The backend rejected the token or couldn't be reached — never fabricate a session.
         this.api.showToast(err?.error?.message || 'Could not verify your sign-in with the server. Please try again.');
       }
     });

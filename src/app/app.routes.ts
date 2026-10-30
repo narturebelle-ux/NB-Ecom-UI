@@ -107,8 +107,7 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/care-directory/care-directory.component').then(m => m.CareDirectoryComponent)
   },
 
-  // Phase 4 — Records vault & sharing. Client-side, metadata-only mock — see
-  // records.models.ts for why no actual file content is ever stored. Not synced to a backend.
+  // Phase 4 — Records vault & sharing, real API (UI_INTEGRATION_GUIDE.md §10).
   {
     path: 'records/access-log',
     title: 'Access History | NartureBelle',

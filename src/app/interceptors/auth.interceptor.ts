@@ -13,7 +13,7 @@ import { environment } from '../../environments/environment';
  * environment.apiUrl; third-party requests (fonts, Firebase's own endpoints) pass through untouched.
  *
  * Handles the contract's three auth error codes centrally, then re-throws so each
- * service method's own catchError (e.g. the products-list fallback) still runs —
+ * caller's own error handling still runs —
  * this interceptor only ever adds side effects, never swallows the error itself.
  */
 export const authInterceptor: HttpInterceptorFn = (req, next) => {

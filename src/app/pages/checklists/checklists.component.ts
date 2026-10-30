@@ -36,6 +36,7 @@ import { ChecklistTask, HospitalPartner, PregnancyStage } from '../../models/mat
           <div class="tasks-header">
             <h2>Medical Tests & Questions For Your OB-GYN</h2>
             <span class="task-count">{{ filteredTasks.length }} Tasks</span>
+            @if (loadError) { <p class="load-error">{{ loadError }}</p> }
           </div>
 
           <div class="tasks-list">
@@ -376,6 +377,7 @@ import { ChecklistTask, HospitalPartner, PregnancyStage } from '../../models/mat
       color: var(--sage-900);
       margin-bottom: 1rem;
     }
+    .load-error { color: #a0281c; font-size: 0.85rem; margin: 0.5rem 0; }
     .hospitals-list {
       display: flex;
       flex-direction: column;
@@ -493,6 +495,7 @@ export class ChecklistsComponent implements OnInit {
 
   allTasks: ChecklistTask[] = [];
   filteredTasks: ChecklistTask[] = [];
+  loadError: string | null = null;
   hospitals: HospitalPartner[] = [];
 
   selectedStage: string = 'ALL';
@@ -506,14 +509,15 @@ export class ChecklistsComponent implements OnInit {
   submittingTour = false;
 
   ngOnInit() {
-    this.api.getChecklists().subscribe(tasks => {
-      this.allTasks = tasks;
-      this.filteredTasks = tasks;
+    this.api.getChecklists().subscribe({
+      next: tasks => {
+        this.allTasks = tasks;
+        this.filteredTasks = tasks;
+      },
+      error: () => { this.loadError = 'We couldn’t load the checklist. Please check your connection and reload.'; }
     });
 
-    this.api.getHospitals().subscribe(hosps => {
-      this.hospitals = hosps;
-    });
+    this.loadHospitals();
   }
 
   filterStage(stage: string) {
@@ -526,14 +530,17 @@ export class ChecklistsComponent implements OnInit {
   }
 
   onCityChange() {
-    this.api.getHospitals(this.selectedCity, this.searchPincode).subscribe(hosps => {
-      this.hospitals = hosps;
-    });
+    this.loadHospitals();
   }
 
   onPincodeSearch() {
-    this.api.getHospitals(this.selectedCity, this.searchPincode).subscribe(hosps => {
-      this.hospitals = hosps;
+    this.loadHospitals();
+  }
+
+  private loadHospitals() {
+    this.api.getHospitals(this.selectedCity, this.searchPincode).subscribe({
+      next: hosps => { this.hospitals = hosps; },
+      error: () => this.api.showToast('Couldn’t load hospitals. Please check your connection.')
     });
   }
 

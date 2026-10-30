@@ -18,20 +18,10 @@ import { ApiService } from '../../services/api.service';
             <button class="close-btn" (click)="close()">✕</button>
           </div>
 
-          <!-- Free Shipping Bar -->
-          <div class="shipping-progress">
-            @if (api.cartTotal() >= 999) {
-              <div class="shipping-msg unlocked">
-                <span>🎉</span> <strong>Free Express Insured Delivery Unlocked!</strong>
-              </div>
-            } @else {
-              <div class="shipping-msg">
-                <span>🚚</span> Add <strong>₹{{ 999 - api.cartTotal() }}</strong> more for Free Delivery!
-              </div>
-              <div class="progress-bar">
-                <div class="progress-fill" [style.width.%]="(api.cartTotal() / 999) * 100"></div>
-              </div>
-            }
+          <!-- DEMO: there is no product-ordering API yet; nothing here is charged or shipped. -->
+          <div class="demo-notice">
+            <span class="demo-badge">Demo</span>
+            Product ordering isn’t live yet. This basket is a preview: nothing is charged or shipped.
           </div>
 
           <!-- Basket Items -->
@@ -70,24 +60,14 @@ import { ApiService } from '../../services/api.service';
                 <span>Subtotal</span>
                 <strong>₹{{ api.cartTotal() }}</strong>
               </div>
-              <div class="bill-row">
-                <span>Shipping</span>
-                <span class="free-text">{{ api.cartTotal() >= 999 ? 'FREE' : '₹99' }}</span>
-              </div>
               <div class="bill-row total-row">
-                <span>Estimated Total</span>
-                <strong class="total-val">₹{{ api.cartTotal() >= 999 ? api.cartTotal() : api.cartTotal() + 99 }}</strong>
+                <span>Total</span>
+                <strong class="total-val">₹{{ api.cartTotal() }}</strong>
               </div>
 
               <button (click)="checkout()" class="btn btn-primary btn-lg full-btn">
-                Proceed to Safe Checkout &rarr;
+                Place demo order (nothing is charged)
               </button>
-
-              <div class="security-badges">
-                <span>🔒 256-bit Encrypted</span>
-                <span>•</span>
-                <span>📦 Discrete Maternal Packaging</span>
-              </div>
             </div>
           }
         </div>
@@ -326,7 +306,8 @@ export class CartDrawerComponent {
   }
 
   checkout() {
-    this.api.showToast('Redirecting to secure gateway... Demo Order placed successfully!');
+    // DEMO: no product-ordering endpoint exists, so this only clears the basket.
+    this.api.showToast('Demo only: no order was placed and nothing was charged. Product ordering isn’t live yet.');
     this.api.clearCart();
     this.close();
   }

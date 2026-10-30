@@ -565,3 +565,31 @@ button.btn-link, a.btn-link {
     padding-right: 1rem;
   }
 }
+
+/* Marks anything still simulated (no real API behind it yet) so it's never mistaken for live data. */
+.demo-badge {
+  display: inline-block;
+  vertical-align: middle;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #92610a;
+  background: #fff8eb;
+  border: 1px solid #fbd38d;
+  border-radius: 999px;
+  padding: 0.15rem 0.55rem;
+}
+.demo-notice {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  font-size: 0.82rem;
+  color: #92610a;
+  background: #fff8eb;
+  border: 1px solid #fbd38d;
+  border-radius: 10px;
+  padding: 0.65rem 0.85rem;
+  margin: 0.75rem 1rem;
+}

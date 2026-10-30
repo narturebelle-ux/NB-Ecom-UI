@@ -322,8 +322,9 @@ export class DoctorsLiveComponent implements OnInit {
   rsvpQuestion = '';
 
   ngOnInit() {
-    this.api.getDoctorSessions().subscribe(s => {
-      this.sessions = s;
+    this.api.getDoctorSessions().subscribe({
+      next: s => { this.sessions = s; },
+      error: () => this.api.showToast('Couldn’t load sessions. Please check your connection.')
     });
   }
 
@@ -342,14 +343,17 @@ export class DoctorsLiveComponent implements OnInit {
       userQuestion: this.rsvpQuestion
     };
 
-    this.api.rsvpDoctor(payload).subscribe((res: any) => {
-      this.api.showToast(res.message);
-      if (this.selectedSession) {
-        this.selectedSession.attendeeCount++;
-      }
-      this.selectedSession = null;
-      this.rsvpName = '';
-      this.rsvpPhone = '';
+    this.api.rsvpDoctor(payload).subscribe({
+      next: (res: any) => {
+        this.api.showToast(res?.message || 'Your seat is reserved.');
+        if (this.selectedSession) {
+          this.selectedSession.attendeeCount++;
+        }
+        this.selectedSession = null;
+        this.rsvpName = '';
+        this.rsvpPhone = '';
+      },
+      error: () => this.api.showToast('We couldn’t reserve your seat. Please try again.')
     });
   }
 }

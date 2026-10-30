@@ -45,7 +45,7 @@ type Stage = 'loading' | 'review' | 'creating' | 'pay' | 'paying' | 'failed' | '
             </div>
           }
           @default {
-            <h1>Checkout</h1>
+            <h1>Checkout <span class="demo-badge">Demo payment</span></h1>
             <div class="steps">
               <span class="step" [class.done]="stage() !== 'review' && stage() !== 'creating'">1 · Review</span>
               <span class="step-line"></span>

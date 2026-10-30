@@ -468,8 +468,9 @@ export class NurseCompanionComponent implements OnInit {
   bookingNotes = '';
 
   ngOnInit() {
-    this.api.getNursePackages().subscribe(pkgs => {
-      this.packages = pkgs;
+    this.api.getNursePackages().subscribe({
+      next: pkgs => { this.packages = pkgs; },
+      error: () => this.api.showToast('Couldn’t load nurse packages. Please check your connection.')
     });
   }
 
@@ -489,11 +490,14 @@ export class NurseCompanionComponent implements OnInit {
       notes: this.bookingNotes
     };
 
-    this.api.bookNurse(payload).subscribe((res: any) => {
-      this.api.showToast(res.message);
-      this.selectedPackage = null;
-      this.bookingName = '';
-      this.bookingPhone = '';
+    this.api.bookNurse(payload).subscribe({
+      next: (res: any) => {
+        this.api.showToast(res?.message || 'Your request has been registered.');
+        this.selectedPackage = null;
+        this.bookingName = '';
+        this.bookingPhone = '';
+      },
+      error: () => this.api.showToast('We couldn’t send your request. Please try again.')
     });
   }
 }

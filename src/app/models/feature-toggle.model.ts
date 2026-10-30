@@ -25,7 +25,7 @@ export const DEFAULT_FEATURES: FeatureFlags = {
   legacyLeadForms: false,
   careBooking: true,
   recordsVault: true,
-  childTracker: true,
+  childTracker: false,
   aiAssistant: false,
   joyCircle: false
 };

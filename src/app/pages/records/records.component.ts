@@ -48,6 +48,7 @@ const CATEGORIES: RecordCategory[] = ['SCAN', 'LAB_REPORT', 'PRESCRIPTION', 'DIS
               <input type="checkbox" [(ngModel)]="consentChecked" />
               I agree to NartureBelle storing the documents I upload, as described above.
             </label>
+            <p class="hint"><span class="demo-badge">Device only</span> This agreement is remembered on this device only. The API doesn't record a storage consent yet.</p>
             <button class="btn btn-primary" [disabled]="!consentChecked" (click)="giveConsent()">Continue</button>
           </div>
         } @else {

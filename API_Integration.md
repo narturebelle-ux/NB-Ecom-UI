@@ -468,6 +468,45 @@ Other changes:
   once each area is verified live, as a product-owner call. Note that `childTracker` is already off on the API, so the
   child page is hidden live today.
 
+## 24. Where every screen gets its data (2026-10-30)
+
+**No built-in dummy data is left in the UI.** The silent fallbacks in `api.service.ts` are removed: dummy
+products, checklists, hospitals, nurse packages and doctor sessions, the fake "success" for nurse bookings and
+doctor RSVPs, and the fake "Verified Expecting Mother" login when the API was unreachable. So are the simulated
+Firebase sign-ins (fake tokens and OTP `123456`). If the API or Firebase is unavailable, the screen now shows an error.
+
+**Real API** (base `http://localhost:8080/api/v1`):
+
+| Screen | Endpoints |
+|---|---|
+| Sign-in / session | `POST /auth/firebase`, `GET`/`PATCH /me` (Firebase ID token as Bearer) |
+| Feature flags | `GET /features` |
+| Consent | `GET /consent-documents/current`, `GET`/`POST /me/consents`, `POST /me/consents/{type}/revoke` |
+| Onboarding | `GET /me/onboarding`, `PUT /me/onboarding/intake`, `GET /onboarding/call-slots`, `POST /me/onboarding/call`, `POST /me/onboarding/callback-request`, `GET /me/onboarding/documents`, `POST /me/onboarding/documents/sign`, `POST /me/onboarding/complete` |
+| My Journey | `GET`/`POST /me/journeys`, `PATCH /me/journeys/{id}`, `GET /me/dashboard`, `GET /me/reminders`, `POST /me/reminders/{id}/dismiss` |
+| Plans & checkout | `GET /plans`, `GET /plans/{id}`, `POST`/`GET /orders`, `GET /orders/{id}`, `POST /payments/create`, `GET /entitlements` |
+| Care team & bookings | `GET /providers`, `GET /providers/{id}`, `GET /providers/{id}/slots`, `POST`/`GET /bookings`, `POST /bookings/{id}/cancel`, `/reschedule`, `/no-show`, `/feedback` |
+| Records | `GET`/`POST /records`, `GET`/`PATCH`/`DELETE /records/{id}`, `POST /records/upload-url` (then a direct PUT to storage), `POST /records/{id}/download-url`, `GET`/`POST /records/{id}/shares`, `POST /records/shares/{id}/revoke`, `GET /records/{id}/access-log` |
+| Profile | `GET`/`PUT /me/notification-preferences/{channel}`, `GET /me/export`, `GET`/`POST`/`DELETE /me/deletion-request` |
+| Checkup checklist | `GET /checklists`, `GET /hospitals`, `POST /me/hospital-referrals` |
+| Child & vaccines | `GET`/`POST /me/children`, `PATCH /me/children/{id}`, `GET /me/children/{id}/vaccinations`, `PUT`/`DELETE …/vaccinations/{scheduleItemId}` |
+| Joy Circle | `GET /joy-circle/events`, `GET /me/joy-circle/rsvps`, `POST`/`DELETE /joy-circle/events/{id}/rsvp` |
+| Recommendations | `GET /me/product-recommendations`, `POST`/`DELETE …/{productId}/dismiss` |
+| Hidden legacy pages (`legacyLeadForms` off) | `GET /nurse-companion/packages` (500 on the API today), `POST /nurse-companion/book`, `GET /doctor-sessions`, `POST /doctor-sessions/rsvp` |
+
+**Still simulated or kept only on this device. Each is labelled on screen:**
+
+| What | Why | Label in the UI |
+|---|---|---|
+| Plan payment | The API's own mock gateway (`mockSucceedPath`/`mockFailPath`) until Phase 7 | "Demo payment" badge + "nothing is charged" |
+| Product basket / cart checkout | No product-ordering endpoint exists | "Demo" banner. The button says "Place demo order (nothing is charged)". No shipping or security claims. |
+| Records storage agreement | The API has no records-storage consent type (only TERMS/PRIVACY) | "Device only" badge |
+| Plan recommendation during onboarding | Client-side rule by design (decided with the API) | Already says it's a suggestion, not a clinical judgement |
+
+Seeded content that comes from the real API but is still a placeholder (labelled where the API marks it): consent and
+onboarding documents (DRAFT, pending legal review), the vaccine schedule (PENDING_CLINICAL_REVIEW), Joy Circle events
+(the API's hostBio says "Placeholder host"), doctor sessions, products, checklists and hospitals (seed rows in the API DB).
+
 ## 9. Open requests to the API agent
 
 *(Running list — mark resolved items with ✅ and a date rather than deleting them, so the history stays visible.)*
@@ -481,5 +520,7 @@ Other changes:
 - ✅ **2026-10-29** — Phase 5 contract shipped and the UI is reconciled against it (§21).
 - ✅ **2026-10-29** — `careBooking` and `recordsVault` flags turned on (V14); `GET /features` confirmed. `callbackRequestedAt` added to the onboarding status and read by the UI.
 - ✅ **2026-10-29** — Phase 4 contract shipped and the UI is reconciled against it (§19). Real uploads still need `SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY` configured.
+- 🔵 **2026-10-30** — Please add a records-storage consent type (e.g. `RECORDS_STORAGE`) so the Records agreement is recorded server-side instead of on the device (§24).
+- 🔵 **2026-10-30** — `GET /nurse-companion/packages` returns 500 (page is hidden behind `legacyLeadForms`, low priority).
 - 🟡 **2026-10-29** — Phase 6: planned contract received from nb-ecomm-api-a5, UI built against it (§23). Awaiting the API shipping each item, then live verification and flag flips.
 - 🔵 **2026-10-28** — Phases 5-6 contracts (see §15) needed to reconcile the UI's self-mocked Providers/booking, Records, Reminders, and Child/vaccination implementations. Phase 7 is intentionally not mocked at all — real decisions needed first (see roadmap).
