@@ -135,7 +135,7 @@ import { CHANNEL_LABELS, ChannelPreference, DEFAULT_CHANNEL_PREFERENCES, Notific
         </form>
 
         <!-- Consent Center (roadmap §1.1 UI) -->
-        <div class="consent-center">
+        <div class="consent-center" id="privacy">
           <h2 class="section-title">Consent &amp; Privacy</h2>
 
           @if (consentLoading()) {

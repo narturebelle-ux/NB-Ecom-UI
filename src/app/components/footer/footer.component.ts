@@ -32,10 +32,10 @@ import { FeatureDirective } from '../../directives/feature.directive';
             <li *appFeature="'joyCircle'"><a routerLink="/joy-circle">Joy Circle events</a></li>
             <li><a routerLink="/about">About us</a></li>
             <li><a routerLink="/careers">Careers</a></li>
-            <li><a routerLink="/ideas">Idea pool</a></li>
+            <li><a routerLink="/ideas">Share an Idea</a></li>
             <li><a routerLink="/journey">My Journey</a></li>
             <li><a routerLink="/plans">Care Plans</a></li>
-            <li><a routerLink="/invite">Invite friends</a></li>
+            <li><a routerLink="/invite">Refer &amp; Invite</a></li>
             <li><a routerLink="/care">Find a Professional</a></li>
             <li><a routerLink="/checklists">Checkup & Scan Checklist</a></li>
           </ul>

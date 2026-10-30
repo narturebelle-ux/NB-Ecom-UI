@@ -807,3 +807,11 @@ There are no direct commits to `develop` or `main`, and old branches aren't reus
 **One feature at a time:** finish a feature on its branch (follow-up fixes included), have the product owner check the app's
 behavior, merge it into `develop` after approval, and only then cut the next branch from the updated `origin/develop`. Never run
 two feature branches at once and never stack them. Full rules are in this repo's README.md, "Branching workflow".
+
+## 33. Account menu (2026-10-30, branch feature/profile-menu)
+
+Share an Idea (`/ideas`) and Refer & Invite (`/invite`) moved out of the top bar into the account dropdown, at the product owner's request. It now reads
+My Profile, Share an Idea, Refer & Invite, Privacy, Sign Out, and the phone menu has the same items. Refer & Invite is hidden for care professionals.
+Privacy opens `/profile#privacy` (Consent & Privacy). The router's anchor scrolling is on, with a 96px offset for the sticky header. No API changes.
+Visitors no longer have Idea pool in the top bar; `/ideas` is still public and linked from the footer as "Share an Idea".
+Also fixes the phone header, which the dark mode button had pushed off-screen: below 640px the tagline and account name hide, and below 380px the brand text hides.
