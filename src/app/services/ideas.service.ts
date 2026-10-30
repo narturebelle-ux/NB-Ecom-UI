@@ -1,7 +1,8 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, effect, inject, signal } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
+import { ApiService } from './api.service';
 
 /**
  * Idea pool & Idea Impact (API UI_INTEGRATION_GUIDE.md §15, branch feature/idea-impact).
@@ -61,7 +62,23 @@ export const IDEA_DESCRIPTION_MAX = 1500;
 @Injectable({ providedIn: 'root' })
 export class IdeasService {
   private http = inject(HttpClient);
+  private api = inject(ApiService);
   private readonly baseUrl = environment.apiUrl;
+
+  /** Her referral code (GET /me/referral, API §16): idea share links carry ?ref= so sharing ideas also earns invite credit. */
+  private readonly myRefCode = signal<string | null>(null);
+
+  constructor() {
+    effect(() => {
+      const signedIn = !!this.api.currentUser();
+      this.myRefCode.set(null);
+      if (!signedIn) return;
+      this.http.get<{ code: string }>(`${this.baseUrl}/me/referral`).subscribe({
+        next: r => this.myRefCode.set(r.code),
+        error: () => { /* referrals not live yet, or no consent: share without ?ref= */ }
+      });
+    });
+  }
 
   meta(): Observable<IdeasMeta> {
     return this.http.get<IdeasMeta>(`${this.baseUrl}/ideas/meta`);
@@ -110,7 +127,8 @@ export class IdeasService {
 
   /** The public page people land on from a share. */
   shareUrl(idea: Idea): string {
-    return `${window.location.origin}/ideas/${idea.id}`;
+    const ref = this.myRefCode();
+    return `${window.location.origin}/ideas/${idea.id}${ref ? `?ref=${encodeURIComponent(ref)}` : ''}`;
   }
 
   whatsappUrl(idea: Idea): string {
