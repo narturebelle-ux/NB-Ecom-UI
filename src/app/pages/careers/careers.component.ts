@@ -52,7 +52,7 @@ import { CareersService, EMPLOYMENT_TYPE_LABELS, Job, WORK_MODE_LABELS } from '.
           <mat-icon>lightbulb</mat-icon>
           <div>
             <strong>Not looking for a job, but have an idea?</strong>
-            <p>We’re early and listening. Tell us what would make NartureBelle better.</p>
+            <p>We’re early and listening. Tell us what would make NartureBelle™ better.</p>
           </div>
           <a routerLink="/feedback" class="btn btn-outline btn-sm">Share an idea</a>
         </div>

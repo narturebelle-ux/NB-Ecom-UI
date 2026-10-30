@@ -52,7 +52,7 @@ export const providerGuard: CanActivateFn = (_route, state) => {
   const user = api.currentUser();
   if (!user) return router.createUrlTree(['/auth/login'], { queryParams: { returnUrl: state.url } });
   if (!isProfessionalUser(user)) {
-    api.showToast('This area is for NartureBelle care professionals.');
+    api.showToast('This area is for NartureBelle™ care professionals.');
     return router.createUrlTree(['/']);
   }
   return true;

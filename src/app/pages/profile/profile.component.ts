@@ -26,7 +26,7 @@ import { CHANNEL_LABELS, ChannelPreference, DEFAULT_CHANNEL_PREFERENCES, Notific
           </div>
           <div class="profile-title">
             <h1>My Profile</h1>
-            <p class="profile-subtitle">{{ api.currentUser()?.email || api.currentUser()?.phone || 'NartureBelle Member' }}</p>
+            <p class="profile-subtitle">{{ api.currentUser()?.email || api.currentUser()?.phone || 'NartureBelle™ Member' }}</p>
           </div>
         </div>
 

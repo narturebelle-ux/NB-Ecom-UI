@@ -127,7 +127,7 @@ import { ChecklistTask, HospitalPartner, PregnancyStage } from '../../models/mat
                   <p class="hosp-spec">🩺 {{ hosp.specialty }}</p>
 
                   <div class="hosp-perk">
-                    <span>🎁 <strong>NartureBelle Partner Offer:</strong> {{ hosp.discountDetails }}</span>
+                    <span>🎁 <strong>NartureBelle™ Partner Offer:</strong> {{ hosp.discountDetails }}</span>
                   </div>
 
                   <div class="hosp-action-row">

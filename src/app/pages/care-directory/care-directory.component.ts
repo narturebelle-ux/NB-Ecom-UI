@@ -19,7 +19,7 @@ import { OnboardingService } from '../../services/onboarding.service';
       <div class="container">
         <div class="directory-header animate-in">
           <h1>Find Your Care Team</h1>
-          <p>Every professional listed here has been credential-verified by NartureBelle.</p>
+          <p>Every professional listed here has been credential-verified by NartureBelle™.</p>
           <a routerLink="/care/bookings" class="btn btn-outline btn-sm"><mat-icon class="icon-sm">event_note</mat-icon> My Bookings</a>
         </div>
 

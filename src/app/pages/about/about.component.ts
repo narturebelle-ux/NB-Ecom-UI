@@ -20,21 +20,21 @@ interface Person {
           <span class="kicker">About us</span>
           <h1>Nurturing You, Nurturing Life</h1>
           <p class="lead">
-            NartureBelle is a care-coordination platform for mothers and young families, from the first weeks of pregnancy
+            NartureBelle™ is a care-coordination platform for mothers and young families, from the first weeks of pregnancy
             through postpartum and early childhood.
           </p>
         </div>
       </section>
 
       <section class="container narrow story">
-        <h2>Why NartureBelle</h2>
+        <h2>Why NartureBelle™</h2>
         <p>
           Pregnancy and early parenthood come with countless questions, appointments and decisions, and too often mothers are left
-          to piece their care together on their own. NartureBelle brings it into one private place: a care plan that fits your
+          to piece their care together on their own. NartureBelle™ brings it into one private place: a care plan that fits your
           stage, a care coordinator who speaks your language, and verified professionals who work together around you.
         </p>
         <p>
-          Every professional on NartureBelle is credential-verified before they can see a single mother. Anything that touches
+          Every professional on NartureBelle™ is credential-verified before they can see a single mother. Anything that touches
           your health, from the records you upload to the products we suggest, is shared only with your consent.
         </p>
 
@@ -142,7 +142,7 @@ export class AboutComponent {
 
   /** Draft for the founder's approval. */
   founderQuote =
-    'Every mother deserves care that knows her: her stage, her language and her story. We built NartureBelle so that no mother has to find her way through pregnancy and early parenthood alone.';
+    'Every mother deserves care that knows her: her stage, her language and her story. We built NartureBelle™ so that no mother has to find her way through pregnancy and early parenthood alone.';
 
   executiveBoard: Person[] = [
     { name: 'Kumbam RajaRajeshReddy', role: 'Executive Board Member' },

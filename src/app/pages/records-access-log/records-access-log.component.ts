@@ -17,7 +17,7 @@ const ACTION_META: Record<string, { icon: string; label: string }> = {
 const ACTOR_LABELS: Record<string, string> = {
   OWNER: 'by you',
   SHARED_PROVIDER: 'by a professional you shared it with',
-  ADMIN: 'by a NartureBelle administrator'
+  ADMIN: 'by a NartureBelle™ administrator'
 };
 
 /** Every view, download, share and delete of the user's records (API keeps one log per record; merged here). */

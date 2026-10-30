@@ -18,7 +18,7 @@ import { PRIORITY_LABELS, SessionProductRecommendation } from '../../models/sess
     @if (items().length) {
       <section class="care-recos">
         <h2><mat-icon class="icon-sm">medical_information</mat-icon> From your care team</h2>
-        <p class="sub">Recommended for you by your professionals after your sessions. NartureBelle may earn a commission if you buy.</p>
+        <p class="sub">Recommended for you by your professionals after your sessions. NartureBelle™ may earn a commission if you buy.</p>
         <div class="reco-list">
           @for (r of sorted(); track r.id) {
             <article class="reco-row">
