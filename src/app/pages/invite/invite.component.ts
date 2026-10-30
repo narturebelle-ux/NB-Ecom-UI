@@ -85,32 +85,32 @@ import { InviteService, MyReferral } from '../../services/invite.service';
   styles: [`
     .invite-page { padding-bottom: 5rem; }
     .narrow { max-width: 760px; }
-    .hero { padding: 4rem 0 2.5rem; text-align: center; background: radial-gradient(circle at 20% 10%, #fde8e1, transparent 55%), radial-gradient(circle at 80% 30%, #fff4dc, transparent 55%); }
-    .kicker { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.78rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--blush-700); }
+    .hero { padding: 4rem 0 2.5rem; text-align: center; background: radial-gradient(circle at 20% 10%, var(--sage-100), transparent 55%), radial-gradient(circle at 80% 30%, var(--gold-100), transparent 55%); }
+    .kicker { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.78rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold-700); }
     h1 { font-size: clamp(2.1rem, 5.5vw, 3.2rem); line-height: 1.1; color: var(--sage-900); margin: 0.7rem 0 1rem; }
     .lead { font-size: 1.05rem; color: var(--text-secondary); line-height: 1.6; max-width: 600px; margin: 0 auto; }
-    .card { background: #fff; border: 1px solid var(--border-light); border-radius: 20px; padding: 1.4rem 1.5rem; margin-top: 1.2rem; }
+    .card { background: var(--bg-surface); border: 1px solid var(--border-light); border-radius: 20px; padding: 1.4rem 1.5rem; margin-top: 1.2rem; }
     h2 { font-size: 1.2rem; color: var(--sage-900); margin-bottom: 0.7rem; }
     h3 { font-size: 0.95rem; color: var(--sage-900); margin: 1.2rem 0 0.5rem; }
-    .reward { text-align: center; border-color: #e0a526; background: linear-gradient(180deg, #fff6e0, #fff); }
-    .reward .big { font-size: 2.6rem; width: 2.6rem; height: 2.6rem; color: #e0a526; }
+    .reward { text-align: center; border-color: var(--gold-500); background: linear-gradient(180deg, var(--gold-100), var(--bg-surface)); }
+    .reward .big { font-size: 2.6rem; width: 2.6rem; height: 2.6rem; color: var(--gold-500); }
     .reward p { color: var(--text-secondary); margin-bottom: 1rem; }
     .row { display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap; }
     .link-row { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
     .link { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; background: var(--sage-50); border-radius: 10px; padding: 0.55rem 0.75rem; font-size: 0.86rem; color: var(--sage-900); }
     .share-row { display: flex; gap: 0.5rem; flex-wrap: wrap; margin: 0.8rem 0 0.6rem; }
-    .share { display: inline-flex; align-items: center; gap: 0.35rem; border-radius: 999px; padding: 0.5rem 1rem; font-size: 0.86rem; font-weight: 700; cursor: pointer; text-decoration: none; border: 1.5px solid var(--border-light); background: #fff; color: var(--sage-900); }
-    .share.wa { background: #25d366; border-color: #25d366; color: #fff; }
+    .share { display: inline-flex; align-items: center; gap: 0.35rem; border-radius: 999px; padding: 0.5rem 1rem; font-size: 0.86rem; font-weight: 700; cursor: pointer; text-decoration: none; border: 1.5px solid var(--border-light); background: var(--bg-surface); color: var(--sage-900); }
+    .share.wa { background: var(--solid-sage-700); border-color: var(--solid-sage-700); color: #fff; }
     .progress-head { display: flex; justify-content: space-between; align-items: baseline; }
     .count { font-size: 1rem; color: var(--text-secondary); }
-    .count strong { font-size: 1.6rem; color: var(--blush-700); }
+    .count strong { font-size: 1.6rem; color: var(--gold-700); }
     .slots { display: flex; gap: 0.5rem; margin: 0.6rem 0; }
-    .slot { width: 52px; height: 52px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px dashed var(--border-light); color: var(--border-light); }
-    .slot.filled { border: none; background: var(--blush-700); color: #fff; }
+    .slot { width: 52px; height: 52px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px dashed var(--text-muted); color: var(--text-muted); }
+    .slot.filled { border: none; background: var(--solid-sage-700); color: #fff; }
     .friend { display: flex; align-items: center; gap: 0.75rem; padding: 0.55rem 0; border-bottom: 1px solid var(--border-subtle); }
     .friend > div { flex: 1; display: flex; flex-direction: column; }
     .friend strong { color: var(--sage-900); font-size: 0.9rem; }
-    .avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: var(--sage-700); color: #fff; font-weight: 800; }
+    .avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: var(--solid-sage-700); color: #fff; font-weight: 800; }
     .state { font-size: 0.78rem; color: var(--text-muted); }
     .state.done { color: var(--sage-700); font-weight: 700; }
     .hint { font-size: 0.82rem; color: var(--text-muted); }

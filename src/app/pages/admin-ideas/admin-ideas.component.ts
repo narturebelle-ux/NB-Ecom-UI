@@ -74,9 +74,9 @@ import { Idea, IdeaStatus, IdeasService } from '../../services/ideas.service';
     h1 { font-size: 2rem; color: var(--sage-900); }
     .hint { font-size: 0.82rem; color: var(--text-muted); }
     .tabs { display: flex; gap: 0.4rem; flex-wrap: wrap; margin: 1rem 0; }
-    .tab { border: 1.5px solid var(--border-light); background: #fff; border-radius: 999px; padding: 0.38rem 0.85rem; font-weight: 600; font-size: 0.82rem; color: var(--text-secondary); cursor: pointer; }
-    .tab.on { background: var(--sage-700); border-color: var(--sage-700); color: #fff; }
-    .card { background: #fff; border: 1px solid var(--border-light); border-radius: 14px; padding: 1rem 1.2rem; margin-bottom: 0.8rem; display: flex; flex-direction: column; gap: 0.45rem; }
+    .tab { border: 1.5px solid var(--border-light); background: var(--bg-surface); border-radius: 999px; padding: 0.38rem 0.85rem; font-weight: 600; font-size: 0.82rem; color: var(--text-secondary); cursor: pointer; }
+    .tab.on { background: var(--solid-sage-700); border-color: var(--solid-sage-700); color: #fff; }
+    .card { background: var(--bg-surface); border: 1px solid var(--border-light); border-radius: 14px; padding: 1rem 1.2rem; margin-bottom: 0.8rem; display: flex; flex-direction: column; gap: 0.45rem; }
     .head { display: flex; justify-content: space-between; gap: 1rem; }
     .meta { font-size: 0.74rem; color: var(--text-muted); }
     h3 { font-size: 1.02rem; color: var(--sage-900); }
@@ -84,11 +84,11 @@ import { Idea, IdeaStatus, IdeasService } from '../../services/ideas.service';
     .desc { font-size: 0.86rem; color: var(--text-secondary); white-space: pre-line; }
     .votes { font-size: 0.82rem; color: var(--text-secondary); }
     .goal { color: var(--sage-700); }
-    .note { display: flex; gap: 0.35rem; font-size: 0.84rem; color: #7a5410; background: #fff4dc; border-radius: 10px; padding: 0.5rem 0.7rem; }
+    .note { display: flex; gap: 0.35rem; font-size: 0.84rem; color: var(--gold-700); background: var(--gold-100); border-radius: 10px; padding: 0.5rem 0.7rem; }
     .impl { display: flex; flex-direction: column; gap: 0.35rem; }
     .impl label { font-size: 0.82rem; font-weight: 600; color: var(--sage-900); }
     .actions { display: flex; justify-content: flex-end; gap: 0.4rem; flex-wrap: wrap; }
-    .danger { color: #a0281c; }
+    .danger { color: var(--danger-text); }
     .empty { text-align: center; color: var(--text-secondary); }
   `]
 })

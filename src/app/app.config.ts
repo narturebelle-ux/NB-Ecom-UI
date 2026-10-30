@@ -9,7 +9,7 @@ import { authInterceptor } from './interceptors/auth.interceptor';
 export const appConfig: ApplicationConfig = {
   providers: [
     provideZoneChangeDetection({ eventCoalescing: true }),
-    provideRouter(routes, withComponentInputBinding(), withViewTransitions(), withInMemoryScrolling({ anchorScrolling: 'enabled' })),
+    provideRouter(routes, withComponentInputBinding(), withViewTransitions(), withInMemoryScrolling({ anchorScrolling: 'enabled', scrollPositionRestoration: 'enabled' })),
     provideHttpClient(withInterceptors([authInterceptor])),
     // Lets every <mat-icon>name</mat-icon> use Material Symbols without repeating fontSet.
     provideEnvironmentInitializer(() => {
