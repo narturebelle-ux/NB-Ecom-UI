@@ -1,5 +1,5 @@
 import { Component, computed, effect, inject, untracked } from '@angular/core';
-import { isProfessionalUser, isReviewerUser } from '../../models/maternal.models';
+import { isAdminUser, isProfessionalUser, isReviewerUser } from '../../models/maternal.models';
 import { RouterLink, RouterLinkActive, Router } from '@angular/router';
 import { ApiService } from '../../services/api.service';
 import { FirebaseAuthService } from '../../services/firebase-auth.service';
@@ -36,6 +36,11 @@ import { FeatureDirective } from '../../directives/feature.directive';
 
         <!-- Desktop Navigation Links — signed-in users only; guests only need sign in / get started.
              Until onboarding is complete, the only destination is onboarding itself. -->
+        @if (isAdmin()) {
+          <nav class="nav-links">
+            <a routerLink="/admin/careers" routerLinkActive="active" class="nav-link"><mat-icon class="icon-sm">admin_panel_settings</mat-icon> Careers admin</a>
+          </nav>
+        }
         @if (isProfessional()) {
           <nav class="nav-links">
             <a routerLink="/provider" routerLinkActive="active" class="nav-link">My sessions</a>
@@ -139,6 +144,7 @@ import { FeatureDirective } from '../../directives/feature.directive';
               }
             </div>
           } @else {
+            <a routerLink="/about" class="btn btn-ghost-nav btn-sm about-link">About us</a>
             <a routerLink="/auth/login" class="btn btn-ghost-nav btn-sm login-btn">Sign in</a>
             <a routerLink="/auth/signup" class="btn btn-primary btn-sm get-started-btn">Get started</a>
           }
@@ -546,6 +552,7 @@ import { FeatureDirective } from '../../directives/feature.directive';
 
     @media (max-width: 1024px) {
       .nav-links { display: none; }
+      .about-link { display: none; }
       .mobile-toggle { display: block; }
     }
   `]
@@ -558,6 +565,7 @@ export class NavbarComponent {
   isProfessional = computed(() => isProfessionalUser(this.api.currentUser()));
   /** Reviewers include MEDICAL_REVIEWER staff, who aren't professionals, so they get the link even outside the portal. */
   isReviewer = computed(() => isReviewerUser(this.api.currentUser()));
+  isAdmin = computed(() => isAdminUser(this.api.currentUser()));
   router = inject(Router);
 
   isMobileOpen = false;

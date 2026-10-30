@@ -6,7 +6,7 @@ import { DoctorsLiveComponent } from './pages/doctors-live/doctors-live.componen
 import { LoginComponent } from './pages/login/login.component';
 import { VerifyEmailComponent } from './pages/verify-email/verify-email.component';
 import { featureGuard } from './guards/feature.guard';
-import { authGuard, providerGuard, reviewerGuard, verifiedGuard } from './guards/auth.guard';
+import { adminGuard, authGuard, providerGuard, reviewerGuard, verifiedGuard } from './guards/auth.guard';
 import { onboardingGuard } from './guards/onboarding.guard';
 import { landingGuard } from './guards/landing.guard';
 
@@ -17,6 +17,16 @@ export const routes: Routes = [
   // The Month 3/6/9 store pages are retired (Phase 6): old links land on personalised recommendations.
   { path: 'products/:stage', redirectTo: 'recommendations' },
 
+  { path: 'careers', title: 'Careers | NartureBelle', loadComponent: () => import('./pages/careers/careers.component').then(m => m.CareersComponent) },
+  { path: 'careers/:id', title: 'Careers | NartureBelle', loadComponent: () => import('./pages/career-detail/career-detail.component').then(m => m.CareerDetailComponent) },
+  { path: 'feedback', title: 'Share an Idea | NartureBelle', loadComponent: () => import('./pages/feedback/feedback.component').then(m => m.FeedbackComponent) },
+  {
+    path: 'admin/careers',
+    title: 'Careers Admin | NartureBelle',
+    canActivate: [adminGuard],
+    loadComponent: () => import('./pages/admin-careers/admin-careers.component').then(m => m.AdminCareersComponent)
+  },
+  { path: 'about', title: 'About Us | NartureBelle', loadComponent: () => import('./pages/about/about.component').then(m => m.AboutComponent) },
   { path: 'checklists', component: ChecklistsComponent, title: 'Prenatal Checkup Checklists & Scan Labs | NartureBelle' },
 
   // Legacy lead-gen flows — hidden behind legacyLeadForms (off) per the roadmap's

@@ -30,6 +30,9 @@ import { FeatureDirective } from '../../directives/feature.directive';
           <ul class="footer-links">
             <li *appFeature="'productRecommendations'"><a routerLink="/recommendations">Recommended for you</a></li>
             <li *appFeature="'joyCircle'"><a routerLink="/joy-circle">Joy Circle events</a></li>
+            <li><a routerLink="/about">About us</a></li>
+            <li><a routerLink="/careers">Careers</a></li>
+            <li><a routerLink="/feedback">Share an idea</a></li>
             <li><a routerLink="/journey">My Journey</a></li>
             <li><a routerLink="/plans">Care Plans</a></li>
             <li><a routerLink="/care">Find a Professional</a></li>
@@ -66,7 +69,7 @@ import { FeatureDirective } from '../../directives/feature.directive';
               <mat-icon class="icon">mail</mat-icon>
               <div>
                 <strong>Care Team:</strong>
-                <span>care&#64;narturebelle.com</span>
+                <span>support-care&#64;narturebelle.com</span>
               </div>
             </div>
           </div>
