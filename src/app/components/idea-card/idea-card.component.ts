@@ -54,16 +54,16 @@ import { Idea, IdeasService } from '../../services/ideas.service';
     </article>
   `,
   styles: [`
-    .idea { background: #fff; border: 1px solid var(--border-light); border-radius: 18px; padding: 1.1rem 1.2rem; display: flex; flex-direction: column; gap: 0.55rem; height: 100%; }
+    .idea { background: var(--bg-surface); border: 1px solid var(--border-light); border-radius: 18px; padding: 1.1rem 1.2rem; display: flex; flex-direction: column; gap: 0.55rem; height: 100%; }
     .idea.big { padding: 1.6rem 1.7rem; border-radius: 22px; box-shadow: 0 10px 40px rgba(21, 48, 42, 0.08); }
-    .idea.done { border-color: #e0a526; background: linear-gradient(180deg, #fffaf0, #fff); }
+    .idea.done { border-color: var(--gold-500); background: linear-gradient(180deg, var(--gold-100), var(--bg-surface)); }
     .top { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; }
     .cat { font-size: 0.7rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--blush-700); }
     .num { font-size: 0.7rem; color: var(--text-muted); font-weight: 600; }
     .badge { display: inline-flex; align-items: center; gap: 0.2rem; font-size: 0.66rem; font-weight: 800; text-transform: uppercase; padding: 0.12rem 0.5rem; border-radius: 999px; }
-    .review { background: #eef4ff; color: #2a4f8f; }
-    .impl { background: #e0a526; color: #fff; }
-    .goal { background: var(--sage-700); color: #fff; }
+    .review { background: var(--trust-100); color: var(--trust-900); }
+    .impl { background: var(--gold-100); color: var(--gold-700); }
+    .goal { background: var(--solid-sage-700); color: #fff; }
     .mine { background: var(--sage-50); color: var(--sage-900); }
     h1 { font-size: clamp(1.5rem, 3.5vw, 2.1rem); color: var(--sage-900); line-height: 1.25; }
     h3 { font-size: 1.05rem; line-height: 1.35; }
@@ -75,17 +75,17 @@ import { Idea, IdeasService } from '../../services/ideas.service';
     .by { font-size: 0.76rem; color: var(--text-muted); }
     .progress { margin-top: auto; }
     .bar { height: 10px; border-radius: 999px; background: var(--sage-50); overflow: hidden; }
-    .fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--blush-700), #e0a526); min-width: 4px; transition: width 0.6s ease; }
+    .fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--blush-700), var(--gold-500)); min-width: 4px; transition: width 0.6s ease; }
     .nums { display: flex; justify-content: space-between; font-size: 0.76rem; color: var(--text-secondary); margin-top: 0.3rem; }
     .nums strong { color: var(--sage-900); }
     .all { color: var(--text-muted); }
-    .impact { display: flex; gap: 0.35rem; font-size: 0.85rem; color: #7a5410; background: #fff4dc; border-radius: 10px; padding: 0.55rem 0.7rem; }
+    .impact { display: flex; gap: 0.35rem; font-size: 0.85rem; color: var(--gold-700); background: var(--gold-100); border-radius: 10px; padding: 0.55rem 0.7rem; }
     .actions { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.2rem; }
-    .vote, .share { display: inline-flex; align-items: center; gap: 0.3rem; border-radius: 999px; padding: 0.42rem 0.9rem; font-size: 0.82rem; font-weight: 700; cursor: pointer; text-decoration: none; border: 1.5px solid var(--border-light); background: #fff; color: var(--sage-900); }
-    .vote { background: var(--blush-700); border-color: var(--blush-700); color: #fff; }
-    .vote.on { background: #fff; color: var(--blush-700); }
+    .vote, .share { display: inline-flex; align-items: center; gap: 0.3rem; border-radius: 999px; padding: 0.42rem 0.9rem; font-size: 0.82rem; font-weight: 700; cursor: pointer; text-decoration: none; border: 1.5px solid var(--border-light); background: var(--bg-surface); color: var(--sage-900); }
+    .vote { background: var(--solid-blush-700); border-color: var(--solid-blush-700); color: #fff; }
+    .vote.on { background: var(--bg-surface); color: var(--blush-700); }
     .vote:disabled { opacity: 0.6; cursor: wait; }
-    .share.wa { border-color: #25d366; color: #128c4a; }
+    .share.wa { border-color: var(--sage-500); color: var(--sage-700); }
   `]
 })
 export class IdeaCardComponent {

@@ -168,7 +168,13 @@ export class FirebaseAuthService {
    * (e.g. linking a phone number) so the new claim is picked up immediately.
    */
   async getIdToken(forceRefresh = false): Promise<string | null> {
-    if (!this.isConfigured() || !this.auth?.currentUser) {
+    if (!this.isConfigured() || !this.auth) {
+      return null;
+    }
+    // After a page reload Firebase restores the session asynchronously. Without waiting, early requests go out
+    // with no token, get a 401, and the interceptor signs the user out.
+    await this.auth.authStateReady();
+    if (!this.auth.currentUser) {
       return null;
     }
     return await this.auth.currentUser.getIdToken(forceRefresh);

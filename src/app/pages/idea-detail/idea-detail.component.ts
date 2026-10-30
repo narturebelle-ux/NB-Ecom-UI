@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { ApiService } from '../../services/api.service';
+import { CommerceService } from '../../services/commerce.service';
 import { IdeaCardComponent } from '../../components/idea-card/idea-card.component';
 import { Idea, IdeasMeta, IdeasService, ideaErrorMessage } from '../../services/ideas.service';
 
@@ -14,14 +15,14 @@ import { Idea, IdeasMeta, IdeasService, ideaErrorMessage } from '../../services/
   template: `
     <div class="idea-page">
       <div class="container narrow">
-        <a routerLink="/ideas" class="back"><mat-icon class="icon-sm">arrow_back</mat-icon> All ideas</a>
+        @if (commerce.canShareIdeas()) { <a routerLink="/ideas" class="back"><mat-icon class="icon-sm">arrow_back</mat-icon> All ideas</a> }
 
         @if (loading()) {
           <p class="hint">Loading…</p>
         } @else if (!idea()) {
           <div class="card empty">
             <p>{{ notFound() ? 'This idea isn’t in the pool any more.' : 'We couldn’t load this idea right now.' }}</p>
-            <a routerLink="/ideas" class="btn btn-outline btn-sm">See all ideas</a>
+            @if (commerce.canShareIdeas()) { <a routerLink="/ideas" class="btn btn-outline btn-sm">See all ideas</a> }
           </div>
         } @else {
           <span class="kicker"><mat-icon class="icon-sm">lightbulb</mat-icon> A mom’s idea for NartureBelle™</span>
@@ -54,11 +55,11 @@ import { Idea, IdeasMeta, IdeasService, ideaErrorMessage } from '../../services/
     </div>
   `,
   styles: [`
-    .idea-page { padding: 2rem 0 5rem; background: radial-gradient(circle at 15% 0%, #fde8e1, transparent 45%); }
+    .idea-page { padding: 2rem 0 5rem; background: radial-gradient(circle at 15% 0%, var(--sage-100), transparent 45%); }
     .narrow { max-width: 760px; }
     .back { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.85rem; color: var(--trust-700); text-decoration: none; margin-bottom: 1rem; }
     .kicker { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.76rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--blush-700); margin-bottom: 0.7rem; }
-    .card { background: #fff; border: 1px solid var(--border-light); border-radius: 18px; padding: 1.3rem 1.4rem; margin-top: 1.2rem; }
+    .card { background: var(--bg-surface); border: 1px solid var(--border-light); border-radius: 18px; padding: 1.3rem 1.4rem; margin-top: 1.2rem; }
     .how h2 { font-size: 1.2rem; color: var(--sage-900); margin-bottom: 0.6rem; }
     .how ol { padding-left: 1.2rem; color: var(--text-secondary); line-height: 1.7; }
     .cta { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 1rem; }
@@ -72,6 +73,7 @@ export class IdeaDetailComponent implements OnInit {
   private router = inject(Router);
   private ideas = inject(IdeasService);
   api = inject(ApiService);
+  commerce = inject(CommerceService);
 
   idea = signal<Idea | null>(null);
   meta = signal<IdeasMeta | null>(null);

@@ -1,4 +1,5 @@
 import { Component, effect, inject } from '@angular/core';
+import { ViewportScroller } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { RouterOutlet } from '@angular/router';
 import { CommonModule } from '@angular/common';
@@ -29,6 +30,8 @@ export class App {
   invite = inject(InviteService);
 
   constructor() {
+    // In-page links (e.g. /profile#privacy) stop below the sticky header instead of underneath it.
+    inject(ViewportScroller).setOffset([0, 96]);
     // Keep ?ref= from an invite link through sign-up, and attach her to the inviter once she's signed in and consented.
     this.invite.captureFromUrl();
     effect(() => {
