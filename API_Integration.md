@@ -773,6 +773,8 @@ Against API 70296dd (final contract). Not verified live, because it's waiting on
 
 *(Running list — mark resolved items with ✅ and a date rather than deleting them, so the history stays visible.)*
 
+- 🟡 **2026-10-30** — **Next feature (not started): current plan, upgrade and invoices.** API and UI tasks and the open decisions are in §34.
+
 - 🔵 **2026-10-30** — **Cold-start 500s (unconfirmed).** The UI agent saw `/me` and `/me/journeys` answer 500 once while the container was booting. They were 401 a minute later, and the API agent couldn't reproduce it. The UI already retries (status 0/502/503/504 ×3, 500 ×1; commit 9a06d50). **If one is caught live, capture the headers and body:** an `x-vercel-error` header or text/plain means it's Vercel's proxy; `{"code":"INTERNAL_ERROR"}` means it's the app's startup path.
 
 - 🔴 **2026-10-30** — **Deploy the API to production (blocker for the live site):** now on **Vercel Container runtime**, project `nb-ecom-api`, at `api.narturebelle.com` (API 7b7fbad), with the prod DB and secrets on that project. Send the UI agent the public URL once `/health/db` answers over https (§29). Résumé limit lowered to 4 MB on both sides.
@@ -815,3 +817,46 @@ My Profile, Share an Idea, Refer & Invite, Privacy, Sign Out, and the phone menu
 Privacy opens `/profile#privacy` (Consent & Privacy). The router's anchor scrolling is on, with a 96px offset for the sticky header. No API changes.
 Visitors no longer have Idea pool in the top bar; `/ideas` is still public and linked from the footer as "Share an Idea".
 Also fixes the phone header, which the dark mode button had pushed off-screen: below 640px the tagline and account name hide, and below 380px the brand text hides.
+
+Also on this branch: **Plans leaves the nav once she has a plan.** The navbar loads `GET /entitlements` when a user signs in and hides Plans (desktop and phone)
+while any entitlement is unexpired. It stays visible with no plan, an expired plan, or a failed check. My Journey keeps showing the current plan, and the footer keeps its
+Care Plans link. `FirebaseAuthService.getIdToken()` now awaits `authStateReady()`, so requests right after a page reload carry the restored token rather than
+risking a 401 that signs the user out.
+
+## 34. Next feature: current plan, upgrade and invoices (backlog, 2026-10-30)
+
+**Story: current plan, upgrade and invoices** (requested by the product owner, 2026-10-30; not started)
+
+**Current plan and upgrade**
+- My Journey already shows the current plan. Add it to My Profile too, with an **Upgrade** option.
+- An upgrade flow is needed: the API has none yet, and its pending pricing branch answers `409 PLAN_ALREADY_ACTIVE` for a second plan.
+
+**Invoice number and file name are two different things**
+- **Invoice number:** the official ID. The server generates it automatically from a running sequence, e.g. `NB/26-27/000123`. It contains no personal data. Proposed rule: consecutive, unique per financial year, at most 16 characters, using only letters, digits, `-` and `/`, as Indian GST invoices require. **The product owner's accountant must confirm the format.**
+- **File name:** a readable label only, in the owner's format: `LastName_FirstName_<Item>_<yyyyMMddHHmmssSSS>.pdf`. `<Item>` is the plan, product or session name. Characters unsafe for file names are removed. It is never used as an identifier.
+
+**Each billing event gets its own document; an issued invoice is never edited** (proposed)
+| Event | Document |
+|---|---|
+| Plan purchase | Invoice, new number |
+| Upgrade | Invoice for the amount charged, new number, linked to the earlier invoice |
+| Cancellation or refund | Credit note with its own number, linked to the original invoice |
+| Product purchase | Invoice, new number (no product ordering exists yet) |
+| Paid session | Invoice, new number |
+| Session covered by a plan | No charge, so a booking confirmation, not an invoice |
+
+**API tasks**
+- `invoices` and credit-note storage; a sequence allocated inside the payment transaction so numbers stay consecutive and are never reused.
+- Issue on PAID, upgrade and refund. Store a snapshot of buyer, item, amounts and tax on the document, so later profile or price changes don't alter it.
+- `GET /me/invoices`, `GET /me/invoices/{id}/pdf`, admin list. Upgrade endpoint and pricing rule.
+- While payments are simulated, documents must be clearly marked as demo and must not look like real tax invoices.
+
+**UI tasks**
+- Current plan card on My Profile with Upgrade; upgrade flow and checkout.
+- "Invoices & receipts" list with download, on My Profile. Show the invoice number on the order confirmation page.
+
+**Decisions needed from the product owner**
+1. Upgrade pricing: pay the difference, or something else?
+2. GST: registered? GSTIN, legal name and address for the invoice, and tax rate (linked to the open Phase 7 merchant-of-record decision).
+3. Invoice format confirmed by the accountant.
+4. Which is first in the build order: this story or the waiting validations and pricing-removal work (API branch `feature/pricing-and-validations`)? The owner has said this story is next, but upgrade and checkout depend on that pricing change.
