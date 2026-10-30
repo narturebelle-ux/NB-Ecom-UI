@@ -592,6 +592,7 @@ onboarding documents (DRAFT, pending legal review), the vaccine schedule (PENDIN
 - ✅ **2026-10-29** — Phase 5 contract shipped and the UI is reconciled against it (§21).
 - ✅ **2026-10-29** — `careBooking` and `recordsVault` flags turned on (V14); `GET /features` confirmed. `callbackRequestedAt` added to the onboarding status and read by the UI.
 - ✅ **2026-10-29** — Phase 4 contract shipped and the UI is reconciled against it (§19). Real uploads still need `SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY` configured.
+- 🔴 **2026-10-30** — **Bug:** `GET /providers?professionalType=…` and `?modality=…` return 500 `INTERNAL_ERROR` on :8080. The unfiltered list, `city` and `language` return 200. The Care page's type chips and "Virtual only" checkbox hit this and show "We couldn't load care professionals right now". Needs the API log (the catch-all handler logs the stack trace).
 - ✅ **2026-10-30** — `RECORDS_STORAGE` consent type added (API 43c0d60) and the UI now grants and reads it (§0).
 - ✅ **2026-10-30** — `GET /nurse-companion/packages` 500 fixed in API 0cd5f32 (live after the 8080 rebuild).
 - ✅ **2026-10-30** — `Content-Disposition` exposed in CORS (API 2fa71d8).
