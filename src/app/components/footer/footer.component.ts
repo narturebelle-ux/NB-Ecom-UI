@@ -31,6 +31,8 @@ import { FeatureDirective } from '../../directives/feature.directive';
             <li *appFeature="'productRecommendations'"><a routerLink="/recommendations">Recommended for you</a></li>
             <li *appFeature="'joyCircle'"><a routerLink="/joy-circle">Joy Circle events</a></li>
             <li><a routerLink="/about">About us</a></li>
+            <li><a routerLink="/careers">Careers</a></li>
+            <li><a routerLink="/feedback">Share an idea</a></li>
             <li><a routerLink="/journey">My Journey</a></li>
             <li><a routerLink="/plans">Care Plans</a></li>
             <li><a routerLink="/care">Find a Professional</a></li>
