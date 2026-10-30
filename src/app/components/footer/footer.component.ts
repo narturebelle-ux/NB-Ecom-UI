@@ -69,7 +69,7 @@ import { FeatureDirective } from '../../directives/feature.directive';
               <mat-icon class="icon">mail</mat-icon>
               <div>
                 <strong>Care Team:</strong>
-                <span>care&#64;narturebelle.com</span>
+                <span>support-care&#64;narturebelle.com</span>
               </div>
             </div>
           </div>
