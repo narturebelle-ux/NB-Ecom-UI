@@ -833,7 +833,7 @@ menu, footer and "All ideas" links show only to those who qualify. `/ideas/:id` 
 Owner's rules: paid for a care plan and done at least one session; referral reward plans don't count; a refunded member stays a user (whether she keeps her sessions is being confirmed); anyone signed in can vote from a shared link, with paid and
 unpaid votes kept apart so paid requests take priority; `GET /ideas` stays public.
 
-**The UI check is interim:** `CommerceService.canShareIdeas` uses `usedSessions > 0`, which also counts booked sessions and referral plans. It must switch to the API's `canPostIdeas`; see §9.
+**The UI check is interim:** `CommerceService.canShareIdeas` uses `usedSessions > 0`, which counts completed sessions but also those on referral plans. It must switch to the API's `canPostIdeas`; see §9.
 
 ## 34. Next feature: current plan, upgrade and invoices (backlog, 2026-10-30)
 
