@@ -6,6 +6,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { ApiService } from '../../services/api.service';
 import { CommerceService } from '../../services/commerce.service';
 import { OnboardingService, PlanRecommendation } from '../../services/onboarding.service';
+import { InviteService } from '../../services/invite.service';
 import { DUE_DATE_LOCK_NOTE, JOURNEY_STATUS_LABELS, JourneyStatus, PROFESSIONAL_TYPE_LABELS, eddBounds, eddProblem } from '../../models/maternal.models';
 import { Plan, PlanQuote } from '../../models/commerce.models';
 import {
@@ -502,6 +503,7 @@ export class OnboardingComponent implements OnInit {
   private commerce = inject(CommerceService);
   private router = inject(Router);
   ob = inject(OnboardingService);
+  private invite = inject(InviteService);
 
   steps = ONBOARDING_STEPS;
   stages = STAGES;
@@ -589,6 +591,8 @@ export class OnboardingComponent implements OnInit {
     this.loadError.set(null);
     this.ob.sync().subscribe({
       next: () => {
+        // Consent is granted by the time onboarding loads, so this is where a new mother joins her inviter.
+        this.invite.claimIfPending();
         const saved = this.ob.state().intake;
         if (saved) {
           const { savedAt, ...answers } = saved;

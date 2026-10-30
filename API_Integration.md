@@ -601,6 +601,23 @@ Other: the 403 interceptor treats `HEALTH_DATA` like `RECORDS_STORAGE` (an optio
 Profile → Consents lists `HEALTH_DATA` automatically with grant/revoke. **Not built yet:** viewing or editing the health profile from Profile
 after onboarding (it's only editable through "Edit my details" during onboarding). Say if you want that.
 
+## 32. Referral links & the free Premium reward (2026-10-30, branch feature/referrals)
+
+*(Placed here to keep merges with the other open branches conflict-free.)*
+
+Built against API UI_INTEGRATION_GUIDE.md §16 (branch `feature/referrals`, 960c86f). The rule: 5 friends who join through her link and buy a plan
+earn her a free 9-month Premium plan, once. Friends pay normally.
+- **Arriving with `?ref=CODE`** (any page): `App` stores the code in localStorage (`nb_ref`), then `GET /referrals/{code}` shows the banner
+  "**Asha R.** invited you to NartureBelle™" with a "Create your account" button. A 404 clears the stored code.
+- **Claiming:** `POST /me/referral/claim {code}` runs once she's signed in **and** `GET /me` confirmed there are no pending consents (app-shell
+  effect), and again when onboarding loads, since consent is always granted by then. On success: "Welcome! You joined through Asha R.'s invite."
+  The stored code is cleared on success or any 4xx except 401/403 (`REFERRAL_SELF`, `REFERRAL_ALREADY_CLAIMED`, `REFERRAL_NOT_NEW_CUSTOMER`, bad code).
+- **`/invite`** (`authGuard`), using `GET /me/referral`:
+  - a hero ("Bring 5 moms. Get Premium free.") and her link (`https://www.narturebelle.com/?ref=CODE`) with Copy / WhatsApp / native share
+  - 5 heart slots filled to `qualified`, the friend list with each friend's purchase state, and a **celebration card** when `rewardGranted`
+- **Nav:** "Invite" for onboarded members (mobile: "Invite friends · get Premium free"), and "Invite friends" in the footer.
+- **Idea share links get `?ref=` too:** on `feature/idea-pool`, links carry her code when she's signed in, so idea sharing also earns referral credit.
+
 ## 26. Health-rule review (Part D) and the professional portal (2026-10-30)
 
 **Product-owner decisions (2026-10-30):**

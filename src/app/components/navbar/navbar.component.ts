@@ -59,6 +59,7 @@ import { FeatureDirective } from '../../directives/feature.directive';
         @if (api.currentUser() && !isProfessional() && onboarding.onboarded()) {
         <nav class="nav-links">
           <a routerLink="/journey" routerLinkActive="active" class="nav-link">My Journey</a>
+          <a routerLink="/invite" routerLinkActive="active" class="nav-link invite-nav"><mat-icon class="icon-sm">card_giftcard</mat-icon> Invite</a>
           <a *appFeature="'careBooking'" routerLink="/care" routerLinkActive="active" class="nav-link">Care</a>
           <a *appFeature="'recordsVault'" routerLink="/records" routerLinkActive="active" class="nav-link">Records</a>
           <a *appFeature="'childTracker'" routerLink="/child" routerLinkActive="active" class="nav-link">Child</a>
@@ -182,6 +183,7 @@ import { FeatureDirective } from '../../directives/feature.directive';
 
           @if (api.currentUser()) {
             <a routerLink="/journey" (click)="isMobileOpen = false" class="mobile-nav-link"><mat-icon class="icon-sm">eco</mat-icon> My Journey</a>
+            <a routerLink="/invite" (click)="isMobileOpen = false" class="mobile-nav-link"><mat-icon class="icon-sm">card_giftcard</mat-icon> Invite friends · get Premium free</a>
             <a *appFeature="'careBooking'" routerLink="/care" (click)="isMobileOpen = false" class="mobile-nav-link">Care</a>
             <a *appFeature="'recordsVault'" routerLink="/records" (click)="isMobileOpen = false" class="mobile-nav-link">Records</a>
             <a *appFeature="'childTracker'" routerLink="/child" (click)="isMobileOpen = false" class="mobile-nav-link">Child</a>

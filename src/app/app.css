@@ -2,3 +2,7 @@
   min-height: calc(100vh - 350px);
   display: block;
 }
+
+.invite-banner { display: flex; align-items: center; justify-content: center; gap: 0.75rem; flex-wrap: wrap; padding: 0.6rem 1rem; background: linear-gradient(90deg, #fde8e1, #fff4dc); color: var(--sage-900); font-size: 0.9rem; text-align: center; }
+.invite-cta { font-weight: 800; color: #fff; background: var(--blush-700); border-radius: 999px; padding: 0.3rem 0.85rem; text-decoration: none; }
+.invite-close { border: none; background: none; cursor: pointer; color: var(--text-muted); font-size: 0.9rem; }

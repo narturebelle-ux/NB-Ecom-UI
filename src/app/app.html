@@ -1,5 +1,13 @@
 <app-navbar></app-navbar>
 
+@if (invite.inviterName() && !api.currentUser()) {
+  <div class="invite-banner" role="status">
+    <span>💌 <strong>{{ invite.inviterName() }}</strong> invited you to NartureBelle™, care for every stage of motherhood.</span>
+    <a routerLink="/auth/signup" class="invite-cta">Create your account</a>
+    <button type="button" class="invite-close" aria-label="Dismiss" (click)="invite.dismissBanner()">✕</button>
+  </div>
+}
+
 <main class="app-main">
   <router-outlet></router-outlet>
 </main>

@@ -35,6 +35,7 @@ import { FeatureDirective } from '../../directives/feature.directive';
             <li><a routerLink="/ideas">Idea pool</a></li>
             <li><a routerLink="/journey">My Journey</a></li>
             <li><a routerLink="/plans">Care Plans</a></li>
+            <li><a routerLink="/invite">Invite friends</a></li>
             <li><a routerLink="/care">Find a Professional</a></li>
             <li><a routerLink="/checklists">Checkup & Scan Checklist</a></li>
           </ul>
