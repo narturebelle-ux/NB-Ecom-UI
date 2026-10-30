@@ -705,4 +705,6 @@ Against API 70296dd (final contract). Not verified live, because it's waiting on
 Both repos follow the same rule: every new feature or change gets its own branch (`feature/…`, `fix/…`, `docs/…`), cut from the latest
 `origin/develop`, then a pull request into `develop`. Releases go `develop` → `main` by pull request, and `main` is production (Vercel).
 There are no direct commits to `develop` or `main`, and old branches aren't reused (`Feature/phase-0-1` here, `firebase-setup` in the API).
-Full rules are in this repo's README.md, "Branching workflow".
+**One feature at a time:** finish a feature on its branch (follow-up fixes included), have the product owner check the app's
+behavior, merge it into `develop` after approval, and only then cut the next branch from the updated `origin/develop`. Never run
+two feature branches at once and never stack them. Full rules are in this repo's README.md, "Branching workflow".

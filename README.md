@@ -27,6 +27,14 @@ git switch -c feature/<short-name> origin/develop
 2. Open a pull request **into `develop`** and merge it. Vercel builds a preview for the branch.
 3. To release, open a pull request from **`develop` into `main`** and merge it. Vercel then deploys production.
 
+**One feature at a time** (product-owner rule, 2026-10-30):
+1. A feature's branch holds **all** of its changes, including follow-up fixes. Don't open a second branch for the same feature.
+2. When development is done, **ask the product owner to check the application's behavior** (locally or on the branch's Vercel preview).
+3. Only after they approve, merge it into `develop` by pull request.
+4. **Only then** cut the next branch, from the updated `origin/develop`, so it contains the previous feature.
+5. Never start a new branch while another is unmerged, and never stack one feature branch on top of another.
+   Parallel branches caused merge conflicts and fix-up merges, which is what this rule prevents.
+
 Rules:
 - Don't commit to `develop` or `main` directly, and don't reuse an old branch for a new feature.
 - If `develop` moves on while a branch is open, bring it in with `git merge origin/develop` before the pull request.
