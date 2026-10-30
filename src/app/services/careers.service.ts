@@ -1,12 +1,16 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
 import { environment } from '../../environments/environment';
 
 /**
- * Careers + ideas/feedback. Built against the UI's PROPOSED contract (sent to the API agent 2026-10-30):
- * applications and feedback are stored by the API and emailed to admin@narturebelle.com.
+ * Careers + ideas/feedback — API 2366d6c (UI_INTEGRATION_GUIDE.md §14). Applications and feedback are stored by
+ * the API and emailed to admin@narturebelle.com (log-only until the API's email provider is configured).
  */
+
+/** Same rules as the API: 7-20 of + digits spaces ( ) - */
+export const PHONE_PATTERN = /^[+0-9 ()\-]{7,20}$/;
+export const URL_PATTERN = /^https?:\/\/\S+$/i;
 
 export type EmploymentType = 'FULL_TIME' | 'PART_TIME' | 'CONTRACT' | 'INTERNSHIP';
 export type WorkMode = 'ONSITE' | 'REMOTE' | 'HYBRID';
@@ -28,6 +32,7 @@ export interface Job {
   requirements: string[];
   postedAt: string;
   status: 'OPEN' | 'CLOSED';
+  closedAt: string | null;
   /** Admin list only. */
   applicationCount?: number;
 }
@@ -45,6 +50,10 @@ export interface JobApplication {
   yearsExperience: number | null;
   coverNote: string | null;
   resumeFileName: string;
+  resumeSizeBytes: number;
+  jobId: number;
+  /** false while email is log-only (provider not configured) or the send failed. */
+  adminNotified: boolean;
   submittedAt: string;
 }
 
@@ -126,7 +135,14 @@ export class CareersService {
     return this.http.get<JobApplication[]>(`${this.baseUrl}/admin/careers/jobs/${jobId}/applications`);
   }
 
-  resumeUrl(applicationId: number): Observable<{ url: string; expiresAt: string }> {
-    return this.http.get<{ url: string; expiresAt: string }>(`${this.baseUrl}/admin/careers/applications/${applicationId}/resume-url`);
+  /** The file itself (Content-Disposition: attachment); every download is audited by the API. */
+  downloadResume(applicationId: number, fallbackName: string): Observable<{ blob: Blob; filename: string }> {
+    return this.http.get(`${this.baseUrl}/admin/careers/applications/${applicationId}/resume`, { responseType: 'blob', observe: 'response' }).pipe(
+      map(res => {
+        const cd = res.headers.get('Content-Disposition') ?? '';
+        const match = /filename\*?=(?:UTF-8'')?"?([^";]+)"?/i.exec(cd);
+        return { blob: res.body as Blob, filename: match ? decodeURIComponent(match[1]) : fallbackName };
+      })
+    );
   }
 }

@@ -52,10 +52,10 @@ import {
                 </select>
               </div>
             </div>
-            <div class="field"><label for="sum">One-line summary *</label><input id="sum" name="summary" class="form-control" maxlength="200" [(ngModel)]="draft.summary" /></div>
-            <div class="field"><label for="desc">Description *</label><textarea id="desc" name="description" class="form-control" rows="7" [(ngModel)]="draft.description"></textarea></div>
+            <div class="field"><label for="sum">One-line summary *</label><input id="sum" name="summary" class="form-control" maxlength="500" [(ngModel)]="draft.summary" /></div>
+            <div class="field"><label for="desc">Description *</label><textarea id="desc" name="description" class="form-control" rows="7" maxlength="10000" [(ngModel)]="draft.description"></textarea></div>
             <div class="field">
-              <label for="req">Requirements <span class="opt">one per line</span></label>
+              <label for="req">Requirements <span class="opt">one per line, up to 30</span></label>
               <textarea id="req" name="requirements" class="form-control" rows="4" [(ngModel)]="requirementsText"></textarea>
             </div>
             @if (formError()) { <p class="error-msg">{{ formError() }}</p> }
@@ -96,14 +96,16 @@ import {
                       <div>
                         <strong>{{ a.fullName }}</strong>
                         <span class="hint">{{ a.email }} · {{ a.phone }}@if (a.location) { · {{ a.location }} }@if (a.yearsExperience !== null) { · {{ a.yearsExperience }} yrs }</span>
-                        <span class="hint">Applied {{ a.submittedAt | date:'d MMM y, h:mm a' }}</span>
+                        <span class="hint">Applied {{ a.submittedAt | date:'d MMM y, h:mm a' }} · {{ a.resumeFileName }} ({{ sizeLabel(a.resumeSizeBytes) }})
+                          @if (!a.adminNotified) { <span class="not-emailed" title="Email is log-only until the API's email provider is set up, or the send failed">not emailed</span> }
+                        </span>
                         @if (a.coverNote) { <p class="note">{{ a.coverNote }}</p> }
                         <div class="links">
                           @if (a.linkedinUrl) { <a [href]="a.linkedinUrl" target="_blank" rel="noopener">LinkedIn</a> }
                           @if (a.portfolioUrl) { <a [href]="a.portfolioUrl" target="_blank" rel="noopener">Portfolio</a> }
                         </div>
                       </div>
-                      <button class="btn btn-outline btn-sm" (click)="openResume(a)"><mat-icon class="icon-sm">description</mat-icon> Résumé</button>
+                      <button class="btn btn-outline btn-sm" (click)="openResume(a)"><mat-icon class="icon-sm">download</mat-icon> Résumé</button>
                     </div>
                   } @empty {
                     <p class="hint">No applications yet.</p>
@@ -141,6 +143,7 @@ import {
     .applicant { display: flex; justify-content: space-between; gap: 1rem; padding: 0.6rem 0; border-bottom: 1px solid var(--border-subtle); }
     .applicant > div { display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; }
     .applicant strong { color: var(--sage-900); }
+    .not-emailed { display: inline-block; margin-left: 0.35rem; font-size: 0.68rem; font-weight: 800; text-transform: uppercase; color: #92610a; background: #fff8eb; border: 1px solid #fbd38d; border-radius: 999px; padding: 0 0.4rem; }
     .note { font-size: 0.82rem; color: var(--text-secondary); white-space: pre-line; margin-top: 0.25rem; }
     .links { display: flex; gap: 0.75rem; font-size: 0.82rem; }
     .hint { font-size: 0.8rem; color: var(--text-muted); }
@@ -218,10 +221,15 @@ export class AdminCareersComponent implements OnInit {
       this.formError.set('Please fill in the title, location, summary and description.');
       return;
     }
+    const requirements = this.requirementsText.split('\n').map(r => r.trim()).filter(Boolean);
+    if (requirements.length > 30 || requirements.some(r => r.length > 500)) {
+      this.formError.set('Please keep requirements to 30 lines of up to 500 characters each.');
+      return;
+    }
     const body: JobInput = {
       ...d,
       title: d.title.trim(), team: d.team?.trim() || null, location: d.location.trim(), summary: d.summary.trim(), description: d.description.trim(),
-      requirements: this.requirementsText.split('\n').map(r => r.trim()).filter(Boolean)
+      requirements
     };
     this.busy.set(true);
     const id = this.editId();
@@ -262,11 +270,22 @@ export class AdminCareersComponent implements OnInit {
     });
   }
 
-  /** Short-lived signed link from the API; opened in a new tab. */
+  /** Downloads the résumé with the admin token and saves it (each download is audited by the API). */
   openResume(a: JobApplication) {
-    this.careers.resumeUrl(a.id).subscribe({
-      next: r => window.open(r.url, '_blank', 'noopener'),
-      error: () => this.api.showToast('Couldn’t open the résumé.')
+    this.careers.downloadResume(a.id, a.resumeFileName).subscribe({
+      next: ({ blob, filename }) => {
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        link.click();
+        URL.revokeObjectURL(url);
+      },
+      error: err => this.api.showToast(err?.status === 404 ? 'That résumé no longer exists.' : 'Couldn’t download the résumé.')
     });
+  }
+
+  sizeLabel(bytes: number): string {
+    return bytes < 1024 * 1024 ? `${Math.max(1, Math.round(bytes / 1024))} KB` : `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   }
 }

@@ -9,7 +9,9 @@ import {
   EMPLOYMENT_TYPE_LABELS,
   Job,
   RESUME_ACCEPT,
+  PHONE_PATTERN,
   RESUME_MAX_BYTES,
+  URL_PATTERN,
   WORK_MODE_LABELS
 } from '../../services/careers.service';
 
@@ -196,6 +198,9 @@ export class CareerDetailComponent implements OnInit {
     const f = this.form;
     if (!f.fullName.trim() || !f.email.trim() || !f.phone.trim()) return 'Please fill in your name, email and phone.';
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email.trim())) return 'Please enter a valid email address.';
+    if (!PHONE_PATTERN.test(f.phone.trim())) return 'Please enter a valid phone number (7–20 digits; + ( ) - and spaces are fine).';
+    if (f.linkedinUrl.trim() && !URL_PATTERN.test(f.linkedinUrl.trim())) return 'Your LinkedIn link should start with https://';
+    if (f.portfolioUrl.trim() && !URL_PATTERN.test(f.portfolioUrl.trim())) return 'Your portfolio link should start with https://';
     if (!this.resume) return 'Please attach your résumé.';
     if (!f.privacyConsent) return 'Please agree to us storing your application so we can review it.';
     return null;
@@ -217,7 +222,7 @@ export class CareerDetailComponent implements OnInit {
           : code === 'RESUME_TOO_LARGE' || err?.status === 413 ? 'Your résumé is larger than 5 MB.'
           : code === 'RESUME_TYPE_NOT_ALLOWED' ? 'Please upload your résumé as a PDF or Word document.'
           : code === 'TOO_MANY_REQUESTS' || err?.status === 429 ? 'Too many attempts. Please wait a few minutes and try again.'
-          : code === 'VALIDATION_FAILED' ? (err?.error?.message || 'Please check the highlighted details.')
+          : code === 'VALIDATION_FAILED' ? (err?.error?.fields?.resume ? 'Please attach your résumé.' : err?.error?.message || 'Please check your details and try again.')
           : err?.status === 404 ? 'Applications aren’t open on this server yet. Please email admin@narturebelle.com instead.'
           : 'We couldn’t send your application. Please try again.'
         );
