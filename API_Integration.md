@@ -633,6 +633,29 @@ There's no UI for creating rules yet (admins use the API); say if you want one.
 - Onboarding's `HEALTH_DATA` check is version-aware too. Once you publish the new consent text as a new version, mothers are asked again,
   and Profile shows it as "Not granted" with a Grant button.
 
+## 31. Idea pool & Idea Impact (2026-10-30, branch feature/idea-pool)
+
+*(Placed here rather than at the end to keep merges with the other open branches conflict-free.)*
+
+Built against API UI_INTEGRATION_GUIDE.md §15 (branch `feature/idea-impact`, d4ade2d). It replaces "Share an idea": `/feedback` now
+redirects to `/ideas`, and the footer link reads "Idea pool". The old feedback page and `POST /feedback` still exist but are no longer linked.
+- **`/ideas`** (public, campaign style):
+  - a hero with open/closed status (`meta.open`) and a 3-step "share → rally → we make it real" explainer
+  - a **post panel**: 5 category tiles from `meta.categories`, a title (≤120), a description (≤1500) and `featureConsent`, plus a note that she appears
+    publicly as first name + last initial. There are no name or email fields. Signed-out users get sign-up/sign-in buttons that return to `/ideas`.
+  - after posting, the new idea's card with share buttons
+  - the pool with category chips and Most votes / Newest sorting
+  - "Your ideas" (`GET /me/ideas`)
+  - the **Idea Impact** band (`GET /ideas/impact`)
+- **Idea card:** progress shown as `paidVotes / voteGoal` ("member votes") plus total votes, and status badges (Under review, Made real, Goal reached,
+  Your idea). Vote/unvote (hidden on her own ideas and when the pool is closed) uses `votedByMe` and swaps in the returned Idea. Share options:
+  **WhatsApp**, **Copy link**, and the device share sheet where available. They all point to `/ideas/{id}`.
+- **`/ideas/:id`** (public share target): a big card, plus "Help this idea happen" steps (create an account → choose a care plan, since only
+  members with a plan count → pass it on), with sign-up/sign-in buttons that return to the idea.
+- **`/admin/ideas`** (`adminGuard`): filter by status, then Under review / Implemented (needs a public impact note, `IMPACT_NOTE_REQUIRED`) / Decline / Reopen.
+- **Errors:** `IDEA_SELF_VOTE`, `IDEA_NOT_OPEN`, `IDEA_POOL_CLOSED` and 429 (5 ideas a day) get friendly messages. Signed-out votes go to sign-in.
+- **Nav:** "Ideas" for onboarded members, "Idea pool" for visitors on desktop, and "Ideas admin" for admins.
+
 ## 27. Due-date-based plan pricing (2026-10-30)
 
 Against API 70296dd (final contract). Not verified live, because it's waiting on the :8080 restart (V27).
