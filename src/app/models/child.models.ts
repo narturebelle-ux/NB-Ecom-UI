@@ -30,7 +30,7 @@ export interface VaccinationItem {
 
 export interface VaccinationSchedule {
   childId: number;
-  schedule: { id: number; version: string; title: string; reviewStatus: string };
+  schedule: { id: number; version: number; title: string; reviewStatus: string } | null;
   items: VaccinationItem[];
 }
 
