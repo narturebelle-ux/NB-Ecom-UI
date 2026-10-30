@@ -633,6 +633,47 @@ There's no UI for creating rules yet (admins use the API); say if you want one.
 - Onboarding's `HEALTH_DATA` check is version-aware too. Once you publish the new consent text as a new version, mothers are asked again,
   and Profile shows it as "Not granted" with a Grant button.
 
+## 27. Due-date-based plan pricing (2026-10-30)
+
+Against API 70296dd (final contract). Not verified live, because it's waiting on the :8080 restart (V27).
+- **Prices:** for signed-in users, `/plans`, the onboarding plan step and checkout use `GET /me/plans/quote`. It falls back to the
+  public `/plans` list only on 404, i.e. an API without the endpoint. Visitors see the public 9-month list with "sign in and add your due date to pay
+  only for the months you need".
+- **Months shown:**
+  - `DUE_DATE` basis → "Priced for N months until your due date", plus "₹X/month × N · full 9 months ₹Y" on each card, and a
+    "Covers N months (until your due date)" row at checkout.
+  - `FULL_PLAN` → "Full 9-month plans".
+- **Checkout takes its plan from the quote,** so the price on screen is what `POST /orders` charges.
+- **Lock warning:** checkout (when months < 9) and the onboarding plan step (`DUE_DATE` basis) say: "Your plan price is based on your due date. After you pay, the due date can only be changed by up to 3 weeks. For a bigger change, please contact support."
+- **Due-date validation:** while pregnant, the date can't be in the past or more than 42 weeks ahead. This applies to the onboarding intake and the My Journey edit form (date picker `min`/`max` plus a message).
+- **409 `DUE_DATE_LOCKED`:** on the journey edit and the onboarding intake save it shows the lock message above.
+
+## 28. Careers, job applications and "Share an idea" (2026-10-30)
+
+**Product-owner decisions:**
+- Applications are delivered **through the API**: stored, then emailed with the résumé to `admin@narturebelle.com`.
+- Roles are posted and closed from an **admin screen**.
+- A **feedback / ideas form** goes to the same inbox.
+
+**Reconciled with the final contract (API 2366d6c, UI_INTEGRATION_GUIDE.md §14).** Changes from the proposal, applied in the UI:
+- Résumés download from `GET /admin/careers/applications/{id}/resume` (the file itself, saved with the admin token). There's no signed URL.
+- The admin applicant list shows the file name and size, and a **"not emailed"** badge when `adminNotified` is false (email is log-only until `RESEND_API_KEY` is set and the domain verified).
+- Client-side checks match the API: phone is 7–20 of `+0-9 ()-`; LinkedIn and portfolio must be http(s); job summary ≤500, description ≤10000, ≤30 requirements of ≤500 characters each.
+- `VALIDATION_FAILED` with `fields.resume` → "Please attach your résumé".
+
+**Pages:**
+- `/careers` (public): open roles (`GET /careers/jobs`), plus a "Share an idea" prompt.
+- `/careers/:id` (public): the role, then an application form sent as `multipart/form-data` to `POST /careers/jobs/{id}/applications`.
+  - Fields: name, email, phone, city, LinkedIn, portfolio, years of experience, cover note, résumé (PDF/DOC/DOCX, max 5 MB, checked client-side too), privacy consent, and the `website` honeypot.
+  - Handles 409 `JOB_CLOSED`, `RESUME_TOO_LARGE`/413, `RESUME_TYPE_NOT_ALLOWED`, 429 and `VALIDATION_FAILED`.
+- `/feedback` (public): idea text (≤3000), optional 1–5 rating, optional name/email (pre-filled when signed in), `page` (= referrer) and the honeypot → `POST /feedback`.
+- `/admin/careers` (`adminGuard`, any `*_ADMIN`):
+  - list all roles with an applicant count
+  - post and edit (requirements one per line)
+  - close and reopen
+  - view applicants, and open a résumé through a short-lived URL (`GET /admin/careers/applications/{id}/resume-url`)
+- Links: Careers and "Share an idea" in the footer. A "Careers admin" navbar link for admins.
+
 ## 9. Open requests to the API agent
 
 *(Running list — mark resolved items with ✅ and a date rather than deleting them, so the history stays visible.)*
@@ -649,6 +690,7 @@ There's no UI for creating rules yet (admins use the API); say if you want one.
 - 🟡 **2026-10-30** — ✅ committed in API 0fe423d (prod included, rows labelled as sample); live after the :8080 restart. **Sample data in every list (product-owner request).** Seed providers (every professional type, a few cities/languages, VIRTUAL + PHYSICAL offerings, open slots), call slots with coordinators, Joy Circle events, BABY_CARE products, and any other list that can be empty, including under `prod`. Mark sample rows as sample in the data.
 - 🟡 **2026-10-30** — Parts A–C committed (API 688c3a4 matching, 294b906 coordinators, 839a38c health profile + `HEALTH_DATA`), and the UI is built against them (§25). Live after the :8080 restart, then UI verification. **Part D ✅ shipped (88879af); UI review screen built (§26).** Go-ahead given 2026-10-30 with these product-owner decisions: rules are approved once (not per mother); approvers are MEDICAL_REVIEWER staff or verified (VERIFIED/ACTIVE) GYNECOLOGIST, NUTRITIONIST or REGISTERED_NURSE providers. The UI will add a review screen for approvers once the review endpoints are defined.
 - ✅ **2026-10-30** — Professional portal shipped (API 30c56a9) and the UI is reconciled (§26). `HEALTH_DATA` v2 with care-team wording is live (V26). ~~Please send final shapes for `GET /provider/me`, `GET /provider/bookings`, `GET /provider/bookings/{id}/product-suggestions`, `GET`/`PUT /provider/bookings/{id}/product-recommendations` and `GET /me/care-recommendations`, plus a new `HEALTH_DATA` consent version whose text covers care-team access~~.
+- ✅ **2026-10-30** — Careers + feedback shipped (API 2366d6c), UI reconciled (§28). Live after the :8080 restart (V28). Email stays log-only until the user sets up Resend. ~~**Careers + feedback (product owner):** jobs, applications with résumé upload, feedback; stored and emailed to admin@narturebelle.com via an email provider (account + SPF/DKIM DNS needed from the user). Please send final shapes (§28).~~
 - 🟡 **2026-10-30** — The `/providers` enum-filter 500 is believed to be a stale-jar artefact (the jar was rebuilt under the running PID). It should clear on restart, and bad values are now 400 (f213f95). Re-check after the restart.
 - 🔴 **2026-10-30** — **Bug:** `GET /providers?professionalType=…` and `?modality=…` return 500 `INTERNAL_ERROR` on :8080. The unfiltered list, `city` and `language` return 200. The Care page's type chips and "Virtual only" checkbox hit this and show "We couldn't load care professionals right now". Needs the API log (the catch-all handler logs the stack trace).
 - ✅ **2026-10-30** — `RECORDS_STORAGE` consent type added (API 43c0d60) and the UI now grants and reads it (§0).

@@ -6,8 +6,8 @@ import { MatIconModule } from '@angular/material/icon';
 import { ApiService } from '../../services/api.service';
 import { CommerceService } from '../../services/commerce.service';
 import { OnboardingService, PlanRecommendation } from '../../services/onboarding.service';
-import { JOURNEY_STATUS_LABELS, JourneyStatus, PROFESSIONAL_TYPE_LABELS } from '../../models/maternal.models';
-import { Plan } from '../../models/commerce.models';
+import { DUE_DATE_LOCK_NOTE, JOURNEY_STATUS_LABELS, JourneyStatus, PROFESSIONAL_TYPE_LABELS, eddBounds, eddProblem } from '../../models/maternal.models';
+import { Plan, PlanQuote } from '../../models/commerce.models';
 import {
   ConsultationMode,
   IntakeAnswers,
@@ -78,7 +78,8 @@ const STAGES: JourneyStatus[] = ['PREGNANCY', 'PRE_DELIVERY', 'POSTPARTUM', 'CHI
               @if (needsEdd()) {
                 <div class="field">
                   <label for="edd">Expected due date <span class="req">*</span></label>
-                  <input id="edd" type="date" class="form-control" [(ngModel)]="form.expectedDeliveryDate" />
+                  <input id="edd" type="date" class="form-control" [min]="edd.min" [max]="edd.max" [(ngModel)]="form.expectedDeliveryDate" />
+                  @if (eddError(); as e) { <span class="field-error">{{ e }}</span> }
                   <span class="hint">Your best estimate is fine — you can change it any time.</span>
                 </div>
               }
@@ -201,6 +202,12 @@ const STAGES: JourneyStatus[] = ['PREGNANCY', 'PRE_DELIVERY', 'POSTPARTUM', 'CHI
             <!-- ======== 2. PLAN ======== -->
             @case ('plan') {
               <h2>Your recommended plan</h2>
+              @if (quote(); as q) {
+                <p class="quote-note">
+                  @if (q.basis === 'DUE_DATE') { Prices cover the <strong>{{ q.months }} {{ q.months === 1 ? 'month' : 'months' }}</strong> until your due date, with sessions adjusted to match. }
+                  @else { Prices are for the full 9-month plan. }
+                </p>
+              }
               <p class="sub">Based on what you told us. You can choose any plan — your care coordinator will review it with you on your onboarding call.</p>
 
               @if (plansLoading()) {
@@ -235,6 +242,7 @@ const STAGES: JourneyStatus[] = ['PREGNANCY', 'PRE_DELIVERY', 'POSTPARTUM', 'CHI
                   }
                 </div>
               }
+              @if (quote()?.basis === 'DUE_DATE') { <p class="lock-note">{{ dueDateLockNote }}</p> }
               <div class="actions split">
                 <button class="btn-link" (click)="editIntake()"><mat-icon class="icon-sm">edit</mat-icon> Edit my details</button>
                 <button class="btn-link" (click)="checkPayment()"><mat-icon class="icon-sm">refresh</mat-icon> I’ve already paid</button>
@@ -443,6 +451,9 @@ const STAGES: JourneyStatus[] = ['PREGNANCY', 'PRE_DELIVERY', 'POSTPARTUM', 'CHI
     .callback-box p { margin: 0.25rem 0 0; }
     .proto { display: flex; align-items: center; gap: 0.35rem; font-size: 0.78rem; color: #92610a; background: #fff8eb; border: 1px solid #fbd38d; border-radius: var(--radius-md); padding: 0.55rem 0.8rem; }
 
+    .quote-note { font-size: 0.86rem; color: var(--sage-900); background: var(--sage-50); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 0.55rem 0.8rem; margin: 0.5rem 0 1rem; }
+    .lock-note { font-size: 0.8rem; color: #92610a; margin-top: 0.5rem; }
+    .field-error { display: block; font-size: 0.8rem; color: #a0281c; margin-top: 0.25rem; }
     .health-box { border: 1.5px solid var(--border-light); border-radius: var(--radius-md); padding: 1rem 1.1rem; margin: 1rem 0; background: #fff; }
     .health-head { display: flex; align-items: center; gap: 0.4rem; color: var(--sage-900); margin-bottom: 0.4rem; }
     .consent-doc { margin: 0.5rem 0; font-size: 0.82rem; }
@@ -533,6 +544,9 @@ export class OnboardingComponent implements OnInit {
 
   signName = '';
   signAgree = false;
+  edd = eddBounds();
+  quote = signal<PlanQuote | null>(null);
+  dueDateLockNote = DUE_DATE_LOCK_NOTE;
 
   /** Ticked when the user agrees to HEALTH_DATA on this form (only asked where the API supports it). */
   shareHealth = false;
@@ -611,7 +625,7 @@ export class OnboardingComponent implements OnInit {
 
   intakeValid(): boolean {
     if (!this.form.stage || !this.phoneValid(this.form.phone) || !this.form.languages.length) return false;
-    return !this.needsEdd() || !!this.form.expectedDeliveryDate;
+    return !this.needsEdd() || (!!this.form.expectedDeliveryDate && !eddProblem(this.form.expectedDeliveryDate));
   }
 
   toggle<T>(list: T[], value: T) {
@@ -648,7 +662,9 @@ export class OnboardingComponent implements OnInit {
       error: (err) => {
         this.saving.set(false);
         if (err?.status === 401 || err?.status === 403) return; // interceptor handles consent/verify redirects
-        this.errorMsg.set(err?.error?.message || 'We couldn’t save your details. Please try again.');
+        this.errorMsg.set(err?.error?.code === 'DUE_DATE_LOCKED'
+          ? DUE_DATE_LOCK_NOTE
+          : err?.error?.message || 'We couldn’t save your details. Please try again.');
       }
     });
   }
@@ -661,8 +677,10 @@ export class OnboardingComponent implements OnInit {
   private enterPlanStep() {
     this.ob.refreshPayment().subscribe({ error: () => {} });
     this.plansLoading.set(true);
-    this.commerce.getPlans().subscribe({
-      next: (plans) => {
+    this.commerce.getQuote().subscribe({
+      next: (q) => {
+        this.quote.set(q);
+        const plans = q.plans;
         this.plans.set(plans);
         const rec = this.ob.recommend(plans);
         this.recommendation.set(rec);
@@ -671,6 +689,10 @@ export class OnboardingComponent implements OnInit {
       },
       error: () => this.plansLoading.set(false)
     });
+  }
+
+  eddError(): string | null {
+    return this.needsEdd() ? eddProblem(this.form.expectedDeliveryDate) : null;
   }
 
   allocationSummary(p: Plan): string {

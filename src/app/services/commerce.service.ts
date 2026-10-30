@@ -1,8 +1,8 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Observable, tap } from 'rxjs';
+import { Observable, catchError, map, tap, throwError } from 'rxjs';
 import { environment } from '../../environments/environment';
-import { Entitlement, Order, Payment, PaymentMode, Plan } from '../models/commerce.models';
+import { Entitlement, Order, Payment, PaymentMode, Plan, PlanQuote } from '../models/commerce.models';
 
 /** Phase 2 (Plans, checkout & entitlements) against the real API — UI_INTEGRATION_GUIDE.md §8. */
 @Injectable({ providedIn: 'root' })
@@ -14,6 +14,18 @@ export class CommerceService {
 
   getPlans(): Observable<Plan[]> {
     return this.http.get<Plan[]>(`${this.baseUrl}/plans`);
+  }
+
+  /**
+   * Prices for the signed-in user (prorated to her due date). POST /orders charges exactly this.
+   * Falls back to the public 9-month list only if the API has no quote endpoint yet (404).
+   */
+  getQuote(): Observable<PlanQuote> {
+    return this.http.get<PlanQuote>(`${this.baseUrl}/me/plans/quote`).pipe(
+      catchError(err => err?.status === 404
+        ? this.getPlans().pipe(map(plans => ({ months: 9, basis: 'FULL_PLAN' as const, plans })))
+        : throwError(() => err))
+    );
   }
 
   getPlan(id: number): Observable<Plan> {
