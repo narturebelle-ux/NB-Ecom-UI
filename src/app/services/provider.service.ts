@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
-import { Booking, Provider, ProviderFilters, Slot } from '../models/provider.models';
+import { Booking, Provider, ProviderFilters, Slot, CareMatchesResponse, Modality } from '../models/provider.models';
 
 /** Phase 3 (Providers, booking & sessions) against the real API — UI_INTEGRATION_GUIDE.md §9. */
 @Injectable({ providedIn: 'root' })
@@ -11,6 +11,16 @@ export class ProviderService {
   private readonly baseUrl = environment.apiUrl;
 
   /** Public; the API only ever lists VERIFIED/ACTIVE providers. Filtering is server-side. */
+  /**
+   * Providers matched to the signed-in user (languages from the intake, city, modality). Sorted by earliest slot.
+   * 409 MATCH_PROFILE_INCOMPLETE {missing:["languages"]} when the intake has no languages; [] matches is a normal 200.
+   */
+  getMatches(professionalType: string, modality?: Modality | null): Observable<CareMatchesResponse> {
+    let params = new HttpParams().set('professionalType', professionalType);
+    if (modality) params = params.set('modality', modality);
+    return this.http.get<CareMatchesResponse>(`${this.baseUrl}/me/care/matches`, { params });
+  }
+
   getProviders(filters: ProviderFilters = {}): Observable<Provider[]> {
     let params = new HttpParams();
     for (const [key, value] of Object.entries(filters)) {

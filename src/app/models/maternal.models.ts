@@ -134,8 +134,8 @@ export interface CartItem {
 
 // --- Phase 1: Consent (roadmap §1.1) ---
 
-/** RECORDS_STORAGE (API 43c0d60) is optional: never in /me pending, only enforced on record uploads. */
-export type ConsentDocumentType = 'TERMS' | 'PRIVACY' | 'RECORDS_STORAGE';
+/** RECORDS_STORAGE and HEALTH_DATA are optional (required:false): never in /me pending, enforced only on records uploads / health-profile writes. */
+export type ConsentDocumentType = 'TERMS' | 'PRIVACY' | 'RECORDS_STORAGE' | 'HEALTH_DATA';
 
 export interface ConsentDocument {
   id: number;

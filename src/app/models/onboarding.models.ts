@@ -44,27 +44,53 @@ export interface IntakeAnswers {
   riskFactors: RiskFactor[];
   supportNeeds: SupportNeed[];
   city: string;
-  language: string;
+  /** Languages the user is comfortable in (1-10); used to match coordinators and providers. */
+  languages: string[];
   consultationMode: ConsultationMode;
   phone: string;
   notes: string;
 }
 
+/** A named care coordinator ("Belle") who runs onboarding calls. Null on slots created before coordinators existed. */
+export interface Coordinator {
+  id: number;
+  displayName: string;
+  languages: string[];
+  photoUrl: string | null;
+}
+
 export interface OnboardingCall {
   startsAt: string;
   phone: string;
+  coordinator?: Coordinator | null;
 }
+
+/** GET/PUT /me/health-profile — separate from the intake; writes need the HEALTH_DATA consent. */
+export interface HealthProfile {
+  firstPregnancy: boolean | null;
+  multiples: boolean | null;
+  riskFactors: RiskFactor[];
+  updatedAt?: string;
+}
+
+/** Offered as chips on the intake; anything else can be typed in. */
+export const LANGUAGE_OPTIONS = [
+  'English', 'Hindi', 'Kannada', 'Tamil', 'Telugu', 'Malayalam', 'Marathi', 'Bengali', 'Gujarati', 'Punjabi', 'Urdu', 'Odia'
+];
 
 // --- Server shapes (UI_INTEGRATION_GUIDE.md §11, onboarding Part A) ---
 
 export interface ServerIntake {
   id: number;
-  firstPregnancy: boolean | null;
-  multiples: boolean | null;
-  riskFactors: RiskFactor[];
+  /** Removed from the intake once the health profile ships (moved to GET /me/health-profile); still sent by older APIs. */
+  firstPregnancy?: boolean | null;
+  multiples?: boolean | null;
+  riskFactors?: RiskFactor[];
   supportWanted: string[];
   city: string | null;
+  /** First of `languages`; the only language field on older APIs. */
   language: string | null;
+  languages?: string[];
   preferredModality: 'VIRTUAL' | 'PHYSICAL' | null;
   phone: string | null;
   notes: string | null;
@@ -78,6 +104,7 @@ export interface ServerOnboardingCall {
   scheduledStart: string;
   scheduledEnd: string;
   createdAt: string;
+  coordinator?: Coordinator | null;
 }
 
 export interface ServerOnboardingStatus {
@@ -95,6 +122,7 @@ export interface OnboardingCallSlot {
   startAt: string;
   endAt: string;
   status: string;
+  coordinator?: Coordinator | null;
 }
 
 /** GET /me/onboarding/documents. bodyMarkdown is DRAFT text pending legal review — render as-is. */

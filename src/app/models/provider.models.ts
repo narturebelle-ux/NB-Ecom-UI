@@ -97,3 +97,17 @@ export function providerInitials(name: string): string {
     .map(w => w[0].toUpperCase())
     .join('');
 }
+
+/** GET /me/care/matches — providers matched to the user's languages, city and preferred modality. */
+export interface CareMatch {
+  provider: Provider;
+  /** e.g. "Speaks Tamil", "Offers online sessions", "In Chennai". */
+  matchReasons: string[];
+  /** Up to 3 earliest open slots. */
+  nextSlots: Slot[];
+}
+
+export interface CareMatchesResponse {
+  criteria: { languages: string[]; city: string | null; modality: Modality | null };
+  matches: CareMatch[];
+}

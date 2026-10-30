@@ -5,7 +5,9 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ProviderService } from '../../services/provider.service';
 import { PROFESSIONAL_TYPE_LABELS } from '../../models/maternal.models';
-import { Modality, ProfessionalTypeKey, Provider, providerInitials } from '../../models/provider.models';
+import { CareMatch, Modality, ProfessionalTypeKey, Provider, providerInitials } from '../../models/provider.models';
+import { ApiService } from '../../services/api.service';
+import { OnboardingService } from '../../services/onboarding.service';
 
 /** Provider directory — public GET /api/v1/providers; only VERIFIED/ACTIVE providers are ever listed. */
 @Component({
@@ -45,6 +47,37 @@ import { Modality, ProfessionalTypeKey, Provider, providerInitials } from '../..
           </div>
         </div>
 
+        @if (typeFilter() && matchesState() !== 'hidden') {
+          <section class="matches glass-soft">
+            <h2><mat-icon class="icon-sm">auto_awesome</mat-icon> Best matches for you</h2>
+            @if (matchesState() === 'loading') {
+              <p class="field-hint">Finding {{ label(typeFilter()!) | lowercase }}s who fit you…</p>
+            } @else if (matchesState() === 'incomplete') {
+              <p class="field-hint">Tell us the languages you’re comfortable in, and we’ll match you with professionals who speak them.</p>
+            } @else if (matches().length === 0) {
+              <p class="field-hint">No {{ label(typeFilter()!) | lowercase }} who speaks your language{{ matchCriteria() ? ' (' + matchCriteria() + ')' : '' }} has an open time right now.
+                Browse everyone below, or your care coordinator can help.</p>
+            } @else {
+              <div class="match-list">
+                @for (m of matches(); track m.provider.id) {
+                  <a [routerLink]="['/care', m.provider.id]" class="match card">
+                    <span class="avatar">{{ initials(m.provider.displayName) }}</span>
+                    <div class="match-body">
+                      <strong>{{ m.provider.displayName }}</strong>
+                      <div class="reasons">
+                        @for (r of m.matchReasons; track r) { <span class="reason"><mat-icon class="icon-sm">check</mat-icon> {{ r }}</span> }
+                      </div>
+                      @if (m.nextSlots.length) {
+                        <span class="field-hint">Next: {{ m.nextSlots[0].startAt | date:'EEE d MMM, h:mm a' }}@if (m.nextSlots.length > 1) { · +{{ m.nextSlots.length - 1 }} more }</span>
+                      }
+                    </div>
+                  </a>
+                }
+              </div>
+            }
+          </section>
+        }
+
         @if (loading()) {
           <div class="provider-grid">
             @for (i of [1, 2, 3]; track i) { <div class="skeleton" style="height: 190px"></div> }
@@ -83,6 +116,14 @@ import { Modality, ProfessionalTypeKey, Provider, providerInitials } from '../..
     </div>
   `,
   styles: [`
+    .matches { border-radius: var(--radius-xl); padding: 1.1rem 1.25rem; margin-bottom: 1.5rem; }
+    .matches h2 { display: flex; align-items: center; gap: 0.4rem; font-size: 1.05rem; color: var(--sage-900); margin-bottom: 0.6rem; }
+    .match-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 0.75rem; }
+    .match { display: flex; gap: 0.75rem; align-items: flex-start; padding: 0.85rem 1rem; text-decoration: none; color: inherit; }
+    .match-body { display: flex; flex-direction: column; gap: 0.3rem; min-width: 0; }
+    .match-body strong { color: var(--sage-900); }
+    .reasons { display: flex; flex-wrap: wrap; gap: 0.25rem 0.6rem; }
+    .reason { display: inline-flex; align-items: center; gap: 0.15rem; font-size: 0.75rem; color: var(--sage-700); font-weight: 600; }
     .directory-page { padding: 3rem 0 5rem; }
     .directory-header { text-align: center; max-width: 620px; margin: 0 auto 2rem; display: flex; flex-direction: column; align-items: center; gap: 0.75rem; }
     .directory-header h1 { font-size: 2rem; color: var(--sage-900); }
@@ -117,6 +158,8 @@ import { Modality, ProfessionalTypeKey, Provider, providerInitials } from '../..
 })
 export class CareDirectoryComponent implements OnInit {
   private providerService = inject(ProviderService);
+  private api = inject(ApiService);
+  private onboarding = inject(OnboardingService);
 
   types: ProfessionalTypeKey[] = ['GYNECOLOGIST', 'NUTRITIONIST', 'LACTATION_CONSULTANT', 'PEDIATRICIAN', 'POSTPARTUM_PHYSIOTHERAPIST', 'CLINICAL_PSYCHOLOGIST', 'REGISTERED_NURSE'];
   typeFilter = signal<ProfessionalTypeKey | null>(null);
@@ -128,6 +171,11 @@ export class CareDirectoryComponent implements OnInit {
   loading = signal(true);
   errorMsg = signal<string | null>(null);
 
+  /** "hidden" when signed out / not onboarded / the API has no matching endpoint. */
+  matchesState = signal<'hidden' | 'loading' | 'ready' | 'incomplete'>('hidden');
+  matches = signal<CareMatch[]>([]);
+  matchCriteria = signal('');
+
   ngOnInit() {
     this.load();
   }
@@ -135,11 +183,35 @@ export class CareDirectoryComponent implements OnInit {
   setType(t: ProfessionalTypeKey | null) {
     this.typeFilter.set(t);
     this.load();
+    this.loadMatches();
   }
 
   toggleVirtual() {
     this.virtualOnly.set(!this.virtualOnly());
     this.load();
+    this.loadMatches();
+  }
+
+  /** GET /me/care/matches for the picked type — only for signed-in, onboarded users. */
+  private loadMatches() {
+    const type = this.typeFilter();
+    if (!type || !this.api.currentUser() || !this.onboarding.onboarded()) {
+      this.matchesState.set('hidden');
+      return;
+    }
+    this.matchesState.set('loading');
+    this.providerService.getMatches(type, this.virtualOnly() ? 'VIRTUAL' : null).subscribe({
+      next: res => {
+        this.matches.set(res.matches);
+        const c = res.criteria;
+        this.matchCriteria.set([c.languages?.join(', '), c.modality === 'PHYSICAL' && c.city ? 'in ' + c.city : ''].filter(Boolean).join(', '));
+        this.matchesState.set('ready');
+      },
+      error: err => {
+        // 409: intake has no languages yet. Anything else (e.g. an API without this endpoint): just don't show the section.
+        this.matchesState.set(err?.error?.code === 'MATCH_PROFILE_INCOMPLETE' ? 'incomplete' : 'hidden');
+      }
+    });
   }
 
   load() {

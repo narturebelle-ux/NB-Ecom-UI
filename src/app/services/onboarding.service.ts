@@ -8,6 +8,7 @@ import { Plan } from '../models/commerce.models';
 import { Journey } from '../models/maternal.models';
 import {
   ConsultationMode,
+  HealthProfile,
   IntakeAnswers,
   OnboardingCallSlot,
   OnboardingDocument,
@@ -77,26 +78,33 @@ export class OnboardingService {
     return this.sync().pipe(catchError(() => of(undefined)));
   }
 
+  /**
+   * Health answers live in their own consented section (GET/PUT /me/health-profile, HEALTH_DATA consent)
+   * on APIs that have it. `healthConsent` tells the intake form what to ask; null until sync() runs.
+   */
+  readonly healthConsent = signal<{ supported: boolean; granted: boolean; version: number | null; title: string; body: string } | null>(null);
+
   /** Loads intake + call from the server and merges them with the local-only progress. */
   sync(): Observable<void> {
     return forkJoin({
       status: this.http.get<ServerOnboardingStatus>(`${this.baseUrl}/me/onboarding`),
-      journeys: this.api.getJourneys()
+      journeys: this.api.getJourneys(),
+      health: this.loadHealth()
     }).pipe(
-      switchMap(({ status, journeys }) => {
+      switchMap(({ status, journeys, health }) => {
         const journey = journeys.find(j => j.status !== 'CLOSED');
         const legacy = this.readLegacyIntake();
         // One-time migration: answers saved before the API existed are pushed up, then dropped locally.
         if (!status.intake && legacy && journey) {
-          return this.putIntake(legacy).pipe(map(intake => ({ status: { ...status, intake }, journey })));
+          return this.putIntake(legacy, !this.healthConsent()?.supported).pipe(map(intake => ({ status: { ...status, intake }, journey, health })));
         }
-        return of({ status, journey });
+        return of({ status, journey, health });
       }),
-      tap(({ status, journey }) => {
+      tap(({ status, journey, health }) => {
         this.clearLegacyIntake();
         this.state.set({
           ...this.state(),
-          intake: status.intake && journey ? this.toAnswers(status.intake, journey) : undefined,
+          intake: status.intake && journey ? this.toAnswers(status.intake, journey, health) : undefined,
           call: status.call ? this.toCall(status.call, status.intake?.phone ?? '') : undefined,
           callRequested: !!status.callbackRequestedAt,
           documentsSigned: status.documentsSigned
@@ -109,8 +117,14 @@ export class OnboardingService {
     );
   }
 
-  /** Stage + EDD to the Journey API (create, or update the active one), then the rest to the onboarding API. */
-  saveIntake(answers: IntakeAnswers): Observable<void> {
+  /**
+   * Stage + EDD to the Journey API (create, or update the active one), then the rest to the onboarding API.
+   * Health answers go to /me/health-profile, and only when the user agreed to HEALTH_DATA (`shareHealth`):
+   * the consent is granted first if needed. On older APIs without a health profile they stay on the intake.
+   */
+  saveIntake(answers: IntakeAnswers, shareHealth = false): Observable<void> {
+    const hc = this.healthConsent();
+    const separateHealth = !!hc?.supported;
     return this.api.getJourneys().pipe(
       switchMap(journeys => {
         const active = journeys.find(j => j.status !== 'CLOSED');
@@ -118,7 +132,18 @@ export class OnboardingService {
           ? this.api.updateJourney(active.id, { status: answers.stage, expectedDeliveryDate: answers.expectedDeliveryDate })
           : this.api.createJourney(answers.stage, answers.expectedDeliveryDate);
       }),
-      switchMap(() => this.putIntake(answers)),
+      switchMap(() => this.putIntake(answers, !separateHealth)),
+      switchMap(() => {
+        if (!separateHealth || !shareHealth) return of(null);
+        const grant = hc!.granted || hc!.version === null
+          ? of(null)
+          : this.api.grantConsent('HEALTH_DATA', hc!.version).pipe(tap(() => this.healthConsent.set({ ...hc!, granted: true })));
+        return grant.pipe(switchMap(() => this.http.put<HealthProfile>(`${this.baseUrl}/me/health-profile`, {
+          firstPregnancy: answers.firstPregnancy,
+          multiples: answers.multiples,
+          riskFactors: answers.riskFactors
+        })));
+      }),
       tap(() => this.state.set({ ...this.state(), intake: { ...answers, savedAt: new Date().toISOString() } })),
       map(() => undefined)
     );
@@ -219,32 +244,36 @@ export class OnboardingService {
 
   // ---------- mapping ----------
 
-  private putIntake(a: IntakeAnswers): Observable<ServerIntake> {
+  /** `includeHealth` only for older APIs that still keep health answers on the intake. */
+  private putIntake(a: IntakeAnswers, includeHealth: boolean): Observable<ServerIntake> {
+    // Answers saved by the old browser-only version had a single `language` string.
+    const languages = a.languages?.length ? a.languages : (a as unknown as { language?: string }).language ? [(a as unknown as { language: string }).language] : [];
     return this.http.put<ServerIntake>(`${this.baseUrl}/me/onboarding/intake`, {
-      firstPregnancy: a.firstPregnancy,
-      multiples: a.multiples,
-      riskFactors: a.riskFactors,
+      ...(includeHealth ? { firstPregnancy: a.firstPregnancy, multiples: a.multiples, riskFactors: a.riskFactors } : {}),
       supportWanted: a.supportNeeds,
       city: a.city || null,
-      language: a.language || null,
+      languages,
+      language: languages[0] ?? null,
       preferredModality: a.consultationMode === 'VIRTUAL' ? 'VIRTUAL' : a.consultationMode === 'IN_PERSON' ? 'PHYSICAL' : null,
       phone: a.phone || null,
       notes: a.notes || null
     });
   }
 
-  private toAnswers(s: ServerIntake, journey: Journey): IntakeAnswers & { savedAt: string } {
+  private toAnswers(s: ServerIntake, journey: Journey, health: HealthProfile | null): IntakeAnswers & { savedAt: string } {
     const known = Object.keys(SUPPORT_NEED_LABELS) as SupportNeed[];
     const mode: ConsultationMode = s.preferredModality === 'VIRTUAL' ? 'VIRTUAL' : s.preferredModality === 'PHYSICAL' ? 'IN_PERSON' : 'EITHER';
+    // Health answers: from the health profile where it exists, else from an older API's intake.
+    const h = health ?? { firstPregnancy: s.firstPregnancy ?? null, multiples: s.multiples ?? null, riskFactors: s.riskFactors ?? [] };
     return {
       stage: journey.status,
       expectedDeliveryDate: journey.expectedDeliveryDate ?? null,
-      firstPregnancy: s.firstPregnancy,
-      multiples: !!s.multiples,
-      riskFactors: s.riskFactors ?? [],
+      firstPregnancy: h.firstPregnancy,
+      multiples: !!h.multiples,
+      riskFactors: h.riskFactors ?? [],
       supportNeeds: (s.supportWanted ?? []).filter((x): x is SupportNeed => known.includes(x as SupportNeed)),
       city: s.city ?? '',
-      language: s.language ?? '',
+      languages: s.languages?.length ? s.languages : s.language ? [s.language] : [],
       consultationMode: mode,
       phone: s.phone ?? '',
       notes: s.notes ?? '',
@@ -253,7 +282,30 @@ export class OnboardingService {
   }
 
   private toCall(c: ServerOnboardingCall, phone: string) {
-    return { startsAt: c.scheduledStart, phone };
+    return { startsAt: c.scheduledStart, phone, coordinator: c.coordinator ?? null };
+  }
+
+  /**
+   * Whether this API has the HEALTH_DATA consent (and so a separate health profile), whether the user granted it,
+   * and their saved health profile. Sets `healthConsent`; resolves to the profile or null (404 / not consented / older API).
+   */
+  private loadHealth(): Observable<HealthProfile | null> {
+    return forkJoin({
+      docs: this.api.getConsentDocuments(),
+      mine: this.api.getMyConsents()
+    }).pipe(
+      switchMap(({ docs, mine }) => {
+        const doc = docs.find(d => d.type === 'HEALTH_DATA');
+        const granted = mine.history.some(c => c.documentType === 'HEALTH_DATA' && !c.revokedAt);
+        this.healthConsent.set({ supported: !!doc, granted, version: doc?.version ?? null, title: doc?.title ?? '', body: doc?.bodyMarkdown ?? '' });
+        if (!doc || !granted) return of(null);
+        return this.http.get<HealthProfile>(`${this.baseUrl}/me/health-profile`).pipe(catchError(() => of(null)));
+      }),
+      catchError(() => {
+        if (!this.healthConsent()) this.healthConsent.set({ supported: false, granted: false, version: null, title: '', body: '' });
+        return of(null);
+      })
+    );
   }
 
   // ---------- browser storage (non-health progress only) ----------

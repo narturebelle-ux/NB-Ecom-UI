@@ -252,9 +252,9 @@ interface QuickAction { icon: string; title: string; text: string; link: string;
                 <section class="panel glass call-card" appReveal>
                   <mat-icon class="call-icon">support_agent</mat-icon>
                   <div>
-                    <strong>Your care coordinator</strong>
+                    <strong>Your care coordinator{{ ob.state().call?.coordinator ? ': ' + ob.state().call!.coordinator!.displayName : '' }}</strong>
                     @if (ob.state().call; as call) {
-                      <p>Onboarding call {{ isPast(call.startsAt) ? 'was on' : 'on' }} <b>{{ call.startsAt | date:'EEE d MMM, h:mm a' }}</b>.</p>
+                      <p>Onboarding call {{ isPast(call.startsAt) ? 'was on' : 'on' }} <b>{{ call.startsAt | date:'EEE d MMM, h:mm a' }}</b>.@if (call.coordinator?.languages?.length) { Speaks {{ call.coordinator!.languages.join(', ') }}. }</p>
                     } @else {
                       <p>They’ll call you to arrange your onboarding call. You don’t need to do anything.</p>
                     }

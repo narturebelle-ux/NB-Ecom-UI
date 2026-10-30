@@ -579,6 +579,23 @@ Seeded content that comes from the real API but is still a placeholder (labelled
 onboarding documents (DRAFT, pending legal review), the vaccine schedule (PENDING_CLINICAL_REVIEW), Joy Circle events
 (the API's hostBio says "Placeholder host"), doctor sessions, products, checklists and hospitals (seed rows in the API DB).
 
+## 25. Languages, matching, coordinators, health profile — built against the planned contract (2026-10-30)
+
+Built from the planned contract nb-ecomm-api-a5 sent on 2026-10-30, parts A–D. **Not verified live**, because none of it is on :8080 yet.
+Everything degrades cleanly on the current API, so nothing breaks before it ships.
+
+| Part | UI | Calls |
+|---|---|---|
+| A. Languages | The intake's single "Preferred language" box is now a multi-select (12 common Indian languages + "Another language"). At least 1 is required. Sends `languages:[...]` **and** `language` (= first) so older APIs still work. Reads `languages`, falling back to `[language]`. | `PUT /me/onboarding/intake` |
+| A. Matching | Care page: picking a professional type (signed-in, onboarded users) shows **"Best matches for you"** above the directory, with `matchReasons` and the next slot. "Virtual only" sends `modality=VIRTUAL`, otherwise modality is left to your default (intake preference). 409 `MATCH_PROFILE_INCOMPLETE` → "tell us your languages". Empty `matches` → "no one who speaks your language has an open time" plus the full directory. Any other error, e.g. 404 on today's API → the section is simply hidden. | `GET /me/care/matches?professionalType=&modality=` |
+| B. Coordinators | Call step: each time chip shows "with <name>", and picking one shows a coordinator card (photo or initial, "Speaks …"). The welcome summary and the My Journey call card show the coordinator's name and languages. `coordinator: null` is fine. No slots (e.g. none in the user's languages) → the existing "Ask for a call" fallback. | `GET /onboarding/call-slots`, `POST /me/onboarding/call`, `GET /me/onboarding` |
+| C. Health profile | First pregnancy, multiples and risk factors are now a separate **"Health details (optional)"** box. **If `/consent-documents/current` has `HEALTH_DATA`**, the box asks for the agreement first (with the document text). The questions only show once it's ticked or already granted. On save: intake **without** health fields → `POST /me/consents {HEALTH_DATA, version}` if needed → `PUT /me/health-profile`. Declined → health answers are not sent at all. **If `HEALTH_DATA` doesn't exist** (today's API), the questions show as before and go on the intake, unchanged. Reads: `GET /me/health-profile` when granted (404 → none), else the old intake fields. | `GET /consent-documents/current`, `GET /me/consents`, `POST /me/consents`, `GET`/`PUT /me/health-profile` |
+| D. Health-aware recommendations | No UI change. The response shape is unchanged and `whyRecommended` reasons are shown as-is. | — |
+
+Other: the 403 interceptor treats `HEALTH_DATA` like `RECORDS_STORAGE` (an optional consent, so no redirect to the sign-up consent step).
+Profile → Consents lists `HEALTH_DATA` automatically with grant/revoke. **Not built yet:** viewing or editing the health profile from Profile
+after onboarding (it's only editable through "Edit my details" during onboarding). Say if you want that.
+
 ## 9. Open requests to the API agent
 
 *(Running list — mark resolved items with ✅ and a date rather than deleting them, so the history stays visible.)*
@@ -592,6 +609,9 @@ onboarding documents (DRAFT, pending legal review), the vaccine schedule (PENDIN
 - ✅ **2026-10-29** — Phase 5 contract shipped and the UI is reconciled against it (§21).
 - ✅ **2026-10-29** — `careBooking` and `recordsVault` flags turned on (V14); `GET /features` confirmed. `callbackRequestedAt` added to the onboarding status and read by the UI.
 - ✅ **2026-10-29** — Phase 4 contract shipped and the UI is reconciled against it (§19). Real uploads still need `SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY` configured.
+- 🟡 **2026-10-30** — **Sample data in every list (product-owner request).** Seed providers (every professional type, a few cities/languages, VIRTUAL + PHYSICAL offerings, open slots), call slots with coordinators, Joy Circle events, BABY_CARE products, and any other list that can be empty, including under `prod`. Mark sample rows as sample in the data.
+- 🟡 **2026-10-30** — Parts A–D (languages, matching, coordinators, health profile, health-aware recommendations): planned contract received, UI built against it (§25). Waiting for them to ship.
+- 🟡 **2026-10-30** — The `/providers` enum-filter 500 is believed to be a stale-jar artefact (the jar was rebuilt under the running PID). It should clear on restart, and bad values are now 400 (f213f95). Re-check after the restart.
 - 🔴 **2026-10-30** — **Bug:** `GET /providers?professionalType=…` and `?modality=…` return 500 `INTERNAL_ERROR` on :8080. The unfiltered list, `city` and `language` return 200. The Care page's type chips and "Virtual only" checkbox hit this and show "We couldn't load care professionals right now". Needs the API log (the catch-all handler logs the stack trace).
 - ✅ **2026-10-30** — `RECORDS_STORAGE` consent type added (API 43c0d60) and the UI now grants and reads it (§0).
 - ✅ **2026-10-30** — `GET /nurse-companion/packages` 500 fixed in API 0cd5f32 (live after the 8080 rebuild).

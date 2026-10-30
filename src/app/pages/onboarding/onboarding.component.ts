@@ -12,6 +12,7 @@ import {
   ConsultationMode,
   IntakeAnswers,
   ONBOARDING_STEPS,
+  LANGUAGE_OPTIONS,
   OnboardingCallSlot,
   OnboardingDocument,
   OnboardingMissingStep,
@@ -80,6 +81,29 @@ const STAGES: JourneyStatus[] = ['PREGNANCY', 'PRE_DELIVERY', 'POSTPARTUM', 'CHI
                   <input id="edd" type="date" class="form-control" [(ngModel)]="form.expectedDeliveryDate" />
                   <span class="hint">Your best estimate is fine — you can change it any time.</span>
                 </div>
+              }
+
+              <!-- Health details: optional, and stored only with the HEALTH_DATA consent where the API supports it. -->
+              <div class="health-box">
+                <div class="health-head">
+                  <mat-icon class="icon-sm">health_and_safety</mat-icon>
+                  <strong>Health details</strong> <span class="opt">optional</span>
+                </div>
+                @if (healthNeedsConsent()) {
+                  <p class="hint">These help your care team and tailor your plan suggestion. We only store them with your permission, and you can withdraw it any time in Profile.</p>
+                  @if (ob.healthConsent()?.body) {
+                    <details class="consent-doc">
+                      <summary>Read the {{ ob.healthConsent()?.title || 'health data agreement' }}</summary>
+                      <p class="consent-doc-body">{{ ob.healthConsent()?.body }}</p>
+                    </details>
+                  }
+                  <label class="agree">
+                    <input type="checkbox" [(ngModel)]="shareHealth" />
+                    I agree to NartureBelle storing my health details
+                  </label>
+                }
+                @if (!healthNeedsConsent() || shareHealth) {
+              @if (needsEdd()) {
                 <div class="row-2">
                   <fieldset>
                     <legend>Is this your first pregnancy?</legend>
@@ -109,6 +133,8 @@ const STAGES: JourneyStatus[] = ['PREGNANCY', 'PRE_DELIVERY', 'POSTPARTUM', 'CHI
                   }
                 </div>
               </fieldset>
+                }
+              </div>
 
               <fieldset>
                 <legend>What would you like support with?</legend>
@@ -127,11 +153,21 @@ const STAGES: JourneyStatus[] = ['PREGNANCY', 'PRE_DELIVERY', 'POSTPARTUM', 'CHI
                   <label for="city">City</label>
                   <input id="city" class="form-control" placeholder="e.g. Bengaluru" [(ngModel)]="form.city" />
                 </div>
-                <div class="field">
-                  <label for="lang">Preferred language</label>
-                  <input id="lang" class="form-control" placeholder="e.g. English, Hindi" [(ngModel)]="form.language" />
-                </div>
               </div>
+
+              <fieldset>
+                <legend>Languages you’re comfortable in <span class="req">*</span></legend>
+                <span class="hint">We match your care coordinator and professionals to these.</span>
+                <div class="chip-row wrap">
+                  @for (l of languageOptions(); track l) {
+                    <button type="button" class="lang-chip" [class.selected]="form.languages.includes(l)" [attr.aria-pressed]="form.languages.includes(l)" (click)="toggleLanguage(l)">{{ l }}</button>
+                  }
+                </div>
+                <div class="lang-other">
+                  <input class="form-control" placeholder="Another language" [(ngModel)]="otherLanguage" (keyup.enter)="addOtherLanguage()" aria-label="Another language" />
+                  <button type="button" class="btn-link" [disabled]="!otherLanguage.trim()" (click)="addOtherLanguage()">Add</button>
+                </div>
+              </fieldset>
 
               <div class="row-2">
                 <fieldset>
@@ -226,9 +262,20 @@ const STAGES: JourneyStatus[] = ['PREGNANCY', 'PRE_DELIVERY', 'POSTPARTUM', 'CHI
                   <span class="label">Choose a time</span>
                   <div class="chip-row wrap">
                     @for (s of slotsForDay(); track s.id) {
-                      <button type="button" class="time-chip" [class.selected]="callSlotId() === s.id" (click)="callSlotId.set(s.id)">{{ s.startAt | date:'h:mm a' }}</button>
+                      <button type="button" class="time-chip" [class.selected]="callSlotId() === s.id" (click)="callSlotId.set(s.id)">
+                        {{ s.startAt | date:'h:mm a' }}@if (s.coordinator) { <span class="with">with {{ s.coordinator.displayName }}</span> }
+                      </button>
                     }
                   </div>
+                  @if (selectedCoordinator(); as c) {
+                    <div class="coordinator-card">
+                      @if (c.photoUrl) { <img [src]="c.photoUrl" [alt]="c.displayName" /> } @else { <span class="coord-avatar">{{ c.displayName.charAt(0) }}</span> }
+                      <div>
+                        <strong>{{ c.displayName }}</strong> <span class="hint">· your care coordinator</span>
+                        @if (c.languages.length) { <span class="hint block"><mat-icon class="icon-sm">translate</mat-icon> Speaks {{ c.languages.join(', ') }}</span> }
+                      </div>
+                    </div>
+                  }
                 }
 
                 @if (errorMsg()) { <p class="error-msg">{{ errorMsg() }}</p> }
@@ -304,7 +351,7 @@ const STAGES: JourneyStatus[] = ['PREGNANCY', 'PRE_DELIVERY', 'POSTPARTUM', 'CHI
               <div class="summary">
                 <div><mat-icon>eco</mat-icon><span>Stage</span><strong>{{ stageLabel(ob.state().intake!.stage) }}</strong></div>
                 <div><mat-icon>workspace_premium</mat-icon><span>Plan</span><strong>Paid · order #{{ ob.state().paidOrderId }}</strong></div>
-                <div><mat-icon>call</mat-icon><span>Onboarding call</span><strong>{{ ob.state().call ? (ob.state().call!.startsAt | date:'EEE, MMM d · h:mm a') : 'We’ll call you to arrange it' }}</strong></div>
+                <div><mat-icon>call</mat-icon><span>Onboarding call</span><strong>{{ ob.state().call ? (ob.state().call!.startsAt | date:'EEE, MMM d · h:mm a') : 'We’ll call you to arrange it' }}@if (ob.state().call?.coordinator; as c) { with {{ c.displayName }} }</strong></div>
                 <div><mat-icon>draw</mat-icon><span>Documents</span><strong>Signed</strong></div>
               </div>
               @if (errorMsg()) { <p class="error-msg center">{{ errorMsg() }}</p> }
@@ -396,6 +443,19 @@ const STAGES: JourneyStatus[] = ['PREGNANCY', 'PRE_DELIVERY', 'POSTPARTUM', 'CHI
     .callback-box p { margin: 0.25rem 0 0; }
     .proto { display: flex; align-items: center; gap: 0.35rem; font-size: 0.78rem; color: #92610a; background: #fff8eb; border: 1px solid #fbd38d; border-radius: var(--radius-md); padding: 0.55rem 0.8rem; }
 
+    .health-box { border: 1.5px solid var(--border-light); border-radius: var(--radius-md); padding: 1rem 1.1rem; margin: 1rem 0; background: #fff; }
+    .health-head { display: flex; align-items: center; gap: 0.4rem; color: var(--sage-900); margin-bottom: 0.4rem; }
+    .consent-doc { margin: 0.5rem 0; font-size: 0.82rem; }
+    .consent-doc summary { cursor: pointer; color: var(--trust-700); font-weight: 600; }
+    .consent-doc-body { white-space: pre-line; color: var(--text-secondary); margin-top: 0.4rem; }
+    .lang-chip { border: 1.5px solid var(--border-light); background: #fff; border-radius: var(--radius-full); padding: 0.35rem 0.8rem; font-size: 0.82rem; font-weight: 600; color: var(--text-secondary); cursor: pointer; }
+    .lang-chip.selected { background: var(--sage-700); border-color: var(--sage-700); color: #fff; }
+    .lang-other { display: flex; gap: 0.5rem; align-items: center; margin-top: 0.5rem; max-width: 22rem; }
+    .time-chip .with { display: block; font-size: 0.7rem; font-weight: 500; opacity: 0.8; }
+    .coordinator-card { display: flex; gap: 0.75rem; align-items: center; margin-top: 0.75rem; padding: 0.75rem 0.9rem; border-radius: var(--radius-md); background: var(--sage-50); border: 1px solid var(--border-subtle); }
+    .coordinator-card img, .coord-avatar { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+    .coord-avatar { display: flex; align-items: center; justify-content: center; background: var(--sage-700); color: #fff; font-weight: 800; }
+    .block { display: flex; align-items: center; gap: 0.25rem; }
     .doc-list { display: flex; flex-direction: column; gap: 0.6rem; margin-bottom: 1.5rem; }
     .doc { border: 1.5px solid var(--border-light); border-radius: var(--radius-md); background: #fff; }
     .doc summary { list-style: none; display: flex; align-items: center; gap: 0.75rem; padding: 0.9rem 1rem; cursor: pointer; }
@@ -474,6 +534,31 @@ export class OnboardingComponent implements OnInit {
   signName = '';
   signAgree = false;
 
+  /** Ticked when the user agrees to HEALTH_DATA on this form (only asked where the API supports it). */
+  shareHealth = false;
+  otherLanguage = '';
+  private extraLanguages = signal<string[]>([]);
+  languageOptions = computed(() => [...new Set([...LANGUAGE_OPTIONS, ...this.extraLanguages()])]);
+  selectedCoordinator = computed(() => this.slots().find(s => s.id === this.callSlotId())?.coordinator ?? null);
+
+  healthNeedsConsent(): boolean {
+    const hc = this.ob.healthConsent();
+    return !!hc?.supported && !hc.granted;
+  }
+
+  toggleLanguage(l: string) {
+    this.toggle(this.form.languages, l);
+  }
+
+  addOtherLanguage() {
+    const l = this.otherLanguage.trim();
+    if (!l) return;
+    const name = l.charAt(0).toUpperCase() + l.slice(1);
+    if (!this.form.languages.some(x => x.toLowerCase() === name.toLowerCase())) this.form.languages.push(name);
+    this.extraLanguages.update(list => [...list, name]);
+    this.otherLanguage = '';
+  }
+
   ngOnInit() {
     if (this.ob.step() === 'done') {
       this.router.navigateByUrl('/journey');
@@ -493,7 +578,8 @@ export class OnboardingComponent implements OnInit {
         const saved = this.ob.state().intake;
         if (saved) {
           const { savedAt, ...answers } = saved;
-          this.form = { ...answers, riskFactors: [...answers.riskFactors], supportNeeds: [...answers.supportNeeds] };
+          this.form = { ...answers, riskFactors: [...answers.riskFactors], supportNeeds: [...answers.supportNeeds], languages: [...answers.languages] };
+          this.extraLanguages.set(answers.languages.filter(l => !LANGUAGE_OPTIONS.includes(l)));
         }
         this.loading.set(false);
         if (this.ob.step() === 'done') { this.router.navigateByUrl('/journey'); return; }
@@ -524,7 +610,7 @@ export class OnboardingComponent implements OnInit {
   }
 
   intakeValid(): boolean {
-    if (!this.form.stage || !this.phoneValid(this.form.phone)) return false;
+    if (!this.form.stage || !this.phoneValid(this.form.phone) || !this.form.languages.length) return false;
     return !this.needsEdd() || !!this.form.expectedDeliveryDate;
   }
 
@@ -544,10 +630,16 @@ export class OnboardingComponent implements OnInit {
       multiples: this.needsEdd() ? this.form.multiples : false,
       phone: this.form.phone.trim(),
       city: this.form.city.trim(),
-      language: this.form.language.trim(),
+      languages: [...this.form.languages],
       notes: this.form.notes.trim()
     };
-    this.ob.saveIntake(answers).subscribe({
+    // Without the health-data agreement (where it's needed), health answers aren't sent at all.
+    if (this.healthNeedsConsent() && !this.shareHealth) {
+      answers.firstPregnancy = null;
+      answers.multiples = false;
+      answers.riskFactors = [];
+    }
+    this.ob.saveIntake(answers, !this.healthNeedsConsent() || this.shareHealth).subscribe({
       next: () => {
         this.saving.set(false);
         this.editing.set(false);
@@ -758,7 +850,7 @@ export class OnboardingComponent implements OnInit {
       riskFactors: [],
       supportNeeds: [],
       city: '',
-      language: 'English',
+      languages: ['English'],
       consultationMode: 'EITHER',
       phone: (this.api.currentUser()?.phone || '').replace(/^\+?91/, ''),
       notes: ''

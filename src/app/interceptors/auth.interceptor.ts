@@ -42,9 +42,10 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
         if (err.error?.code === 'EMAIL_NOT_VERIFIED') {
           router.navigate(['/auth/verify-email']);
         } else if (err.error?.code === 'CONSENT_REQUIRED') {
-          // Optional consents (RECORDS_STORAGE on uploads) are asked for by the page itself.
+          // Optional consents (RECORDS_STORAGE on uploads, HEALTH_DATA on the health profile) are asked for by the page itself.
+          const optional = ['RECORDS_STORAGE', 'HEALTH_DATA'];
           const pending: string[] = err.error?.pending ?? [];
-          if (!pending.length || pending.some(t => t !== 'RECORDS_STORAGE')) {
+          if (!pending.length || pending.some(t => !optional.includes(t))) {
             router.navigate(['/auth/consent'], { queryParams: { returnUrl: router.url } });
           }
         } else {
