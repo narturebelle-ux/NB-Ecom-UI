@@ -6,7 +6,6 @@ import { MatIconModule } from '@angular/material/icon';
 interface Person {
   name: string;
   role: string;
-  detail?: string;
 }
 
 /** Public "About us": what NartureBelle is, the founder's note, and the leadership team. */
@@ -66,7 +65,6 @@ interface Person {
           <div>
             <h3>{{ founder.name }}</h3>
             <span class="role">{{ founder.role }}</span>
-            <p class="detail"><mat-icon class="icon-sm">school</mat-icon> {{ founder.detail }}</p>
           </div>
         </div>
 
@@ -130,18 +128,16 @@ interface Person {
     .avatar { width: 48px; height: 48px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: var(--sage-700); color: #fff; font-weight: 800; letter-spacing: 0.03em; }
     .avatar.lg { width: 72px; height: 72px; font-size: 1.4rem; }
     .role { display: block; font-size: 0.82rem; font-weight: 700; color: var(--blush-700); margin-top: 0.15rem; }
-    .detail { display: flex; align-items: center; gap: 0.35rem; font-size: 0.88rem; color: var(--text-secondary); margin-top: 0.4rem; }
     .cta { text-align: center; margin-top: 3rem; }
     .cta p { color: var(--text-secondary); margin-bottom: 1.2rem; }
     .cta-row { display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap; }
-    @media (max-width: 560px) { .founder { flex-direction: column; text-align: center; } .detail { justify-content: center; } }
+    @media (max-width: 560px) { .founder { flex-direction: column; text-align: center; } }
   `]
 })
 export class AboutComponent {
   founder: Person = {
     name: 'Kumbam VijayvenkatReddy',
-    role: 'Founder & CEO',
-    detail: 'MS in Computer Science, Rowan University'
+    role: 'Founder & CEO'
   };
 
   /** Draft for the founder's approval. */
