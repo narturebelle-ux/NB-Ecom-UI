@@ -1,15 +1,20 @@
 import { Component, inject, OnDestroy, OnInit, signal } from '@angular/core';
-import { Router } from '@angular/router';
+import { MatIconModule } from '@angular/material/icon';
+import { CommonModule } from '@angular/common';
+import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { RecaptchaVerifier } from 'firebase/auth';
 import { ApiService } from '../../services/api.service';
 import { FirebaseAuthService } from '../../services/firebase-auth.service';
-import { User } from '../../models/maternal.models';
+import { NotificationService } from '../../services/notification.service';
+import { AccountDataService, DeletionRequest, DeletionStatus } from '../../services/account-data.service';
+import { User, ConsentDocument, ConsentStatus, ConsentDocumentType } from '../../models/maternal.models';
+import { CHANNEL_LABELS, ChannelPreference, DEFAULT_CHANNEL_PREFERENCES, NotificationChannel } from '../../models/notification.models';
 
 @Component({
   selector: 'app-profile',
   standalone: true,
-  imports: [FormsModule],
+  imports: [MatIconModule, CommonModule, FormsModule, RouterLink],
   template: `
     <div class="profile-page">
       <div class="profile-container">
@@ -17,7 +22,7 @@ import { User } from '../../models/maternal.models';
         <!-- Header -->
         <div class="profile-header">
           <div class="avatar-circle">
-            <span class="avatar-emoji">🌸</span>
+            <mat-icon class="avatar-icon">person</mat-icon>
           </div>
           <div class="profile-title">
             <h1>My Profile</h1>
@@ -28,7 +33,7 @@ import { User } from '../../models/maternal.models';
         <!-- Success / Error Banner -->
         @if (statusMsg()) {
           <div class="status-banner" [class.is-error]="isError()">
-            <span>{{ isError() ? '⚠️' : '✅' }}</span>
+            <mat-icon class="icon-sm">{{ isError() ? 'error' : 'check_circle' }}</mat-icon>
             {{ statusMsg() }}
           </div>
         }
@@ -82,15 +87,15 @@ import { User } from '../../models/maternal.models';
             />
             <span class="field-hint auth-status">
               @if (api.currentUser()?.authProvider === 'GOOGLE' || api.currentUser()?.authProvider === 'GOOGLE.COM') {
-                🔵 Signed in with Google
+                <mat-icon class="icon-sm">account_circle</mat-icon> Signed in with Google
               } @else if (api.currentUser()?.authProvider === 'PHONE' || api.currentUser()?.authProvider === 'PHONE.PHONE') {
-                📱 Signed in with Phone OTP
+                <mat-icon class="icon-sm">smartphone</mat-icon> Signed in with Phone OTP
               } @else if (api.currentUser()?.emailVerified) {
-                ✅ Verified
+                <mat-icon class="icon-sm">verified</mat-icon> Verified
               } @else {
-                ⚠️ Not verified yet
+                <mat-icon class="icon-sm">error_outline</mat-icon> Not verified yet
               }
-              · 🔒 Managed by your sign-in provider
+              · <mat-icon class="icon-sm">lock</mat-icon> Managed by your sign-in provider
             </span>
           </div>
 
@@ -114,56 +119,106 @@ import { User } from '../../models/maternal.models';
           <!-- Phone verification (Firebase linkWithPhoneNumber) is temporarily hidden —
                not needed right now. Logic stays in the component, just not rendered. -->
 
-          <div class="form-row">
-            <div class="form-group">
-              <label class="form-label">Trimester</label>
-              <select class="form-control" [(ngModel)]="form.stage" name="stage" (ngModelChange)="onStageChange()" [disabled]="!editMode()">
-                <option value="">— Select your trimester —</option>
-                <option value="MONTH_3">1st Trimester</option>
-                <option value="MONTH_6">2nd Trimester</option>
-                <option value="MONTH_9">3rd Trimester</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label class="form-label">Which Month?</label>
-              <select
-                class="form-control"
-                [(ngModel)]="monthInStage"
-                name="monthInStage"
-                (ngModelChange)="onMonthChange()"
-                [disabled]="!editMode() || !form.stage"
-              >
-                <option [ngValue]="null">— Select month —</option>
-                @for (m of monthOptionsForStage(); track m) {
-                  <option [ngValue]="m">Month {{ m }}</option>
-                }
-              </select>
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">Expected Due Date</label>
-            <input
-              type="date"
-              class="form-control"
-              [(ngModel)]="form.dueDate"
-              name="dueDate"
-              [disabled]="!editMode()"
-            />
-            <span class="field-hint">
-              {{ monthInStage ? 'Estimated from your selected month — adjust if your doctor gave you an exact date.' : 'Pick your trimester and month above for an estimate, or enter an exact date here.' }}
-            </span>
+          <div class="journey-pointer">
+            <mat-icon class="icon-sm">eco</mat-icon>
+            <span>Your pregnancy stage and due date now live in <a routerLink="/journey">My Journey</a>, not here.</span>
           </div>
 
           <div class="form-actions">
             <button type="submit" class="btn btn-primary" [disabled]="!editMode() || saving()">
-              @if (saving()) { ⏳ Saving… } @else { 💾 Update Profile }
+              @if (saving()) { Saving… } @else { <mat-icon class="icon-sm">save</mat-icon> Update Profile }
             </button>
             <button type="button" class="btn btn-outline" (click)="signOut()">
-              🚪 Sign Out
+              <mat-icon class="icon-sm">logout</mat-icon> Sign Out
             </button>
           </div>
         </form>
+
+        <!-- Consent Center (roadmap §1.1 UI) -->
+        <div class="consent-center">
+          <h2 class="section-title">Consent &amp; Privacy</h2>
+
+          @if (consentLoading()) {
+            <p class="field-hint">Loading…</p>
+          } @else {
+            @for (doc of consentDocuments(); track doc.id) {
+              <div class="consent-row">
+                <div class="consent-info">
+                  <strong>{{ doc.title || doc.type }}</strong>
+                  <span class="field-hint">
+                    v{{ doc.version }} ·
+                    @if (isGranted(doc)) {
+                      Granted {{ grantedDate(doc.type) }}
+                    } @else {
+                      Not granted
+                    }
+                  </span>
+                </div>
+                @if (isGranted(doc)) {
+                  <button class="btn-link" [disabled]="consentActionBusy()" (click)="revoke(doc.type)">Revoke</button>
+                } @else {
+                  <button class="btn-link" [disabled]="consentActionBusy()" (click)="grant(doc)">Grant</button>
+                }
+              </div>
+            }
+          }
+        </div>
+
+        <!-- Notification Preferences (roadmap §Phase 5 UI) -->
+        <div class="consent-center">
+          <h2 class="section-title">Notification Preferences</h2>
+          <p class="field-hint prefs-note">In-app reminders are live. Email, SMS and WhatsApp aren’t connected yet. Your choice is saved, but no messages are sent on those channels for now.</p>
+          @for (p of notifPrefs(); track p.channel) {
+            <label class="pref-row">
+              <input type="checkbox" [checked]="p.enabled" [disabled]="prefSaving() === p.channel" (change)="setPref(p.channel, $any($event.target).checked)" />
+              {{ channelLabel(p.channel) }}
+              @if (p.channel !== 'IN_APP') { <span class="field-hint">(not connected yet)</span> }
+            </label>
+          }
+        </div>
+
+        <!-- Self-service export / deletion (roadmap Phase 6) -->
+        <div class="consent-center">
+          <h2 class="section-title">Your Data</h2>
+          <p class="field-hint prefs-note">
+            Download a copy of everything we hold about you. Uploaded record files aren’t in the download,
+            only their details. You can still download each file from Records.
+          </p>
+          <div class="data-actions">
+            <button type="button" class="btn-link" [disabled]="exporting()" (click)="exportData()">
+              <mat-icon class="icon-sm">download</mat-icon> {{ exporting() ? 'Preparing…' : 'Download my data (JSON)' }}
+            </button>
+          </div>
+
+          <h3 class="data-subtitle">Delete my account</h3>
+          @if (deletion(); as d) {
+            <p class="field-hint prefs-note">
+              Deletion request {{ deletionLabel(d.status) }} · asked {{ d.requestedAt | date:'mediumDate' }}.
+            </p>
+            @if (d.status === 'REQUESTED') {
+              <button type="button" class="btn-link" [disabled]="deletionBusy()" (click)="cancelDeletion()">Cancel my deletion request</button>
+            }
+          }
+          @if (canRequestDeletion()) {
+            <p class="field-hint prefs-note">
+              Our team reviews deletion requests and processes them by hand. Nothing is erased automatically yet,
+              and you can cancel until we start. We’ll show the progress here.
+            </p>
+            @if (!confirmingDelete()) {
+              <button type="button" class="btn-link danger" (click)="confirmingDelete.set(true)"><mat-icon class="icon-sm">delete</mat-icon> Ask to delete my account</button>
+            } @else {
+              <div class="delete-confirm">
+                <label for="delconfirm">Type DELETE to confirm</label>
+                <input id="delconfirm" class="form-control del-input" [(ngModel)]="deleteConfirmText" name="delconfirm" autocomplete="off" />
+                <button type="button" class="btn-link danger" [disabled]="deleteConfirmText !== 'DELETE' || deletionBusy()" (click)="requestDeletion()">Send request</button>
+                <button type="button" class="btn-link" (click)="cancelConfirm()">Cancel</button>
+              </div>
+            }
+          }
+
+          <h3 class="data-subtitle">This device</h3>
+          <button type="button" class="btn-link" (click)="clearDevice()"><mat-icon class="icon-sm">phonelink_erase</mat-icon> Sign out and clear saved data on this device</button>
+        </div>
 
         <p class="member-since">Member since {{ memberSince() }}</p>
 
@@ -197,7 +252,7 @@ import { User } from '../../models/maternal.models';
       border: 3px solid #c8ddd0;
       flex-shrink: 0;
     }
-    .avatar-emoji { font-size: 2rem; }
+    .avatar-icon { font-size: 2.2rem; width: 2.2rem; height: 2.2rem; color: var(--sage-700); }
     .profile-title h1 {
       font-size: 1.75rem;
       font-weight: 700;
@@ -289,6 +344,10 @@ import { User } from '../../models/maternal.models';
       color: #8a9e90;
     }
     .auth-status {
+      display: inline-flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.3rem;
       font-weight: 600;
       color: #4a6355;
     }
@@ -374,6 +433,52 @@ import { User } from '../../models/maternal.models';
       margin: 0;
     }
 
+    .journey-pointer {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      background: #f0f5f1;
+      border: 1px solid #d5e0d8;
+      border-radius: 10px;
+      padding: 0.75rem 1rem;
+      font-size: 0.85rem;
+      color: #4a6355;
+      margin-bottom: 1.25rem;
+    }
+    .journey-pointer a { color: #2e4f3e; font-weight: 700; text-decoration: underline; }
+
+    .consent-center {
+      background: #fff;
+      border-radius: 16px;
+      padding: 1.5rem 2rem;
+      box-shadow: 0 4px 24px rgba(27,51,39,0.06);
+      border: 1px solid #e8ede9;
+      margin-bottom: 1.25rem;
+    }
+    .section-title {
+      font-size: 1.1rem;
+      color: #1b3327;
+      margin: 0 0 1rem;
+    }
+    .consent-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.75rem 0;
+      border-top: 1px solid #f0f3f1;
+    }
+    .consent-row:first-of-type { border-top: none; }
+    .consent-info { display: flex; flex-direction: column; gap: 0.2rem; }
+    .consent-info strong { font-size: 0.92rem; color: #1b3327; }
+
+    .prefs-note { margin-bottom: 0.85rem; }
+    .pref-row { display: flex; align-items: center; gap: 0.6rem; font-size: 0.88rem; color: #4a6355; padding: 0.4rem 0; cursor: pointer; }
+    .data-actions { display: flex; gap: 1.25rem; flex-wrap: wrap; }
+    .data-subtitle { font-size: 0.95rem; color: var(--sage-900); margin: 1.25rem 0 0.4rem; }
+    .del-input { max-width: 9rem; padding: 0.35rem 0.6rem; }
+    .delete-confirm { margin-top: 0.75rem; padding: 0.85rem 1rem; background: #fdecea; border: 1px solid #f5b7b1; border-radius: 10px; font-size: 0.85rem; color: #a0281c; display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+    .btn-link.danger { color: #a0281c; }
+
     .edit-toggle-row {
       display: flex;
       align-items: center;
@@ -432,18 +537,31 @@ import { User } from '../../models/maternal.models';
 export class MyProfileComponent implements OnInit, OnDestroy {
   api = inject(ApiService);
   firebaseAuth = inject(FirebaseAuthService);
+  private notifications = inject(NotificationService);
+  private accountData = inject(AccountDataService);
   router = inject(Router);
 
   saving = signal(false);
   statusMsg = signal<string | null>(null);
   isError = signal(false);
 
+  consentLoading = signal(true);
+  consentActionBusy = signal(false);
+  consentDocuments = signal<ConsentDocument[]>([]);
+  consentStatus = signal<ConsentStatus | null>(null);
+
+  notifPrefs = signal<ChannelPreference[]>(DEFAULT_CHANNEL_PREFERENCES);
+  prefSaving = signal<NotificationChannel | null>(null);
+  confirmingDelete = signal(false);
+  deleteConfirmText = '';
+  deletion = signal<DeletionRequest | null>(null);
+  deletionBusy = signal(false);
+  exporting = signal(false);
+
   form = {
     firstName: '',
     lastName: '',
-    phone: '',
-    stage: '',
-    dueDate: ''
+    phone: ''
   };
 
   // Fields stay read-only (and Update Profile disabled) until the user flips this on —
@@ -452,35 +570,6 @@ export class MyProfileComponent implements OnInit, OnDestroy {
 
   toggleEditMode() {
     this.editMode.set(!this.editMode());
-  }
-
-  // Which month (1-9) within the selected trimester — UI-only, not sent to the backend
-  // directly. Used purely to estimate form.dueDate; the user can still edit that field
-  // by hand afterward (e.g. to enter an exact date from their doctor).
-  monthInStage: number | null = null;
-
-  private static readonly MONTHS_BY_STAGE: Record<string, number[]> = {
-    MONTH_3: [1, 2, 3],
-    MONTH_6: [4, 5, 6],
-    MONTH_9: [7, 8, 9]
-  };
-
-  monthOptionsForStage(): number[] {
-    return MyProfileComponent.MONTHS_BY_STAGE[this.form.stage] || [];
-  }
-
-  onStageChange() {
-    // Changing trimester invalidates whichever month was picked for the old one.
-    this.monthInStage = null;
-  }
-
-  onMonthChange() {
-    if (!this.monthInStage) return;
-    // Pregnancy is ~9 months total; a simple calendar-month estimate is accurate enough
-    // for "approximate" — exact dates come from the user's doctor, not this app.
-    const due = new Date();
-    due.setMonth(due.getMonth() + (9 - this.monthInStage));
-    this.form.dueDate = due.toISOString().slice(0, 10);
   }
 
   // Phone-number verification (linkWithPhoneNumber), separate from the plain
@@ -496,9 +585,9 @@ export class MyProfileComponent implements OnInit, OnDestroy {
     // authGuard guarantees a signed-in user by the time this component loads.
     this.populateForm(this.api.currentUser());
 
-    // Refresh from the server (GET /api/v1/users/me) so the page reflects
+    // Refresh from the server (GET /api/v1/me — roadmap §0.6) so the page reflects
     // server-truth rather than whatever was cached at login time.
-    this.api.getMyProfile().subscribe({
+    this.api.getMe().subscribe({
       next: (user) => {
         if (user) {
           this.api.setUser(user);
@@ -509,6 +598,181 @@ export class MyProfileComponent implements OnInit, OnDestroy {
         // Keep showing the cached user; interceptor already handled 401/403 side effects.
       }
     });
+
+    this.loadConsents();
+    this.refreshDeletion();
+    this.notifications.getPreferences().subscribe({
+      next: prefs => this.notifPrefs.set(DEFAULT_CHANNEL_PREFERENCES.map(d => prefs.find(p => p.channel === d.channel) ?? d)),
+      error: () => { /* keep defaults; interceptor handles consent/verify */ }
+    });
+  }
+
+  channelLabel(c: NotificationChannel): string {
+    return CHANNEL_LABELS[c];
+  }
+
+  setPref(channel: NotificationChannel, enabled: boolean) {
+    const before = this.notifPrefs();
+    this.notifPrefs.set(before.map(p => (p.channel === channel ? { ...p, enabled } : p)));
+    this.prefSaving.set(channel);
+    this.notifications.setPreference(channel, enabled).subscribe({
+      next: () => { this.prefSaving.set(null); this.api.showToast('Notification preference saved.'); },
+      error: () => { this.prefSaving.set(null); this.notifPrefs.set(before); this.api.showToast('Couldn’t save that preference.'); }
+    });
+  }
+
+  exportData() {
+    this.exporting.set(true);
+    this.accountData.exportData().subscribe({
+      next: ({ blob, filename }) => {
+        this.exporting.set(false);
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(url);
+      },
+      error: () => {
+        this.exporting.set(false);
+        this.api.showToast('Couldn’t prepare your download. Please try again.');
+      }
+    });
+  }
+
+  canRequestDeletion(): boolean {
+    const d = this.deletion();
+    return !d || d.status === 'CANCELLED' || d.status === 'REJECTED';
+  }
+
+  deletionLabel(s: DeletionStatus): string {
+    return { REQUESTED: 'received', IN_PROGRESS: 'in progress', COMPLETED: 'completed', REJECTED: 'declined', CANCELLED: 'cancelled' }[s];
+  }
+
+  cancelConfirm() {
+    this.confirmingDelete.set(false);
+    this.deleteConfirmText = '';
+  }
+
+  private refreshDeletion() {
+    this.accountData.getDeletionRequest().subscribe({ next: d => this.deletion.set(d), error: () => {} });
+  }
+
+  requestDeletion() {
+    if (this.deleteConfirmText !== 'DELETE') return;
+    this.deletionBusy.set(true);
+    this.accountData.requestDeletion().subscribe({
+      next: d => {
+        this.deletionBusy.set(false);
+        this.deletion.set(d);
+        this.cancelConfirm();
+        this.api.showToast('Your deletion request has been sent. Our team will process it.');
+      },
+      error: (err) => {
+        this.deletionBusy.set(false);
+        if (err?.error?.code === 'DELETION_ALREADY_REQUESTED') {
+          this.cancelConfirm();
+          this.refreshDeletion();
+          return;
+        }
+        this.api.showToast('Couldn’t send your request. Please try again.');
+      }
+    });
+  }
+
+  cancelDeletion() {
+    this.deletionBusy.set(true);
+    this.accountData.cancelDeletion().subscribe({
+      next: () => {
+        this.deletionBusy.set(false);
+        this.refreshDeletion();
+        this.api.showToast('Your deletion request is cancelled.');
+      },
+      error: (err) => {
+        this.deletionBusy.set(false);
+        this.refreshDeletion();
+        const code = err?.error?.code;
+        this.api.showToast(
+          code === 'DELETION_NOT_CANCELLABLE' ? 'Our team has already started processing it, so it can’t be cancelled now.'
+          : code === 'DELETION_REQUEST_NOT_FOUND' ? 'There’s no open deletion request to cancel.'
+          : 'Couldn’t cancel it. Please try again.'
+        );
+      }
+    });
+  }
+
+  /** Clears this browser's saved NartureBelle data and signs out. Server data is untouched. */
+  clearDevice() {
+    const uid = this.api.currentUser()?.id ?? 'guest';
+    const keys = Object.keys(localStorage).filter(k => k.includes(`_${uid}`) || k === 'nb_user');
+    keys.forEach(k => localStorage.removeItem(k));
+    this.firebaseAuth.logout().finally(() => {
+      this.api.logout();
+      this.router.navigate(['/']);
+    });
+  }
+
+  private loadConsents() {
+    this.consentLoading.set(true);
+    this.api.getMyConsents().subscribe({
+      next: (status) => {
+        this.consentStatus.set(status);
+        this.api.getConsentDocuments().subscribe({
+          next: (docs) => {
+            this.consentDocuments.set(docs);
+            this.consentLoading.set(false);
+          },
+          error: () => this.consentLoading.set(false)
+        });
+      },
+      error: () => this.consentLoading.set(false)
+    });
+  }
+
+  /**
+   * Granted = an unrevoked grant of this document's current version. (`pending` only ever lists the required
+   * sign-up consents, so it can't be used for optional ones like RECORDS_STORAGE / HEALTH_DATA.)
+   */
+  isGranted(doc: ConsentDocument): boolean {
+    return !!this.consentStatus()?.history.some(c => c.documentType === doc.type && !c.revokedAt && c.documentVersion === doc.version);
+  }
+
+  grantedDate(type: ConsentDocumentType): string {
+    const grant = this.consentStatus()?.history.find(c => c.documentType === type && !c.revokedAt);
+    if (!grant?.grantedAt) return '';
+    try {
+      return new Date(grant.grantedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+    } catch {
+      return '';
+    }
+  }
+
+  grant(doc: ConsentDocument) {
+    this.consentActionBusy.set(true);
+    this.api.grantConsent(doc.type, doc.version).subscribe({
+      next: () => {
+        this.consentActionBusy.set(false);
+        this.loadConsents();
+      },
+      error: (err) => {
+        this.consentActionBusy.set(false);
+        this.api.showToast(err?.error?.message || 'Could not save your agreement. Please try again.');
+      }
+    });
+  }
+
+  revoke(type: ConsentDocumentType) {
+    this.consentActionBusy.set(true);
+    this.api.revokeConsent(type).subscribe({
+      next: () => {
+        this.consentActionBusy.set(false);
+        this.loadConsents();
+      },
+      error: (err) => {
+        this.consentActionBusy.set(false);
+        this.api.showToast(err?.error?.message || 'Could not revoke. Please try again.');
+      }
+    });
   }
 
   private populateForm(user: User | null) {
@@ -516,8 +780,6 @@ export class MyProfileComponent implements OnInit, OnDestroy {
     this.form.firstName = user.firstName || (user.name?.split(' ')[0] ?? '');
     this.form.lastName = user.lastName || (user.name?.split(' ').slice(1).join(' ') ?? '');
     this.form.phone = user.phone || '';
-    this.form.stage = user.stage || '';
-    this.form.dueDate = user.dueDate || '';
   }
 
   saveProfile() {
@@ -532,39 +794,19 @@ export class MyProfileComponent implements OnInit, OnDestroy {
     this.saving.set(true);
     this.statusMsg.set(null);
 
-    this.api.updateProfile({
+    this.api.updateMe({
       firstName: this.form.firstName.trim(),
       lastName: this.form.lastName.trim(),
-      phone: this.form.phone.trim() || undefined,
-      stage: this.form.stage || undefined,
-      dueDate: this.form.dueDate || undefined
+      phone: this.form.phone.trim() || undefined
     }).subscribe({
-      next: (res: any) => {
+      next: (res) => {
         this.saving.set(false);
-        if (res?.id) {
-          // Real backend success: PUT /users/me returns the updated user directly
-          // (not wrapped) — e.g. changing phone resets phoneVerified server-side,
-          // so this merge also picks that up.
-          this.api.setUser(res);
-          this.populateForm(res);
-          this.editMode.set(false);
-          this.showStatus('Profile updated successfully! ✨', false);
-        } else if (res?.success === false) {
-          this.showStatus(res.message || 'Update failed. Please try again.', true);
-        } else {
-          // fallback for offline/mock
-          const updatedUser = {
-            ...user,
-            firstName: this.form.firstName.trim(),
-            lastName: this.form.lastName.trim(),
-            name: `${this.form.firstName.trim()} ${this.form.lastName.trim()}`.trim(),
-            phone: this.form.phone.trim() || user.phone,
-            stage: this.form.stage || user.stage,
-            dueDate: this.form.dueDate || user.dueDate
-          };
-          this.api.setUser(updatedUser as any);
-          this.showStatus('Profile saved locally (server offline).', false);
-        }
+        // PATCH /me returns the updated user directly (not wrapped) — e.g. changing
+        // phone resets phoneVerified server-side, so this merge also picks that up.
+        this.api.setUser(res);
+        this.populateForm(res);
+        this.editMode.set(false);
+        this.showStatus('Profile updated successfully.', false);
       },
       error: (err) => {
         this.saving.set(false);
@@ -612,7 +854,7 @@ export class MyProfileComponent implements OnInit, OnDestroy {
           this.phoneLinkStep.set('idle');
           this.linkPhoneNumber = '';
           this.linkOtpCode = '';
-          this.api.showToast('Phone number verified! ✨');
+          this.api.showToast('Phone number verified.');
         },
         error: () => {
           this.linkingPhone.set(false);

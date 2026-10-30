@@ -1,0 +1,14 @@
+// Angular Material M3 theme setup. We use a built-in seed palette purely to get Material's
+// full --mat-sys-* token set emitted correctly (avoids hand-rolling M3 palette generation),
+// then override the actual brand colors as plain CSS custom properties in styles.css, which
+// loads after this file. Components (mat-icon, mat-progress-spinner, etc.) read --mat-sys-*
+// tokens at runtime, so overriding them there re-skins Material without touching this file again.
+@use '@angular/material' as mat;
+
+html {
+  @include mat.theme((
+    color: mat.$green-palette,
+    typography: 'Plus Jakarta Sans',
+    density: 0,
+  ));
+}

@@ -103,7 +103,14 @@ export interface User {
   authProvider: string;
   stage?: PregnancyStage;
   dueDate?: string;
+  /** @deprecated single-role string from the old model — use `roles` instead. */
   role: string;
+  /** Roadmap Phase 0 §0.6 role model — a user can hold more than one role (defaults to ["MOTHER"]). */
+  roles?: string[];
+  /** Only present on GET/PATCH /api/v1/me — required consent document types not yet granted. */
+  pendingConsents?: string[];
+  /** Only present on GET/PATCH /api/v1/me — whether a non-CLOSED Journey already exists. */
+  hasActiveJourney?: boolean;
   createdAt?: string;
 }
 
@@ -112,7 +119,128 @@ export function isVerifiedUser(user: User | null | undefined): boolean {
   return !!user && (user.emailVerified === true || user.phoneVerified === true);
 }
 
+/** True if the user holds any admin-type role (roadmap §0.6 — any `*_ADMIN` role, not a single "ADMIN" string). */
+export function isAdminUser(user: User | null | undefined): boolean {
+  return !!user?.roles?.some(r => r.endsWith('_ADMIN'));
+}
+
+/** Professional roles granted when an admin verifies a provider (API Phase 3). */
+export const PROFESSIONAL_ROLES = [
+  'GYNECOLOGIST', 'NUTRITIONIST', 'LACTATION_CONSULTANT', 'PEDIATRICIAN',
+  'POSTPARTUM_PHYSIOTHERAPIST', 'CLINICAL_PSYCHOLOGIST', 'REGISTERED_NURSE'
+];
+
+/** True for a verified care professional; they use the provider portal (/provider), not the mother's onboarding. */
+export function isProfessionalUser(user: User | null | undefined): boolean {
+  return !!user?.roles?.some(r => PROFESSIONAL_ROLES.includes(r));
+}
+
+/** Can open the product health-rule review queue: MEDICAL_REVIEWER, or a verified GYNECOLOGIST / NUTRITIONIST / REGISTERED_NURSE. */
+export function isReviewerUser(user: User | null | undefined): boolean {
+  return !!user?.roles?.some(r => ['MEDICAL_REVIEWER', 'GYNECOLOGIST', 'NUTRITIONIST', 'REGISTERED_NURSE'].includes(r));
+}
+
+/** The few product fields the cart needs — filled from the catalog or from a Phase 6 recommendation. */
+export type CartProduct = Pick<Product, 'id' | 'name' | 'price' | 'imageUrl' | 'category'>;
+
 export interface CartItem {
-  product: Product;
+  product: CartProduct;
   quantity: number;
+}
+
+// --- Phase 1: Consent (roadmap §1.1) ---
+
+/** RECORDS_STORAGE and HEALTH_DATA are optional (required:false): never in /me pending, enforced only on records uploads / health-profile writes. */
+export type ConsentDocumentType = 'TERMS' | 'PRIVACY' | 'RECORDS_STORAGE' | 'HEALTH_DATA';
+
+export interface ConsentDocument {
+  id: number;
+  type: ConsentDocumentType;
+  version: number;
+  title: string;
+  bodyMarkdown: string;
+  effectiveAt?: string;
+  active: boolean;
+  /** true for TERMS/PRIVACY (sign-up consent step); false for RECORDS_STORAGE. */
+  required?: boolean;
+}
+
+export interface Consent {
+  id: number;
+  userId: number;
+  documentType: ConsentDocumentType;
+  documentVersion: number;
+  grantedAt?: string;
+  revokedAt?: string | null;
+}
+
+export interface ConsentStatus {
+  history: Consent[];
+  pending: string[];
+}
+
+// --- Phase 1: Journey (roadmap §1.2) ---
+
+export type JourneyStatus =
+  | 'PREGNANCY'
+  | 'PRE_DELIVERY'
+  | 'DELIVERY_COMPLETED'
+  | 'POSTPARTUM'
+  | 'CHILDCARE_0_7'
+  | 'CLOSED';
+
+export interface Journey {
+  id: number;
+  status: JourneyStatus;
+  expectedDeliveryDate?: string | null;
+  startedAt: string;
+  closedAt?: string | null;
+  /** Computed, never persisted — only present for an active PREGNANCY journey with an EDD on file. */
+  gestationalWeek?: number;
+  trimester?: number;
+}
+
+export const JOURNEY_STATUS_LABELS: Record<JourneyStatus, string> = {
+  PREGNANCY: 'Pregnancy',
+  PRE_DELIVERY: 'Pre-Delivery',
+  DELIVERY_COMPLETED: 'Delivery Completed',
+  POSTPARTUM: 'Postpartum',
+  CHILDCARE_0_7: 'Early Childcare (0–7 years)',
+  CLOSED: 'Closed'
+};
+
+// --- Phase 1: Dashboard (roadmap §1.3) ---
+
+export type ProfessionalType =
+  | 'GYNECOLOGIST'
+  | 'NUTRITIONIST'
+  | 'LACTATION_CONSULTANT'
+  | 'PEDIATRICIAN'
+  | 'POSTPARTUM_PHYSIOTHERAPIST'
+  | 'CLINICAL_PSYCHOLOGIST';
+
+export const PROFESSIONAL_TYPE_LABELS: Record<ProfessionalType, string> = {
+  GYNECOLOGIST: 'Gynecologist',
+  NUTRITIONIST: 'Nutritionist',
+  LACTATION_CONSULTANT: 'Lactation Consultant',
+  PEDIATRICIAN: 'Pediatrician',
+  POSTPARTUM_PHYSIOTHERAPIST: 'Postpartum Physiotherapist',
+  CLINICAL_PSYCHOLOGIST: 'Clinical Psychologist'
+};
+
+export interface NextAction {
+  professionalType: ProfessionalType;
+  title: string;
+  description: string;
+  /** Always "PENDING_CLINICAL_REVIEW" today — this content hasn't been clinically signed off yet. */
+  reviewStatus: string;
+  optional: boolean;
+}
+
+export interface Dashboard {
+  profile: { firstName?: string; lastName?: string };
+  pendingConsents: string[];
+  journey: Journey | null;
+  nextActions: NextAction[];
+  journeySetupRequired: boolean;
 }

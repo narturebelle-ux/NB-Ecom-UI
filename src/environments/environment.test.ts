@@ -3,7 +3,7 @@
 // falls back to its built-in dev-simulation mode (mock Google user, OTP "123456").
 export const environment = {
   production: false,
-  apiUrl: 'http://localhost:8085/api/v1',
+  apiUrl: 'http://localhost:8080/api/v1',
   firebase: {
     apiKey: 'YOUR_FIREBASE_API_KEY',
     authDomain: 'narturebelle-app.firebaseapp.com',

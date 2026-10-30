@@ -1,44 +1,63 @@
 /* ====================================================================
-   NartureBelle Design System: Luxury Maternal Wellness & Consultative Care
+   NartureBelle Design System v2 — Calm, Trustworthy, Glass
+   A deliberately human palette: deep teal-sage for stability and care,
+   a muted slate-blue reserved for "verified/secure" signals, warm
+   terracotta for human warmth. Soft frosted glass, diffused shadows,
+   gentle motion. No neon, no hard edges, no "AI dashboard" look.
    ==================================================================== */
 
 :root {
-  /* Color Palette */
-  --sage-900: #1b3327;
-  --sage-800: #254434;
-  --sage-700: #2e4f3e;
-  --sage-600: #3b634f;
-  --sage-200: #cfe0d5;
-  --sage-100: #e2ede6;
-  --sage-50:  #f0f6f2;
+  /* --- Primary: deep teal-sage (trust, calm, care) --- */
+  --sage-900: #15302a;
+  --sage-800: #1d4038;
+  --sage-700: #275448;
+  --sage-600: #356b5b;
+  --sage-500: #4a8572;
+  --sage-200: #c7e3d6;
+  --sage-100: #e1f0e8;
+  --sage-50:  #f1f8f4;
 
-  --blush-900: #682c24;
-  --blush-800: #8c3b31;
-  --blush-700: #b85245;
-  --blush-500: #d67a6e;
-  --blush-200: #f5cbbe;
-  --blush-100: #fbe6dd;
-  --blush-50:  #fdf3ef;
+  /* --- Trust accent: muted slate-blue, used ONLY for verified/secure/privacy signals --- */
+  --trust-900: #27394a;
+  --trust-700: #3c5a76;
+  --trust-500: #5c82a3;
+  --trust-200: #cfdeea;
+  --trust-100: #e6eef5;
+  --trust-50:  #f3f7fb;
 
-  --gold-700: #946820;
-  --gold-500: #c28b38;
-  --gold-100: #fbf2e3;
+  /* --- Warm accent: human, caring (replaces a colder "blush") --- */
+  --blush-900: #65312a;
+  --blush-800: #873f34;
+  --blush-700: #b35a48;
+  --blush-500: #cf8972;
+  --blush-200: #f2d4c6;
+  --blush-100: #faeae1;
+  --blush-50:  #fdf6f1;
 
-  --bg-cream: #faf7f2;
+  --gold-700: #8f6a28;
+  --gold-500: #c08f42;
+  --gold-100: #faf1e1;
+
+  /* --- Surfaces --- */
+  --bg-cream: #faf8f3;
   --bg-surface: #ffffff;
   --bg-surface-elevated: #ffffff;
-  --bg-alt: #f4ede6;
+  --bg-alt: #f3eee5;
+  --bg-glass: rgba(255, 255, 255, 0.66);
+  --bg-glass-strong: rgba(255, 255, 255, 0.84);
+  --bg-glass-deep: rgba(21, 48, 42, 0.55);
 
-  --text-primary: #1e2621;
-  --text-secondary: #4a5750;
-  --text-muted: #738078;
+  --text-primary: #1c2622;
+  --text-secondary: #4e5c55;
+  --text-muted: #798a82;
   --text-inverse: #ffffff;
 
-  --border-light: rgba(46, 79, 62, 0.12);
-  --border-subtle: rgba(46, 79, 62, 0.06);
-  --border-active: #2e4f3e;
+  --border-light: rgba(39, 84, 72, 0.12);
+  --border-subtle: rgba(39, 84, 72, 0.06);
+  --border-glass: rgba(255, 255, 255, 0.55);
+  --border-active: #275448;
 
-  /* Tiers for Radical Honesty */
+  /* Tiers for Radical Honesty (legacy store pages) */
   --tier-mandatory-text: #0e5e34;
   --tier-mandatory-bg: #e1f7eb;
   --tier-mandatory-border: #9ee3bf;
@@ -51,26 +70,51 @@
   --tier-skip-bg: #fde8e8;
   --tier-skip-border: #f6b5b5;
 
-  /* Typography */
+  /* --- Typography --- */
   --font-serif: 'Playfair Display', Georgia, serif;
   --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 
-  /* Shadows */
-  --shadow-sm: 0 2px 4px rgba(46, 79, 62, 0.04);
-  --shadow-md: 0 6px 18px rgba(46, 79, 62, 0.08);
-  --shadow-lg: 0 14px 34px rgba(46, 79, 62, 0.12);
-  --shadow-xl: 0 24px 48px rgba(46, 79, 62, 0.16);
+  /* --- Soft, diffused shadows (tinted with brand hue, not pure black) --- */
+  --shadow-xs: 0 1px 2px rgba(21, 48, 42, 0.05);
+  --shadow-sm: 0 3px 10px rgba(21, 48, 42, 0.06), 0 1px 2px rgba(21, 48, 42, 0.04);
+  --shadow-md: 0 8px 24px rgba(21, 48, 42, 0.09), 0 2px 6px rgba(21, 48, 42, 0.05);
+  --shadow-lg: 0 18px 42px rgba(21, 48, 42, 0.13), 0 4px 12px rgba(21, 48, 42, 0.06);
+  --shadow-xl: 0 28px 64px rgba(21, 48, 42, 0.17), 0 8px 20px rgba(21, 48, 42, 0.08);
+  --shadow-glow-trust: 0 0 0 4px rgba(92, 130, 163, 0.16);
 
-  /* Radius */
-  --radius-sm: 6px;
-  --radius-md: 12px;
-  --radius-lg: 20px;
-  --radius-xl: 32px;
+  /* --- Radius: soft, friendly --- */
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 22px;
+  --radius-xl: 30px;
   --radius-full: 9999px;
 
-  /* Transitions */
-  --transition-fast: 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  --transition-smooth: 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  /* --- Motion --- */
+  --transition-fast: 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-smooth: 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-spring: 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* --- Bridge to Angular Material's M3 system tokens (theme.scss emits the full set;
+     we override just the ones that drive visible color so mat-icon / mat-progress-spinner
+     etc. match this palette instead of the placeholder seed palette in theme.scss). --- */
+  --mat-sys-primary: var(--sage-700);
+  --mat-sys-on-primary: #ffffff;
+  --mat-sys-primary-container: var(--sage-100);
+  --mat-sys-on-primary-container: var(--sage-900);
+  --mat-sys-secondary: var(--trust-700);
+  --mat-sys-surface: var(--bg-surface);
+  --mat-sys-on-surface: var(--text-primary);
+  --mat-sys-on-surface-variant: var(--text-secondary);
+  --mat-sys-outline: var(--border-light);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 /* Base Reset */
@@ -88,6 +132,10 @@ html {
 body {
   font-family: var(--font-sans);
   background-color: var(--bg-cream);
+  background-image:
+    radial-gradient(circle at 85% 8%, rgba(199, 227, 214, 0.35) 0%, transparent 55%),
+    radial-gradient(circle at 6% 92%, rgba(250, 234, 225, 0.4) 0%, transparent 55%);
+  background-attachment: fixed;
   color: var(--text-primary);
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
@@ -120,6 +168,13 @@ button {
   background: none;
 }
 
+/* Accessible, trustworthy focus ring — visible, calm, never jarring */
+:focus-visible {
+  outline: 2px solid var(--trust-500);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
 /* Container */
 .container {
   width: 100%;
@@ -140,23 +195,27 @@ button {
   font-size: 0.95rem;
   padding: 0.75rem 1.75rem;
   border-radius: var(--radius-full);
-  transition: all var(--transition-smooth);
+  transition: transform var(--transition-smooth), box-shadow var(--transition-smooth), background-color var(--transition-smooth), color var(--transition-smooth);
   cursor: pointer;
   text-decoration: none;
   line-height: 1.2;
   white-space: nowrap;
 }
 
+.btn:active {
+  transform: scale(0.97);
+}
+
 .btn-primary {
   background-color: var(--sage-700);
   color: var(--text-inverse);
-  box-shadow: 0 4px 14px rgba(46, 79, 62, 0.25);
+  box-shadow: var(--shadow-sm);
 }
 
 .btn-primary:hover {
   background-color: var(--sage-900);
   transform: translateY(-2px);
-  box-shadow: 0 8px 22px rgba(46, 79, 62, 0.35);
+  box-shadow: var(--shadow-md);
   color: var(--text-inverse);
 }
 
@@ -183,14 +242,26 @@ button {
   transform: translateY(-2px);
 }
 
-.btn-gold {
-  background: linear-gradient(135deg, #d49f45, #b8812c);
+.btn-trust {
+  background-color: var(--trust-700);
   color: #fff;
-  box-shadow: 0 4px 14px rgba(184, 129, 44, 0.3);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-trust:hover {
+  background-color: var(--trust-900);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.btn-gold {
+  background: linear-gradient(135deg, #cb9c52, #a8793a);
+  color: #fff;
+  box-shadow: var(--shadow-sm);
 }
 
 .btn-gold:hover {
-  background: linear-gradient(135deg, #b8812c, #96651d);
+  background: linear-gradient(135deg, #a8793a, #8a5f2d);
   transform: translateY(-2px);
 }
 
@@ -198,6 +269,21 @@ button {
   padding: 0.45rem 1rem;
   font-size: 0.85rem;
 }
+
+.btn-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--sage-700);
+  cursor: pointer;
+}
+.btn-link:hover { text-decoration: underline; }
 
 .btn-lg {
   padding: 0.95rem 2.25rem;
@@ -245,20 +331,27 @@ button {
   color: var(--blush-900);
 }
 
+/* Verified/secure badge — the ONLY place trust-blue is used as a fill, deliberately rare */
+.badge-trust {
+  background-color: var(--trust-100);
+  color: var(--trust-900);
+  border: 1px solid var(--trust-200);
+}
+
 /* Card Foundations */
 .card {
   background-color: var(--bg-surface);
   border-radius: var(--radius-lg);
   border: 1px solid var(--border-light);
   box-shadow: var(--shadow-sm);
-  transition: all var(--transition-smooth);
+  transition: transform var(--transition-smooth), box-shadow var(--transition-smooth), border-color var(--transition-smooth);
   overflow: hidden;
 }
 
 .card:hover {
   transform: translateY(-4px);
   box-shadow: var(--shadow-lg);
-  border-color: rgba(46, 79, 62, 0.2);
+  border-color: rgba(39, 84, 72, 0.2);
 }
 
 /* Section Header Utility */
@@ -288,12 +381,30 @@ button {
   font-size: 1.05rem;
 }
 
-/* Glassmorphism Effect */
+/* --- Glassmorphism: frosted surfaces with a soft inner highlight for a "premium glass"
+   feel rather than a flat blur. Used across cards that float over the gradient background. --- */
 .glass {
-  background: rgba(255, 255, 255, 0.82);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.6);
+  background: var(--bg-glass-strong);
+  backdrop-filter: blur(18px) saturate(1.3);
+  -webkit-backdrop-filter: blur(18px) saturate(1.3);
+  border: 1px solid var(--border-glass);
+  box-shadow: var(--shadow-md), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+.glass-soft {
+  background: var(--bg-glass);
+  backdrop-filter: blur(14px) saturate(1.2);
+  -webkit-backdrop-filter: blur(14px) saturate(1.2);
+  border: 1px solid var(--border-glass);
+}
+
+/* A dark glass variant for overlays on imagery / deep sections */
+.glass-deep {
+  background: var(--bg-glass-deep);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: #fff;
 }
 
 /* Form Controls */
@@ -319,13 +430,13 @@ button {
   font-family: inherit;
   font-size: 0.95rem;
   color: var(--text-primary);
-  transition: border-color var(--transition-fast);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 
 .form-control:focus {
   outline: none;
-  border-color: var(--sage-700);
-  box-shadow: 0 0 0 3px rgba(46, 79, 62, 0.12);
+  border-color: var(--trust-500);
+  box-shadow: var(--shadow-glow-trust);
 }
 
 /* Toast Notifications */
@@ -333,21 +444,115 @@ button {
   position: fixed;
   bottom: 2rem;
   right: 2rem;
-  background-color: var(--sage-900);
+  background: var(--bg-glass-deep);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   color: var(--text-inverse);
   padding: 1rem 1.5rem;
   border-radius: var(--radius-md);
+  border: 1px solid rgba(255, 255, 255, 0.14);
   box-shadow: var(--shadow-xl);
   z-index: 9999;
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  animation: slideIn 0.3s ease-out;
+  animation: slideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @keyframes slideIn {
-  from { transform: translateY(100%); opacity: 0; }
+  from { transform: translateY(16px); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }
+}
+
+/* Gentle entrance for any element opting in */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-in {
+  animation: fadeUp 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Scroll reveal (RevealDirective) */
+.reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.reveal.is-visible {
+  opacity: 1;
+  transform: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .reveal { opacity: 1; transform: none; }
+}
+
+/* Soft shimmer for loading placeholders — calmer than a spinner for a "nothing hidden" feel */
+.skeleton {
+  background: linear-gradient(90deg, var(--sage-50) 25%, var(--sage-100) 37%, var(--sage-50) 63%);
+  background-size: 400% 100%;
+  animation: shimmer 1.6s ease-in-out infinite;
+  border-radius: var(--radius-md);
+}
+@keyframes shimmer {
+  0% { background-position: 100% 50%; }
+  100% { background-position: 0 50%; }
+}
+
+/* --- Route transitions, using Angular's native View Transitions API
+   (provideRouter(..., withViewTransitions()) in app.config.ts). Every navigation
+   cross-fades with a gentle rise instead of an abrupt swap. --- */
+@media (prefers-reduced-motion: no-preference) {
+  ::view-transition-old(root) {
+    animation: 220ms cubic-bezier(0.4, 0, 1, 1) both nb-view-fade-out;
+  }
+  ::view-transition-new(root) {
+    animation: 320ms cubic-bezier(0.16, 1, 0.3, 1) both nb-view-fade-in;
+  }
+}
+@keyframes nb-view-fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes nb-view-fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+/* Material icon baseline alignment + sizing so <mat-icon> drops cleanly into existing
+   flex rows designed around emoji/text icons. */
+mat-icon.icon-sm { font-size: 1.05rem; width: 1.05rem; height: 1.05rem; vertical-align: -0.2em; }
+mat-icon.icon-lg { font-size: 1.75rem; width: 1.75rem; height: 1.75rem; }
+mat-icon.icon-xl { font-size: 2.5rem; width: 2.5rem; height: 2.5rem; }
+
+/* Large centred icon at the top of focused cards (consent, verify email, journey setup,
+   receipts) — sits in a soft tinted circle so it reads as a calm emblem, not a sticker. */
+mat-icon.hero-icon {
+  display: block;
+  box-sizing: content-box;
+  font-size: 2rem;
+  width: 2rem;
+  height: 2rem;
+  padding: 0.9rem;
+  margin: 0 auto 1rem;
+  border-radius: 50%;
+  color: var(--sage-700);
+  background: linear-gradient(135deg, var(--sage-100), var(--trust-100));
+  border: 1px solid var(--border-light);
+  box-shadow: var(--shadow-sm);
+  animation: fadeUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Text-style buttons with a leading icon */
+button.btn-link, a.btn-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+/* Notice/disclaimer boxes that lead with an info icon */
+.draft-notice mat-icon, .sim-notice mat-icon, .clinical-disclaimer mat-icon, .danger-notice mat-icon {
+  margin-right: 0.15rem;
 }
 
 /* Mobile Responsiveness */
@@ -359,4 +564,32 @@ button {
     padding-left: 1rem;
     padding-right: 1rem;
   }
+}
+
+/* Marks anything still simulated (no real API behind it yet) so it's never mistaken for live data. */
+.demo-badge {
+  display: inline-block;
+  vertical-align: middle;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #92610a;
+  background: #fff8eb;
+  border: 1px solid #fbd38d;
+  border-radius: 999px;
+  padding: 0.15rem 0.55rem;
+}
+.demo-notice {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  font-size: 0.82rem;
+  color: #92610a;
+  background: #fff8eb;
+  border: 1px solid #fbd38d;
+  border-radius: 10px;
+  padding: 0.65rem 0.85rem;
+  margin: 0.75rem 1rem;
 }

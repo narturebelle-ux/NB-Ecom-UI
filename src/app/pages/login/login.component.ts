@@ -1,31 +1,46 @@
 import { Component, inject, OnInit, OnDestroy } from '@angular/core';
+import { MatIconModule } from '@angular/material/icon';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ApiService } from '../../services/api.service';
 import { FirebaseAuthService } from '../../services/firebase-auth.service';
-import { PregnancyStage, User, isVerifiedUser } from '../../models/maternal.models';
+import { goToPostAuthDestination } from '../../services/post-auth-redirect';
+import { User, isVerifiedUser } from '../../models/maternal.models';
 import { RecaptchaVerifier, GoogleAuthProvider, AuthCredential } from 'firebase/auth';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [MatIconModule, CommonModule, FormsModule, RouterLink],
   template: `
     <div class="login-wrapper">
       <div class="container login-container">
         <div class="login-box card glass">
           <div class="login-header">
-            <span class="logo-icon">🌿</span>
-            <h2>Welcome to NartureBelle</h2>
-            <p>Access your personalized Doctor-Approved pregnancy routine, checkup scan alerts, and live sessions.</p>
+            <img src="favicon.svg" alt="" class="logo-icon">
+            @if (isSignUp) {
+              <h2>Create your account</h2>
+              <p>Start your care journey in a few minutes. Signing up is free. You only pay once you choose a care plan.</p>
+            } @else {
+              <h2>Welcome back</h2>
+              <p>Sign in to your care journey: your plan, your care team and your records, all in one private place.</p>
+            }
           </div>
 
-          <!-- Configuration Status Badge -->
+          @if (isSignUp) {
+            <ol class="next-steps">
+              <li><span>1</span> Create your account</li>
+              <li><span>2</span> Tell us about you</li>
+              <li><span>3</span> Choose a plan and meet your coordinator</li>
+            </ol>
+          }
+
+          <!-- Developer-only notice; end users on a configured build never see infrastructure status. -->
           @if (!firebaseAuth.isConfigured()) {
             <div class="firebase-guide-box">
               <div class="guide-header">
-                <span class="badge badge-warning">⚡ Live Firebase Mode Available</span>
+                <span class="badge badge-warning">Developer mode</span>
               </div>
               <p class="guide-text">
                 To connect your real Google Sign-In & live SMS OTP, paste your Firebase config in:
@@ -33,15 +48,10 @@ import { RecaptchaVerifier, GoogleAuthProvider, AuthCredential } from 'firebase/
                 <br><em>(Currently running in interactive testing mode)</em>
               </p>
             </div>
-          } @else {
-            <div class="firebase-connected-box">
-              <span class="badge badge-mandatory">🟢 Google Firebase Live Active</span>
-              <p class="guide-text">Real Google 1-Tap & SMS OTP verification is active.</p>
-            </div>
           }
 
           @if (accountLinkNotice()) {
-            <div class="link-notice">🔗 {{ accountLinkNotice() }}</div>
+            <div class="link-notice"><mat-icon class="icon-sm">link</mat-icon> {{ accountLinkNotice() }}</div>
           }
 
           <!-- Auth Tabs -->
@@ -68,25 +78,8 @@ import { RecaptchaVerifier, GoogleAuthProvider, AuthCredential } from 'firebase/
                     <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.98 0 12s.45 3.82 1.25 5.42l4.03-3.15z"/>
                     <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
                   </svg>
-                  <span>{{ isSubmitting ? 'Connecting with Google...' : 'Continue with Google' }}</span>
+                  <span>{{ isSubmitting ? 'Connecting with Google...' : (isSignUp ? 'Sign up with Google' : 'Continue with Google') }}</span>
                 </button>
-              </div>
-
-              <div class="or-divider"><span>OR CUSTOMIZE PROFILE</span></div>
-
-              <div class="stage-onboarding">
-                <label class="form-label">Select Your Current Stage:</label>
-                <div class="stage-pill-select">
-                  <button type="button" class="s-pill" [class.selected]="selectedStage === 'MONTH_3'" (click)="selectedStage = 'MONTH_3'">
-                    Month 3 (1st Trim)
-                  </button>
-                  <button type="button" class="s-pill" [class.selected]="selectedStage === 'MONTH_6'" (click)="selectedStage = 'MONTH_6'">
-                    Month 6 (2nd Trim)
-                  </button>
-                  <button type="button" class="s-pill" [class.selected]="selectedStage === 'MONTH_9'" (click)="selectedStage = 'MONTH_9'">
-                    Month 9 (3rd Trim)
-                  </button>
-                </div>
               </div>
             </div>
           }
@@ -104,15 +97,6 @@ import { RecaptchaVerifier, GoogleAuthProvider, AuthCredential } from 'firebase/
                     </div>
                   </div>
 
-                  <div class="stage-onboarding">
-                    <label class="form-label">Current Pregnancy Month:</label>
-                    <select [(ngModel)]="selectedStage" name="stage" class="form-control">
-                      <option value="MONTH_3">Month 1–3 (First Trimester)</option>
-                      <option value="MONTH_6">Month 4–6 (Second Trimester)</option>
-                      <option value="MONTH_9">Month 7–9 (Third Trimester)</option>
-                    </select>
-                  </div>
-
                   <!-- Container for Firebase invisible reCAPTCHA -->
                   <div id="recaptcha-container"></div>
 
@@ -127,14 +111,11 @@ import { RecaptchaVerifier, GoogleAuthProvider, AuthCredential } from 'firebase/
                     <input type="text" [(ngModel)]="otpCode" name="otp" placeholder="Enter 6-digit OTP" class="form-control text-center text-lg" required maxlength="6" />
                     <small class="form-hint">
                       Code sent to +91 {{ phone }}.
-                      @if (!firebaseAuth.isConfigured()) {
-                        (Testing code: <strong>123456</strong>)
-                      }
                     </small>
                   </div>
 
                   <button type="submit" class="btn btn-primary btn-lg full-w mt-2" [disabled]="!otpCode || isSubmitting">
-                    {{ isSubmitting ? 'Verifying...' : 'Verify & Sign In →' }}
+                    {{ isSubmitting ? 'Verifying...' : (isSignUp ? 'Verify & Create Account →' : 'Verify & Sign In →') }}
                   </button>
 
                   <button type="button" class="btn btn-outline full-w mt-1" (click)="otpSent = false">
@@ -185,21 +166,6 @@ import { RecaptchaVerifier, GoogleAuthProvider, AuthCredential } from 'firebase/
                     </div>
                   </div>
 
-                  <div class="stage-onboarding">
-                    <label class="form-label">Select Your Current Stage:</label>
-                    <div class="stage-pill-select">
-                      <button type="button" class="s-pill" [class.selected]="selectedStage === 'MONTH_3'" (click)="selectedStage = 'MONTH_3'">
-                        Month 3 (1st Trim)
-                      </button>
-                      <button type="button" class="s-pill" [class.selected]="selectedStage === 'MONTH_6'" (click)="selectedStage = 'MONTH_6'">
-                        Month 6 (2nd Trim)
-                      </button>
-                      <button type="button" class="s-pill" [class.selected]="selectedStage === 'MONTH_9'" (click)="selectedStage = 'MONTH_9'">
-                        Month 9 (3rd Trim)
-                      </button>
-                    </div>
-                  </div>
-
                   <button type="submit" class="btn btn-primary btn-lg full-w mt-2" [disabled]="!email || !password || isSubmitting">
                     {{ isSubmitting ? 'Creating account...' : 'Create Account' }}
                   </button>
@@ -226,8 +192,16 @@ import { RecaptchaVerifier, GoogleAuthProvider, AuthCredential } from 'firebase/
             </div>
           }
 
+          <p class="switch-page">
+            @if (isSignUp) {
+              Already have an account? <a [routerLink]="['/auth/login']" [queryParams]="returnUrl ? { returnUrl } : {}">Sign in</a>
+            } @else {
+              New to NartureBelle? <a [routerLink]="['/auth/signup']" [queryParams]="returnUrl ? { returnUrl } : {}">Create an account</a>
+            }
+          </p>
+
           <div class="login-footer">
-            <p>🔒 256-Bit SSL Encrypted. We never share your maternal health data without clinical consent.</p>
+            <p><mat-icon class="icon-sm">lock</mat-icon> Encrypted in transit. We never share your health data without your consent.</p>
           </div>
         </div>
       </div>
@@ -258,10 +232,18 @@ import { RecaptchaVerifier, GoogleAuthProvider, AuthCredential } from 'firebase/
       text-align: center;
       margin-bottom: 1.5rem;
     }
+    .next-steps { list-style: none; padding: 0.85rem 1rem; margin: 0 0 1.5rem; display: flex; flex-direction: column; gap: 0.5rem; background: var(--sage-50); border: 1px solid var(--sage-100); border-radius: var(--radius-md); }
+    .next-steps li { display: flex; align-items: center; gap: 0.6rem; font-size: 0.85rem; color: var(--sage-900); }
+    .next-steps span { width: 22px; height: 22px; flex-shrink: 0; border-radius: 50%; display: grid; place-items: center; background: var(--sage-700); color: #fff; font-size: 0.72rem; font-weight: 700; }
+    .switch-page { text-align: center; font-size: 0.88rem; color: var(--text-secondary); margin: 1.5rem 0 0; }
+    .switch-page a { font-weight: 700; color: var(--sage-700); }
     .logo-icon {
-      font-size: 2.5rem;
+      width: 56px;
+      height: 56px;
       display: block;
-      margin-bottom: 0.5rem;
+      margin: 0 auto 0.85rem;
+      border-radius: 50%;
+      box-shadow: var(--shadow-md);
     }
     .login-header h2 {
       font-size: 1.75rem;
@@ -281,14 +263,6 @@ import { RecaptchaVerifier, GoogleAuthProvider, AuthCredential } from 'firebase/
       border-radius: var(--radius-md);
       padding: 0.85rem 1rem;
       margin-bottom: 1.25rem;
-    }
-    .firebase-connected-box {
-      background: #f0fdf4;
-      border: 1px solid #bbf7d0;
-      border-radius: var(--radius-md);
-      padding: 0.85rem 1rem;
-      margin-bottom: 1.25rem;
-      text-align: center;
     }
     .guide-header {
       display: flex;
@@ -329,13 +303,16 @@ import { RecaptchaVerifier, GoogleAuthProvider, AuthCredential } from 'firebase/
     }
 
     .link-notice {
-      background: #eef2ff;
-      border: 1px solid #c7d2fe;
+      display: flex;
+      align-items: flex-start;
+      gap: 0.5rem;
+      background: var(--trust-50);
+      border: 1px solid var(--trust-200);
       border-radius: var(--radius-md);
       padding: 0.85rem 1rem;
       margin-bottom: 1.25rem;
       font-size: 0.82rem;
-      color: #3730a3;
+      color: var(--trust-900);
       line-height: 1.45;
     }
 
@@ -493,33 +470,6 @@ import { RecaptchaVerifier, GoogleAuthProvider, AuthCredential } from 'firebase/
       padding: 0.2rem;
     }
 
-    .stage-pill-select {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 0.5rem;
-      margin-top: 0.5rem;
-    }
-    .s-pill {
-      background: var(--bg-cream);
-      border: 1px solid var(--border-color);
-      border-radius: var(--radius-pill);
-      padding: 0.5rem 0.25rem;
-      font-size: 0.75rem;
-      font-weight: 600;
-      color: var(--text-secondary);
-      cursor: pointer;
-      text-align: center;
-      transition: all var(--transition-fast);
-    }
-    .s-pill:hover {
-      border-color: var(--primary-deep);
-    }
-    .s-pill.selected {
-      background: var(--primary-deep);
-      color: #fff;
-      border-color: var(--primary-deep);
-    }
-
     .text-lg {
       font-size: 1.4rem;
       letter-spacing: 0.25em;
@@ -558,7 +508,6 @@ export class LoginComponent implements OnInit, OnDestroy {
 
   activeTab: 'GOOGLE' | 'PHONE' | 'EMAIL' = 'GOOGLE';
   emailMode: 'SIGN_IN' | 'SIGN_UP' | 'FORGOT_PASSWORD' = 'SIGN_IN';
-  selectedStage: PregnancyStage = 'MONTH_3';
 
   phone = '';
   otpCode = '';
@@ -582,10 +531,15 @@ export class LoginComponent implements OnInit, OnDestroy {
     return this.accountLinkNoticeMsg;
   }
 
+  /** /auth/signup reuses this page with sign-up wording; Firebase creates the account either way. */
+  isSignUp = false;
+
   ngOnInit() {
+    this.isSignUp = this.route.snapshot.data['mode'] === 'signup';
+    if (this.isSignUp) this.emailMode = 'SIGN_UP';
     this.returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
     if (this.api.currentUser()) {
-      this.redirectAfterLogin();
+      goToPostAuthDestination(this.api, this.router, this.returnUrl);
     }
   }
 
@@ -786,8 +740,7 @@ export class LoginComponent implements OnInit, OnDestroy {
         phone,
         phoneVerified: true,
         authProvider: 'FIREBASE_PHONE',
-        role: 'USER',
-        stage: this.selectedStage
+        role: 'USER'
       });
     } catch (err: any) {
       this.isSubmitting = false;
@@ -803,11 +756,10 @@ export class LoginComponent implements OnInit, OnDestroy {
    * (no request body — the real API takes none) and stores the returned user directly
    * (the API returns the user object itself, not wrapped).
    *
-   * The pregnancy-stage pill selected on this page can't be sent with /auth/firebase
-   * (it accepts no body) and PUT /users/me — the only way to persist it — requires a
-   * VERIFIED user. So: if already verified (Google/Phone, or a returning user), sync the
-   * stage immediately via a follow-up PUT. If not yet verified (fresh email/password
-   * signup), stash it and let the verify-email page apply it once verification succeeds.
+   * Per roadmap §1 UI, journey stage/EDD are never collected at sign-up — they're set later
+   * in Profile → My Journey. If verified, goToPostAuthDestination() checks for pending
+   * consents and routes to the consent screen or straight to /journey. If not yet verified
+   * (fresh email/password signup), route to verify-email instead.
    */
   private completeFirebaseLogin(fallbackUser: Partial<User> | any) {
     this.api.loginWithFirebase().subscribe({
@@ -816,68 +768,19 @@ export class LoginComponent implements OnInit, OnDestroy {
         this.api.setUser(resolvedUser);
 
         if (isVerifiedUser(resolvedUser)) {
-          this.syncPendingStageThenProceed(resolvedUser);
+          this.api.showToast(`Welcome, ${resolvedUser.firstName || resolvedUser.name || resolvedUser.email || 'Mother'}!`);
+          goToPostAuthDestination(this.api, this.router, this.returnUrl);
         } else {
           this.isSubmitting = false;
-          localStorage.setItem('nb_pending_stage', this.selectedStage);
           const queryParams = this.returnUrl ? { returnUrl: this.returnUrl } : {};
           this.router.navigate(['/auth/verify-email'], { queryParams });
         }
       },
       error: (err) => {
         this.isSubmitting = false;
-        // A real HTTP error means the backend rejected the token — never fabricate a
-        // session on a real rejection (ApiService's own catchError already handles the
-        // true-network-failure dev fallback before this error callback ever runs).
+        // The backend rejected the token or couldn't be reached — never fabricate a session.
         this.api.showToast(err?.error?.message || 'Could not verify your sign-in with the server. Please try again.');
       }
     });
-  }
-
-  /** Only sync if this is a first login (no stage set yet) — never silently overwrite a returning user's choice. */
-  private syncPendingStageThenProceed(user: User) {
-    if (user.stage) {
-      this.isSubmitting = false;
-      this.api.showToast(`Welcome back, ${user.firstName || user.name || user.email || 'Mother'}!`);
-      this.redirectAfterLogin();
-      return;
-    }
-
-    this.api.updateProfile({ stage: this.selectedStage }).subscribe({
-      next: (res: any) => {
-        this.isSubmitting = false;
-        if (res?.id) {
-          this.api.setUser(res);
-        }
-        this.api.showToast(`Welcome, ${user.firstName || user.name || user.email || 'Mother'}!`);
-        this.redirectAfterLogin();
-      },
-      error: (err) => {
-        // Stage sync is a nice-to-have, not worth blocking login over. On 401/403 the
-        // interceptor already redirected; don't race it with a second navigation here.
-        this.isSubmitting = false;
-        if (err?.status !== 401 && err?.status !== 403) {
-          this.redirectAfterLogin();
-        }
-      }
-    });
-  }
-
-  private redirectAfterLogin() {
-    if (this.returnUrl) {
-      this.router.navigateByUrl(this.returnUrl);
-      return;
-    }
-    this.navigateToStage();
-  }
-
-  private navigateToStage() {
-    if (this.selectedStage === 'MONTH_6') {
-      this.router.navigateByUrl('/products/month-6');
-    } else if (this.selectedStage === 'MONTH_9') {
-      this.router.navigateByUrl('/products/month-9');
-    } else {
-      this.router.navigateByUrl('/products/month-3');
-    }
   }
 }

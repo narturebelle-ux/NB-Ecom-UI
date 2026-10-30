@@ -13,7 +13,7 @@ import { environment } from '../../environments/environment';
  * environment.apiUrl; third-party requests (fonts, Firebase's own endpoints) pass through untouched.
  *
  * Handles the contract's three auth error codes centrally, then re-throws so each
- * service method's own catchError (e.g. the products-list fallback) still runs —
+ * caller's own error handling still runs —
  * this interceptor only ever adds side effects, never swallows the error itself.
  */
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
@@ -41,6 +41,13 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
       } else if (err.status === 403) {
         if (err.error?.code === 'EMAIL_NOT_VERIFIED') {
           router.navigate(['/auth/verify-email']);
+        } else if (err.error?.code === 'CONSENT_REQUIRED') {
+          // Optional consents (RECORDS_STORAGE on uploads, HEALTH_DATA on the health profile) are asked for by the page itself.
+          const optional = ['RECORDS_STORAGE', 'HEALTH_DATA'];
+          const pending: string[] = err.error?.pending ?? [];
+          if (!pending.length || pending.some(t => !optional.includes(t))) {
+            router.navigate(['/auth/consent'], { queryParams: { returnUrl: router.url } });
+          }
         } else {
           api.showToast(err.error?.message || "You're not allowed to do that.");
         }

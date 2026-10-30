@@ -1,7 +1,9 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { ApiService } from '../../services/api.service';
+import { ReferralService } from '../../services/referral.service';
 import { ChecklistTask, HospitalPartner, PregnancyStage } from '../../models/maternal.models';
 
 @Component({
@@ -34,6 +36,7 @@ import { ChecklistTask, HospitalPartner, PregnancyStage } from '../../models/mat
           <div class="tasks-header">
             <h2>Medical Tests & Questions For Your OB-GYN</h2>
             <span class="task-count">{{ filteredTasks.length }} Tasks</span>
+            @if (loadError) { <p class="load-error">{{ loadError }}</p> }
           </div>
 
           <div class="tasks-list">
@@ -75,6 +78,8 @@ import { ChecklistTask, HospitalPartner, PregnancyStage } from '../../models/mat
                   </div>
                 }
               </div>
+            } @empty {
+              @if (!loadError) { <p class="empty-note">No checklist items have been published yet.</p> }
             }
           </div>
         </div>
@@ -132,6 +137,8 @@ import { ChecklistTask, HospitalPartner, PregnancyStage } from '../../models/mat
                   </div>
                 </div>
               </div>
+            } @empty {
+              <p class="empty-note">No partner hospitals match yet. Try another city, or check back soon.</p>
             }
           </div>
         </div>
@@ -164,8 +171,8 @@ import { ChecklistTask, HospitalPartner, PregnancyStage } from '../../models/mat
                 <option value="MONTH_9">Month 7–9 (Delivery Soon)</option>
               </select>
             </div>
-            <button type="submit" class="btn btn-primary btn-lg full-w mt-2">
-              Confirm Free Tour Request
+            <button type="submit" class="btn btn-primary btn-lg full-w mt-2" [disabled]="submittingTour">
+              {{ submittingTour ? 'Sending…' : 'Confirm Free Tour Request' }}
             </button>
           </form>
         </div>
@@ -374,6 +381,8 @@ import { ChecklistTask, HospitalPartner, PregnancyStage } from '../../models/mat
       color: var(--sage-900);
       margin-bottom: 1rem;
     }
+    .empty-note { color: var(--text-muted); font-size: 0.88rem; padding: 1rem 0; }
+    .load-error { color: #a0281c; font-size: 0.85rem; margin: 0.5rem 0; }
     .hospitals-list {
       display: flex;
       flex-direction: column;
@@ -486,9 +495,12 @@ import { ChecklistTask, HospitalPartner, PregnancyStage } from '../../models/mat
 })
 export class ChecklistsComponent implements OnInit {
   api = inject(ApiService);
+  referrals = inject(ReferralService);
+  private router = inject(Router);
 
   allTasks: ChecklistTask[] = [];
   filteredTasks: ChecklistTask[] = [];
+  loadError: string | null = null;
   hospitals: HospitalPartner[] = [];
 
   selectedStage: string = 'ALL';
@@ -499,16 +511,18 @@ export class ChecklistsComponent implements OnInit {
   tourName = '';
   tourPhone = '';
   tourStage = 'MONTH_6';
+  submittingTour = false;
 
   ngOnInit() {
-    this.api.getChecklists().subscribe(tasks => {
-      this.allTasks = tasks;
-      this.filteredTasks = tasks;
+    this.api.getChecklists().subscribe({
+      next: tasks => {
+        this.allTasks = tasks;
+        this.filteredTasks = tasks;
+      },
+      error: () => { this.loadError = 'We couldn’t load the checklist. Please check your connection and reload.'; }
     });
 
-    this.api.getHospitals().subscribe(hosps => {
-      this.hospitals = hosps;
-    });
+    this.loadHospitals();
   }
 
   filterStage(stage: string) {
@@ -521,14 +535,17 @@ export class ChecklistsComponent implements OnInit {
   }
 
   onCityChange() {
-    this.api.getHospitals(this.selectedCity, this.searchPincode).subscribe(hosps => {
-      this.hospitals = hosps;
-    });
+    this.loadHospitals();
   }
 
   onPincodeSearch() {
-    this.api.getHospitals(this.selectedCity, this.searchPincode).subscribe(hosps => {
-      this.hospitals = hosps;
+    this.loadHospitals();
+  }
+
+  private loadHospitals() {
+    this.api.getHospitals(this.selectedCity, this.searchPincode).subscribe({
+      next: hosps => { this.hospitals = hosps; },
+      error: () => this.api.showToast('Couldn’t load hospitals. Please check your connection.')
     });
   }
 
@@ -537,11 +554,30 @@ export class ChecklistsComponent implements OnInit {
   }
 
   submitTourRequest() {
-    if (!this.tourPhone) return;
-
-    this.api.showToast(`Tour requested at ${this.selectedHospitalForTour?.name}! A hospital coordinator will call you.`);
-    this.selectedHospitalForTour = null;
-    this.tourName = '';
-    this.tourPhone = '';
+    const hosp = this.selectedHospitalForTour;
+    if (!this.tourPhone || !hosp) return;
+    if (!this.api.currentUser()) {
+      this.router.navigate(['/auth/login'], { queryParams: { returnUrl: '/checklists' } });
+      return;
+    }
+    // Referral attribution (roadmap Phase 6): POST /me/hospital-referrals records the lead
+    // server-side so it can be confirmed and attributed back to NartureBelle.
+    const note = `Tour / callback request. Name: ${this.tourName.trim() || '-'}. Phone: ${this.tourPhone.trim()}. Stage: ${this.tourStage}.`;
+    this.submittingTour = true;
+    this.referrals.createReferral(hosp.id, note).subscribe({
+      next: referral => {
+        this.submittingTour = false;
+        this.api.showToast(`Tour requested at ${referral.hospitalName}. Your referral code is ${referral.code}. The hospital will call you to arrange it.`);
+        this.selectedHospitalForTour = null;
+        this.tourName = '';
+        this.tourPhone = '';
+      },
+      error: (err) => {
+        this.submittingTour = false;
+        if (err?.status === 401 || err?.status === 403) return; // interceptor handles sign-in / verify / consent
+        this.api.showToast(err?.error?.message || 'We couldn’t send your request. Please try again.');
+      }
+    });
   }
+
 }

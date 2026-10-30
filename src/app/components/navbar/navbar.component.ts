@@ -1,19 +1,23 @@
-import { Component, inject } from '@angular/core';
+import { Component, computed, effect, inject, untracked } from '@angular/core';
+import { isProfessionalUser, isReviewerUser } from '../../models/maternal.models';
 import { RouterLink, RouterLinkActive, Router } from '@angular/router';
 import { ApiService } from '../../services/api.service';
 import { FirebaseAuthService } from '../../services/firebase-auth.service';
+import { NotificationService } from '../../services/notification.service';
+import { OnboardingService } from '../../services/onboarding.service';
 import { CommonModule } from '@angular/common';
+import { MatIconModule } from '@angular/material/icon';
 import { FeatureDirective } from '../../directives/feature.directive';
 
 @Component({
   selector: 'app-navbar',
   standalone: true,
-  imports: [RouterLink, RouterLinkActive, CommonModule, FeatureDirective],
+  imports: [RouterLink, RouterLinkActive, CommonModule, MatIconModule, FeatureDirective],
   template: `
-    <!-- Top Announcement Bar -->
-    <div class="announcement-bar">
+    <!-- Top Announcement Bar (legacy lead-gen promo — hidden, not deleted) -->
+    <div *appFeature="'legacyLeadForms'" class="announcement-bar">
       <div class="container announcement-content">
-        <span>✨ <strong>Free OB-GYN Live Masterclass:</strong> 1st Trimester Nutrition &amp; Safe Scans this Saturday!</span>
+        <span><strong>Free OB-GYN Live Masterclass:</strong> 1st Trimester Nutrition &amp; Safe Scans this Saturday!</span>
         <a routerLink="/doctors-live" class="announcement-link">Reserve Free Seat &rarr;</a>
       </div>
     </div>
@@ -30,123 +34,171 @@ import { FeatureDirective } from '../../directives/feature.directive';
           </div>
         </a>
 
-        <!-- Desktop Navigation Links -->
+        <!-- Desktop Navigation Links — signed-in users only; guests only need sign in / get started.
+             Until onboarding is complete, the only destination is onboarding itself. -->
+        @if (isProfessional()) {
+          <nav class="nav-links">
+            <a routerLink="/provider" routerLinkActive="active" class="nav-link">My sessions</a>
+            @if (isReviewer()) { <a routerLink="/review/health-rules" routerLinkActive="active" class="nav-link">Rule review</a> }
+          </nav>
+        }
+        @if (api.currentUser() && !isProfessional() && !onboarding.onboarded()) {
+          <nav class="nav-links">
+            <a routerLink="/onboarding" routerLinkActive="active" class="nav-link onboarding-link">
+              <mat-icon class="icon-sm">flag</mat-icon> Complete your onboarding
+            </a>
+          </nav>
+        }
+        @if (api.currentUser() && !isProfessional() && onboarding.onboarded()) {
         <nav class="nav-links">
-          <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="nav-link">Home</a>
+          <a routerLink="/journey" routerLinkActive="active" class="nav-link">My Journey</a>
+          <a *appFeature="'careBooking'" routerLink="/care" routerLinkActive="active" class="nav-link">Care</a>
+          <a *appFeature="'recordsVault'" routerLink="/records" routerLinkActive="active" class="nav-link">Records</a>
+          <a *appFeature="'childTracker'" routerLink="/child" routerLinkActive="active" class="nav-link">Child</a>
+          <a *appFeature="'joyCircle'" routerLink="/joy-circle" routerLinkActive="active" class="nav-link">Joy Circle</a>
+          <a *appFeature="'productRecommendations'" routerLink="/recommendations" routerLinkActive="active" class="nav-link">For you</a>
+          <a *appFeature="'aiAssistant'" routerLink="/ai" routerLinkActive="active" class="nav-link">AI</a>
+          <a routerLink="/plans" routerLinkActive="active" class="nav-link">Plans</a>
 
-          <!-- Trimester Stage Pills -->
-          <div class="stage-nav-group">
-            <a routerLink="/products/month-3" routerLinkActive="active" class="nav-link stage-pill m3">
-              <span class="pill-dot"></span>Month 3
-            </a>
-            <a routerLink="/products/month-6" routerLinkActive="active" class="nav-link stage-pill m6">
-              <span class="pill-dot"></span>Month 6
-            </a>
-            <a routerLink="/products/month-9" routerLinkActive="active" class="nav-link stage-pill m9">
-              <span class="pill-dot"></span>Month 9
-            </a>
-          </div>
 
           <a routerLink="/checklists" routerLinkActive="active" class="nav-link highlight-link">
-            <span>📋</span> Checkup Checklist
+            <mat-icon class="icon-sm">fact_check</mat-icon> Checkup Checklist
           </a>
 
-          <!-- Feature-toggled nav links -->
-          <a *appFeature="'nurseCompanion'" routerLink="/services/nurse-companion" routerLinkActive="active" class="nav-link nurse-link">
-            <span>👩‍⚕️</span> Nurse Companion
+          <!-- Legacy lead-gen nav links — hidden, not deleted -->
+          <a *appFeature="'legacyLeadForms'" routerLink="/services/nurse-companion" routerLinkActive="active" class="nav-link nurse-link">
+            <mat-icon class="icon-sm">medical_services</mat-icon> Nurse Companion
           </a>
-          <a *appFeature="'doctorLiveSessions'" routerLink="/doctors-live" routerLinkActive="active" class="nav-link doctor-link">
-            <span>🔴</span> Doctor Live
+          <a *appFeature="'legacyLeadForms'" routerLink="/doctors-live" routerLinkActive="active" class="nav-link doctor-link">
+            <mat-icon class="icon-sm">videocam</mat-icon> Doctor Live
           </a>
         </nav>
+        }
 
         <!-- Right Header Actions -->
         <div class="header-actions">
-          <button (click)="openAssessment()" class="btn btn-secondary btn-sm assessment-btn">
-            <span>✨</span> Find My Routine
-          </button>
-
           <!-- Cart Drawer Toggle -->
-          <button (click)="toggleCart()" class="cart-btn" aria-label="Shopping Cart">
-            <span class="cart-icon">🛍️</span>
+          <button *appFeature="'productRecommendations'" (click)="toggleCart()" class="cart-btn" aria-label="Shopping Cart">
+            <mat-icon class="cart-icon">shopping_bag</mat-icon>
             @if (api.cartCount() > 0) {
               <span class="cart-badge">{{ api.cartCount() }}</span>
             }
           </button>
 
+          <!-- Reminder bell (roadmap §Phase 5) -->
+          @if (api.currentUser()) {
+            <div class="bell-menu" [class.menu-open]="isBellOpen">
+              <button class="bell-btn" (click)="toggleBell()" type="button" aria-label="Reminders">
+                <mat-icon>notifications</mat-icon>
+                @if (notifications.unreadCount() > 0) {
+                  <span class="cart-badge">{{ notifications.unreadCount() }}</span>
+                }
+              </button>
+              @if (isBellOpen) {
+                <div class="bell-dropdown">
+                  @if (notifications.reminders().length === 0) {
+                    <p class="bell-empty">No reminders right now.</p>
+                  } @else {
+                    @for (r of notifications.reminders(); track r.id) {
+                      <div class="bell-item" [class.unread]="!notifications.isRead(r.id)" (click)="openReminder(r.id)">
+                        <strong>{{ r.title }}</strong>
+                        <p>{{ r.body }}</p>
+                        <button class="dismiss-btn" (click)="dismissReminder($event, r.id)">Dismiss</button>
+                      </div>
+                    }
+                  }
+                </div>
+              }
+            </div>
+          }
+
           <!-- Auth: signed-in user dropdown -->
           @if (api.currentUser(); as user) {
             <div class="user-menu" [class.menu-open]="isUserMenuOpen">
               <button class="user-pill" (click)="toggleUserMenu()" type="button">
-                <span class="user-avatar">🌸</span>
-                <span class="user-name">{{ getFirstName(user) }}</span>
-                <span class="chevron">{{ isUserMenuOpen ? '▲' : '▼' }}</span>
+                <mat-icon class="user-avatar">account_circle</mat-icon>
+                <span class="user-name">{{ getDisplayName(user) }}</span>
+                <mat-icon class="chevron">{{ isUserMenuOpen ? 'expand_less' : 'expand_more' }}</mat-icon>
               </button>
               @if (isUserMenuOpen) {
                 <div class="user-dropdown">
+                  @if (needsName(user)) {
+                    <a routerLink="/profile" class="dropdown-item" (click)="isUserMenuOpen = false">
+                      <mat-icon class="icon-sm">edit</mat-icon> Add your name
+                    </a>
+                    <hr class="dropdown-divider">
+                  }
                   <a routerLink="/profile" class="dropdown-item" (click)="isUserMenuOpen = false">
-                    <span>👤</span> My Profile
+                    <mat-icon class="icon-sm">shield_person</mat-icon> Profile &amp; Privacy
                   </a>
                   <hr class="dropdown-divider">
                   <button class="dropdown-item sign-out-item" (click)="signOut()">
-                    <span>🚪</span> Sign Out
+                    <mat-icon class="icon-sm">logout</mat-icon> Sign Out
                   </button>
                 </div>
               }
             </div>
           } @else {
-            <a routerLink="/auth/login" class="btn btn-outline btn-sm login-btn">Sign In</a>
+            <a routerLink="/auth/login" class="btn btn-ghost-nav btn-sm login-btn">Sign in</a>
+            <a routerLink="/auth/signup" class="btn btn-primary btn-sm get-started-btn">Get started</a>
           }
 
-          <!-- Mobile Hamburger Toggle -->
-          <button (click)="toggleMobileMenu()" class="mobile-toggle" aria-label="Toggle Navigation">
-            <span>{{ isMobileOpen ? '✕' : '☰' }}</span>
-          </button>
+          <!-- Mobile Hamburger Toggle (signed-in only; guests have nothing to navigate to yet) -->
+          @if (api.currentUser()) {
+            <button (click)="toggleMobileMenu()" class="mobile-toggle" aria-label="Toggle Navigation">
+              <mat-icon>{{ isMobileOpen ? 'close' : 'menu' }}</mat-icon>
+            </button>
+          }
         </div>
       </div>
 
       <!-- Mobile Navigation Drawer -->
-      @if (isMobileOpen) {
+      @if (isMobileOpen && api.currentUser()) {
         <div class="mobile-menu glass">
-          <a routerLink="/" (click)="isMobileOpen = false" class="mobile-nav-link">Home</a>
-          <div class="mobile-stages-title">Browse By Pregnancy Milestone:</div>
-          <div class="mobile-stages-grid">
-            <a routerLink="/products/month-3" (click)="isMobileOpen = false" class="mobile-stage-btn m3">
-              <strong>Month 3</strong><span>1st Trimester</span>
+          @if (isProfessional()) {
+            <a routerLink="/provider" (click)="isMobileOpen = false" class="mobile-nav-link"><mat-icon class="icon-sm">event_note</mat-icon> My sessions</a>
+            @if (isReviewer()) { <a routerLink="/review/health-rules" (click)="isMobileOpen = false" class="mobile-nav-link"><mat-icon class="icon-sm">fact_check</mat-icon> Rule review</a> }
+          } @else if (!onboarding.onboarded()) {
+            <a routerLink="/onboarding" (click)="isMobileOpen = false" class="mobile-nav-link onboarding-link">
+              <mat-icon class="icon-sm">flag</mat-icon> Complete your onboarding
             </a>
-            <a routerLink="/products/month-6" (click)="isMobileOpen = false" class="mobile-stage-btn m6">
-              <strong>Month 6</strong><span>2nd Trimester</span>
-            </a>
-            <a routerLink="/products/month-9" (click)="isMobileOpen = false" class="mobile-stage-btn m9">
-              <strong>Month 9</strong><span>3rd Trimester</span>
-            </a>
-          </div>
+          } @else {
+
+          @if (api.currentUser()) {
+            <a routerLink="/journey" (click)="isMobileOpen = false" class="mobile-nav-link"><mat-icon class="icon-sm">eco</mat-icon> My Journey</a>
+            <a *appFeature="'careBooking'" routerLink="/care" (click)="isMobileOpen = false" class="mobile-nav-link">Care</a>
+            <a *appFeature="'recordsVault'" routerLink="/records" (click)="isMobileOpen = false" class="mobile-nav-link">Records</a>
+            <a *appFeature="'childTracker'" routerLink="/child" (click)="isMobileOpen = false" class="mobile-nav-link">Child</a>
+            <a *appFeature="'joyCircle'" routerLink="/joy-circle" (click)="isMobileOpen = false" class="mobile-nav-link">Joy Circle</a>
+            <a *appFeature="'productRecommendations'" routerLink="/recommendations" (click)="isMobileOpen = false" class="mobile-nav-link">For you</a>
+            <a *appFeature="'aiAssistant'" routerLink="/ai" (click)="isMobileOpen = false" class="mobile-nav-link">AI</a>
+          }
+          <a routerLink="/plans" (click)="isMobileOpen = false" class="mobile-nav-link"><mat-icon class="icon-sm">workspace_premium</mat-icon> Care Plans</a>
+
           <hr class="mobile-divider">
           <a routerLink="/checklists" (click)="isMobileOpen = false" class="mobile-nav-link">
-            📋 Prenatal Checkup Checklist &amp; Labs
+            <mat-icon class="icon-sm">fact_check</mat-icon> Prenatal Checkup Checklist &amp; Labs
           </a>
-          <a *appFeature="'nurseCompanion'" routerLink="/services/nurse-companion" (click)="isMobileOpen = false" class="mobile-nav-link">
-            👩‍⚕️ Dedicated Nurse Care Companion
+          <a *appFeature="'legacyLeadForms'" routerLink="/services/nurse-companion" (click)="isMobileOpen = false" class="mobile-nav-link">
+            Dedicated Nurse Care Companion
           </a>
-          <a *appFeature="'doctorLiveSessions'" routerLink="/doctors-live" (click)="isMobileOpen = false" class="mobile-nav-link">
-            🔴 OB-GYN Live Webinars
+          <a *appFeature="'legacyLeadForms'" routerLink="/doctors-live" (click)="isMobileOpen = false" class="mobile-nav-link">
+            OB-GYN Live Webinars
           </a>
+          }
           <hr class="mobile-divider">
           @if (api.currentUser(); as user) {
             <a routerLink="/profile" (click)="isMobileOpen = false" class="mobile-nav-link profile-link">
-              👤 My Profile ({{ getFirstName(user) }})
+              <mat-icon class="icon-sm">shield_person</mat-icon> Profile &amp; Privacy ({{ getDisplayName(user) }})
             </a>
             <button (click)="signOut()" class="btn btn-outline btn-sm mobile-action-btn">
-              🚪 Sign Out
+              <mat-icon class="icon-sm">logout</mat-icon> Sign Out
             </button>
           } @else {
             <a routerLink="/auth/login" (click)="isMobileOpen = false" class="btn btn-outline btn-sm mobile-action-btn">
               Sign In
             </a>
           }
-          <button (click)="openAssessment(); isMobileOpen = false" class="btn btn-primary btn-sm mobile-action-btn">
-            ✨ Take 60s Pregnancy Checkup
-          </button>
         </div>
       }
     </header>
@@ -272,6 +324,7 @@ import { FeatureDirective } from '../../directives/feature.directive';
     }
 
     .highlight-link { color: var(--sage-800); font-weight: 700; }
+    .onboarding-link { color: var(--sage-900); font-weight: 700; background: var(--sage-50); border: 1px solid var(--sage-200); border-radius: var(--radius-full); padding: 0.4rem 0.9rem; }
     .nurse-link { color: var(--blush-800); font-weight: 700; }
     .doctor-link { color: #a32222; font-weight: 700; }
 
@@ -280,8 +333,10 @@ import { FeatureDirective } from '../../directives/feature.directive';
       align-items: center;
       gap: 0.75rem;
     }
-    .assessment-btn { white-space: nowrap; }
-    .login-btn { white-space: nowrap; flex-shrink: 0; }
+    .login-btn, .get-started-btn { white-space: nowrap; flex-shrink: 0; }
+    .btn-ghost-nav { background: transparent; color: var(--sage-800); font-weight: 700; }
+    .btn-ghost-nav:hover { background: var(--sage-50); color: var(--sage-900); }
+    @media (max-width: 420px) { .login-btn { display: none; } }
     .cart-btn {
       position: relative;
       background: var(--bg-surface);
@@ -300,7 +355,7 @@ import { FeatureDirective } from '../../directives/feature.directive';
       border-color: var(--sage-700);
       transform: scale(1.05);
     }
-    .cart-icon { font-size: 1.25rem; }
+    .cart-icon { font-size: 1.25rem; width: 1.25rem; height: 1.25rem; }
     .cart-badge {
       position: absolute;
       top: -4px;
@@ -317,6 +372,49 @@ import { FeatureDirective } from '../../directives/feature.directive';
       justify-content: center;
       border: 2px solid #fff;
     }
+
+    /* Reminder bell (roadmap §Phase 5) */
+    .bell-menu { position: relative; }
+    .bell-btn {
+      position: relative;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-light);
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 1.1rem;
+    }
+    .bell-dropdown {
+      position: absolute;
+      top: calc(100% + 8px);
+      right: 0;
+      background: #fff;
+      border: 1px solid var(--border-light);
+      border-radius: 12px;
+      box-shadow: 0 8px 30px rgba(27,51,39,0.12);
+      min-width: 280px;
+      max-height: 360px;
+      overflow-y: auto;
+      z-index: 2000;
+      padding: 0.5rem;
+      animation: dropIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .bell-empty { font-size: 0.85rem; color: var(--text-muted); padding: 0.75rem; text-align: center; }
+    .bell-item {
+      padding: 0.65rem 0.75rem;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-bottom: 0.25rem;
+    }
+    .bell-item:hover { background: var(--sage-50); }
+    .bell-item.unread { background: #f0f7f3; }
+    .bell-item strong { display: block; font-size: 0.85rem; color: var(--sage-900); }
+    .bell-item p { font-size: 0.78rem; color: var(--text-secondary); margin: 0.2rem 0 0.35rem; }
+    .dismiss-btn { background: none; border: none; color: var(--text-muted); font-size: 0.72rem; text-decoration: underline; cursor: pointer; padding: 0; }
 
     /* User dropdown menu */
     .user-menu {
@@ -337,16 +435,19 @@ import { FeatureDirective } from '../../directives/feature.directive';
       border-color: var(--sage-700);
       background: #e8f0ec;
     }
-    .user-avatar { font-size: 1rem; }
+    .user-avatar { font-size: 1.3rem; width: 1.3rem; height: 1.3rem; color: var(--sage-700); }
     .user-name {
       font-weight: 600;
       font-size: 0.85rem;
       color: var(--sage-900);
     }
     .chevron {
-      font-size: 0.6rem;
+      font-size: 1.1rem;
+      width: 1.1rem;
+      height: 1.1rem;
       color: var(--text-muted);
       margin-left: 0.1rem;
+      transition: transform var(--transition-fast);
     }
     .user-dropdown {
       position: absolute;
@@ -399,6 +500,7 @@ import { FeatureDirective } from '../../directives/feature.directive';
 
     /* Mobile Menu */
     .mobile-menu {
+      animation: dropIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
       padding: 1.25rem;
       border-top: 1px solid var(--border-light);
       display: flex;
@@ -445,17 +547,43 @@ import { FeatureDirective } from '../../directives/feature.directive';
     @media (max-width: 1024px) {
       .nav-links { display: none; }
       .mobile-toggle { display: block; }
-      .assessment-btn { display: none; }
     }
   `]
 })
 export class NavbarComponent {
   api = inject(ApiService);
   firebaseAuth = inject(FirebaseAuthService);
+  notifications = inject(NotificationService);
+  onboarding = inject(OnboardingService);
+  isProfessional = computed(() => isProfessionalUser(this.api.currentUser()));
+  /** Reviewers include MEDICAL_REVIEWER staff, who aren't professionals, so they get the link even outside the portal. */
+  isReviewer = computed(() => isReviewerUser(this.api.currentUser()));
   router = inject(Router);
 
   isMobileOpen = false;
   isUserMenuOpen = false;
+  isBellOpen = false;
+
+  constructor() {
+    // Reminders are generated server-side every 15 min; load them once the app is unlocked.
+    effect(() => {
+      if (this.api.currentUser() && this.onboarding.onboarded()) untracked(() => this.notifications.refresh());
+    });
+  }
+
+  toggleBell() {
+    this.isBellOpen = !this.isBellOpen;
+    if (this.isBellOpen) this.notifications.refresh();
+  }
+
+  openReminder(id: number) {
+    this.notifications.markRead(id);
+  }
+
+  dismissReminder(event: Event, id: number) {
+    event.stopPropagation();
+    this.notifications.dismiss(id);
+  }
 
   toggleMobileMenu() {
     this.isMobileOpen = !this.isMobileOpen;
@@ -465,20 +593,22 @@ export class NavbarComponent {
     this.isUserMenuOpen = !this.isUserMenuOpen;
   }
 
-  openAssessment() {
-    this.api.isAssessmentOpen.set(true);
-    this.isUserMenuOpen = false;
-  }
-
   toggleCart() {
     this.api.isCartOpen.set(!this.api.isCartOpen());
     this.isUserMenuOpen = false;
   }
 
-  getFirstName(user: any): string {
-    if (user?.firstName) return user.firstName;
-    if (user?.name) return user.name.split(' ')[0];
-    return 'You';
+  /** Full "First Last" per roadmap §0.5, falling back to first name only, then email, then a prompt. */
+  getDisplayName(user: any): string {
+    if (user?.firstName) return [user.firstName, user.lastName].filter(Boolean).join(' ');
+    if (user?.name) return user.name;
+    if (user?.email) return user.email;
+    return 'Add your name';
+  }
+
+  /** Phone-only users with no name on file get prompted to add one. */
+  needsName(user: any): boolean {
+    return !user?.firstName && !user?.name && !user?.email;
   }
 
   signOut() {
