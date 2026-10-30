@@ -6,6 +6,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { ApiService } from '../../services/api.service';
 import { CommerceService } from '../../services/commerce.service';
 import { OnboardingService, PlanRecommendation } from '../../services/onboarding.service';
+import { InviteService } from '../../services/invite.service';
 import { DUE_DATE_LOCK_NOTE, JOURNEY_STATUS_LABELS, JourneyStatus, PROFESSIONAL_TYPE_LABELS, eddBounds, eddProblem } from '../../models/maternal.models';
 import { Plan, PlanQuote } from '../../models/commerce.models';
 import {
@@ -384,10 +385,10 @@ const STAGES: JourneyStatus[] = ['PREGNANCY', 'PRE_DELIVERY', 'POSTPARTUM', 'CHI
     .stepper { list-style: none; display: flex; justify-content: space-between; margin: 0 auto 2rem; max-width: 640px; position: relative; }
     .stepper::before { content: ''; position: absolute; top: 17px; left: 8%; right: 8%; height: 2px; background: var(--border-light); }
     .step { position: relative; display: flex; flex-direction: column; align-items: center; gap: 0.4rem; flex: 1; }
-    .step-dot { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: #fff; border: 2px solid var(--border-light); font-weight: 700; font-size: 0.85rem; color: var(--text-muted); transition: all var(--transition-smooth); z-index: 1; }
+    .step-dot { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: var(--bg-surface); border: 2px solid var(--border-light); font-weight: 700; font-size: 0.85rem; color: var(--text-muted); transition: all var(--transition-smooth); z-index: 1; }
     .step-dot mat-icon { font-size: 1.1rem; width: 1.1rem; height: 1.1rem; }
     .step.current .step-dot { border-color: var(--sage-700); color: var(--sage-900); box-shadow: var(--shadow-glow-trust); }
-    .step.done .step-dot { background: var(--sage-700); border-color: var(--sage-700); color: #fff; }
+    .step.done .step-dot { background: var(--solid-sage-700); border-color: var(--sage-700); color: #fff; }
     .step-label { font-size: 0.75rem; font-weight: 600; color: var(--text-muted); text-align: center; }
     .step.current .step-label { color: var(--sage-900); }
 
@@ -406,12 +407,12 @@ const STAGES: JourneyStatus[] = ['PREGNANCY', 'PRE_DELIVERY', 'POSTPARTUM', 'CHI
 
     .choice-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.6rem; }
     .choice-row { display: flex; gap: 0.5rem; flex-wrap: wrap; }
-    .choice { padding: 0.7rem 1rem; border-radius: var(--radius-md); border: 1.5px solid var(--border-light); background: #fff; font-weight: 600; font-size: 0.88rem; color: var(--text-secondary); transition: all var(--transition-fast); }
+    .choice { padding: 0.7rem 1rem; border-radius: var(--radius-md); border: 1.5px solid var(--border-light); background: var(--bg-surface); font-weight: 600; font-size: 0.88rem; color: var(--text-secondary); transition: all var(--transition-fast); }
     .choice:hover { border-color: var(--sage-500); }
     .choice.selected { border-color: var(--sage-700); background: var(--sage-50); color: var(--sage-900); box-shadow: var(--shadow-glow-trust); }
 
     .check-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem; }
-    .check { display: flex; align-items: center; gap: 0.55rem; padding: 0.6rem 0.8rem; border-radius: var(--radius-md); border: 1.5px solid var(--border-light); background: #fff; font-size: 0.86rem; color: var(--text-secondary); cursor: pointer; transition: all var(--transition-fast); }
+    .check { display: flex; align-items: center; gap: 0.55rem; padding: 0.6rem 0.8rem; border-radius: var(--radius-md); border: 1.5px solid var(--border-light); background: var(--bg-surface); font-size: 0.86rem; color: var(--text-secondary); cursor: pointer; transition: all var(--transition-fast); }
     .check.on { border-color: var(--sage-600); background: var(--sage-50); color: var(--sage-900); }
     .check input { accent-color: var(--sage-700); }
 
@@ -419,7 +420,7 @@ const STAGES: JourneyStatus[] = ['PREGNANCY', 'PRE_DELIVERY', 'POSTPARTUM', 'CHI
     .phone-row span { display: flex; align-items: center; padding: 0 0.75rem; background: var(--sage-50); border: 1.5px solid var(--border-light); border-right: none; border-radius: var(--radius-md) 0 0 var(--radius-md); font-weight: 700; color: var(--sage-800); font-size: 0.9rem; }
     .phone-row .form-control { border-radius: 0 var(--radius-md) var(--radius-md) 0; }
 
-    .error { display: flex; align-items: center; gap: 0.4rem; padding: 0.75rem 1rem; border-radius: var(--radius-md); background: #fdecea; color: #a0281c; border: 1px solid #f5b7b1; font-size: 0.86rem; margin-bottom: 1rem; }
+    .error { display: flex; align-items: center; gap: 0.4rem; padding: 0.75rem 1rem; border-radius: var(--radius-md); background: var(--danger-bg); color: var(--danger-text); border: 1px solid var(--danger-border); font-size: 0.86rem; margin-bottom: 1rem; }
     .actions { display: flex; justify-content: flex-end; margin-top: 1.5rem; }
     .actions.split { justify-content: space-between; }
     .actions.center { justify-content: center; }
@@ -430,45 +431,45 @@ const STAGES: JourneyStatus[] = ['PREGNANCY', 'PRE_DELIVERY', 'POSTPARTUM', 'CHI
     .why-box strong { display: flex; align-items: center; gap: 0.35rem; color: var(--trust-900); margin-bottom: 0.5rem; }
     .why-box ul { margin: 0 0 0.25rem 1.25rem; color: var(--text-secondary); font-size: 0.88rem; display: flex; flex-direction: column; gap: 0.2rem; }
     .billing-toggle { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
-    .billing-toggle button { padding: 0.45rem 1rem; border-radius: var(--radius-full); border: 1.5px solid var(--border-light); background: #fff; font-size: 0.82rem; font-weight: 700; color: var(--text-secondary); }
-    .billing-toggle button.active { background: var(--sage-900); color: #fff; border-color: var(--sage-900); }
+    .billing-toggle button { padding: 0.45rem 1rem; border-radius: var(--radius-full); border: 1.5px solid var(--border-light); background: var(--bg-surface); font-size: 0.82rem; font-weight: 700; color: var(--text-secondary); }
+    .billing-toggle button.active { background: var(--solid-sage-900); color: #fff; border-color: var(--sage-900); }
     .plan-list { display: flex; flex-direction: column; gap: 0.75rem; }
-    .plan-row { position: relative; display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: 1.1rem 1.25rem; border-radius: var(--radius-lg); border: 1.5px solid var(--border-light); background: #fff; flex-wrap: wrap; }
+    .plan-row { position: relative; display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: 1.1rem 1.25rem; border-radius: var(--radius-lg); border: 1.5px solid var(--border-light); background: var(--bg-surface); flex-wrap: wrap; }
     .plan-row.recommended { border-color: var(--sage-600); box-shadow: var(--shadow-md); }
-    .rec-badge { position: absolute; top: -10px; left: 1rem; background: var(--sage-700); color: #fff; font-size: 0.66rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; padding: 0.2rem 0.6rem; border-radius: var(--radius-full); }
+    .rec-badge { position: absolute; top: -10px; left: 1rem; background: var(--solid-sage-700); color: #fff; font-size: 0.66rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; padding: 0.2rem 0.6rem; border-radius: var(--radius-full); }
     .plan-info h3 { font-size: 1.1rem; margin-bottom: 0.15rem; }
     .plan-buy { display: flex; align-items: center; gap: 1rem; }
     .price { font-size: 1.35rem; font-weight: 800; color: var(--sage-900); }
 
     .chip-row { display: flex; gap: 0.5rem; overflow-x: auto; padding-bottom: 0.25rem; margin-bottom: 1.25rem; }
     .chip-row.wrap { flex-wrap: wrap; overflow: visible; }
-    .day-chip { display: flex; flex-direction: column; align-items: center; min-width: 64px; padding: 0.6rem 0.4rem; border-radius: var(--radius-md); border: 1.5px solid var(--border-light); background: #fff; font-size: 0.72rem; color: var(--text-muted); transition: all var(--transition-fast); }
+    .day-chip { display: flex; flex-direction: column; align-items: center; min-width: 64px; padding: 0.6rem 0.4rem; border-radius: var(--radius-md); border: 1.5px solid var(--border-light); background: var(--bg-surface); font-size: 0.72rem; color: var(--text-muted); transition: all var(--transition-fast); }
     .day-chip strong { font-size: 1.2rem; color: var(--sage-900); }
     .day-chip.selected, .time-chip.selected { border-color: var(--sage-700); background: var(--sage-50); box-shadow: var(--shadow-glow-trust); }
-    .time-chip { padding: 0.5rem 0.8rem; border-radius: var(--radius-sm); border: 1.5px solid var(--border-light); background: #fff; font-size: 0.82rem; font-weight: 600; color: var(--sage-900); }
+    .time-chip { padding: 0.5rem 0.8rem; border-radius: var(--radius-sm); border: 1.5px solid var(--border-light); background: var(--bg-surface); font-size: 0.82rem; font-weight: 600; color: var(--sage-900); }
     .callback-box { display: flex; gap: 0.9rem; align-items: flex-start; background: var(--sage-50); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1.1rem 1.25rem; margin: 1rem 0; }
     .callback-box mat-icon { color: var(--sage-700); }
     .callback-box p { margin: 0.25rem 0 0; }
-    .proto { display: flex; align-items: center; gap: 0.35rem; font-size: 0.78rem; color: #92610a; background: #fff8eb; border: 1px solid #fbd38d; border-radius: var(--radius-md); padding: 0.55rem 0.8rem; }
+    .proto { display: flex; align-items: center; gap: 0.35rem; font-size: 0.78rem; color: var(--warn-text); background: var(--warn-bg); border: 1px solid var(--warn-border); border-radius: var(--radius-md); padding: 0.55rem 0.8rem; }
 
     .quote-note { font-size: 0.86rem; color: var(--sage-900); background: var(--sage-50); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 0.55rem 0.8rem; margin: 0.5rem 0 1rem; }
-    .lock-note { font-size: 0.8rem; color: #92610a; margin-top: 0.5rem; }
-    .field-error { display: block; font-size: 0.8rem; color: #a0281c; margin-top: 0.25rem; }
-    .health-box { border: 1.5px solid var(--border-light); border-radius: var(--radius-md); padding: 1rem 1.1rem; margin: 1rem 0; background: #fff; }
+    .lock-note { font-size: 0.8rem; color: var(--warn-text); margin-top: 0.5rem; }
+    .field-error { display: block; font-size: 0.8rem; color: var(--danger-text); margin-top: 0.25rem; }
+    .health-box { border: 1.5px solid var(--border-light); border-radius: var(--radius-md); padding: 1rem 1.1rem; margin: 1rem 0; background: var(--bg-surface); }
     .health-head { display: flex; align-items: center; gap: 0.4rem; color: var(--sage-900); margin-bottom: 0.4rem; }
     .consent-doc { margin: 0.5rem 0; font-size: 0.82rem; }
     .consent-doc summary { cursor: pointer; color: var(--trust-700); font-weight: 600; }
     .consent-doc-body { white-space: pre-line; color: var(--text-secondary); margin-top: 0.4rem; }
-    .lang-chip { border: 1.5px solid var(--border-light); background: #fff; border-radius: var(--radius-full); padding: 0.35rem 0.8rem; font-size: 0.82rem; font-weight: 600; color: var(--text-secondary); cursor: pointer; }
-    .lang-chip.selected { background: var(--sage-700); border-color: var(--sage-700); color: #fff; }
+    .lang-chip { border: 1.5px solid var(--border-light); background: var(--bg-surface); border-radius: var(--radius-full); padding: 0.35rem 0.8rem; font-size: 0.82rem; font-weight: 600; color: var(--text-secondary); cursor: pointer; }
+    .lang-chip.selected { background: var(--solid-sage-700); border-color: var(--sage-700); color: #fff; }
     .lang-other { display: flex; gap: 0.5rem; align-items: center; margin-top: 0.5rem; max-width: 22rem; }
     .time-chip .with { display: block; font-size: 0.7rem; font-weight: 500; opacity: 0.8; }
     .coordinator-card { display: flex; gap: 0.75rem; align-items: center; margin-top: 0.75rem; padding: 0.75rem 0.9rem; border-radius: var(--radius-md); background: var(--sage-50); border: 1px solid var(--border-subtle); }
     .coordinator-card img, .coord-avatar { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
-    .coord-avatar { display: flex; align-items: center; justify-content: center; background: var(--sage-700); color: #fff; font-weight: 800; }
+    .coord-avatar { display: flex; align-items: center; justify-content: center; background: var(--solid-sage-700); color: #fff; font-weight: 800; }
     .block { display: flex; align-items: center; gap: 0.25rem; }
     .doc-list { display: flex; flex-direction: column; gap: 0.6rem; margin-bottom: 1.5rem; }
-    .doc { border: 1.5px solid var(--border-light); border-radius: var(--radius-md); background: #fff; }
+    .doc { border: 1.5px solid var(--border-light); border-radius: var(--radius-md); background: var(--bg-surface); }
     .doc summary { list-style: none; display: flex; align-items: center; gap: 0.75rem; padding: 0.9rem 1rem; cursor: pointer; }
     .doc summary::-webkit-details-marker { display: none; }
     .doc summary > span { flex: 1; }
@@ -485,7 +486,7 @@ const STAGES: JourneyStatus[] = ['PREGNANCY', 'PRE_DELIVERY', 'POSTPARTUM', 'CHI
     .agree input { accent-color: var(--sage-700); }
 
     .summary { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin: 1.5rem 0; }
-    .summary > div { display: grid; grid-template-columns: auto 1fr; column-gap: 0.65rem; align-items: center; padding: 0.85rem 1rem; border-radius: var(--radius-md); background: #fff; border: 1px solid var(--border-light); }
+    .summary > div { display: grid; grid-template-columns: auto 1fr; column-gap: 0.65rem; align-items: center; padding: 0.85rem 1rem; border-radius: var(--radius-md); background: var(--bg-surface); border: 1px solid var(--border-light); }
     .summary mat-icon { grid-row: span 2; color: var(--sage-700); }
     .summary span { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); }
     .summary strong { font-size: 0.9rem; color: var(--sage-900); }
@@ -502,6 +503,7 @@ export class OnboardingComponent implements OnInit {
   private commerce = inject(CommerceService);
   private router = inject(Router);
   ob = inject(OnboardingService);
+  private invite = inject(InviteService);
 
   steps = ONBOARDING_STEPS;
   stages = STAGES;
@@ -589,6 +591,8 @@ export class OnboardingComponent implements OnInit {
     this.loadError.set(null);
     this.ob.sync().subscribe({
       next: () => {
+        // Consent is granted by the time onboarding loads, so this is where a new mother joins her inviter.
+        this.invite.claimIfPending();
         const saved = this.ob.state().intake;
         if (saved) {
           const { savedAt, ...answers } = saved;

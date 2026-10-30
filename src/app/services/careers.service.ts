@@ -5,7 +5,7 @@ import { environment } from '../../environments/environment';
 
 /**
  * Careers + ideas/feedback — API 2366d6c (UI_INTEGRATION_GUIDE.md §14). Applications and feedback are stored by
- * the API and emailed to admin@narturebelle.com (log-only until the API's email provider is configured).
+ * the API and emailed to hello@narturebelle.com (log-only until the API's email provider is configured).
  */
 
 /** Same rules as the API: 7-20 of + digits spaces ( ) - */
@@ -71,7 +71,8 @@ export interface ApplicationForm {
   website: string;
 }
 
-export const RESUME_MAX_BYTES = 5 * 1024 * 1024;
+/** 4 MB: the API is hosted on Vercel, which rejects request bodies over 4.5 MB. */
+export const RESUME_MAX_BYTES = 4 * 1024 * 1024;
 export const RESUME_ACCEPT = '.pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 
 @Injectable({ providedIn: 'root' })

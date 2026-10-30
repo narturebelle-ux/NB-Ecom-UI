@@ -6,7 +6,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { ApiService } from '../../services/api.service';
 import { CareersService } from '../../services/careers.service';
 
-/** "Share an idea": feedback for the team, emailed to admin@narturebelle.com by the API. */
+/** "Share an idea": feedback for the team, emailed to hello@narturebelle.com by the API. */
 @Component({
   selector: 'app-feedback',
   standalone: true,
@@ -72,10 +72,10 @@ import { CareersService } from '../../services/careers.service';
     .kicker { font-size: 0.78rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--blush-700); }
     h1 { font-size: clamp(1.9rem, 4vw, 2.5rem); color: var(--sage-900); margin: 0.5rem 0; }
     .lead { color: var(--text-secondary); line-height: 1.6; margin-bottom: 1.5rem; }
-    .card { border-radius: var(--radius-lg, 14px); background: #fff; border: 1px solid var(--border-light); padding: 1.4rem; }
+    .card { border-radius: var(--radius-lg, 14px); background: var(--bg-surface); border: 1px solid var(--border-light); padding: 1.4rem; }
     .field { display: flex; flex-direction: column; gap: 0.3rem; margin-bottom: 1rem; border: none; padding: 0; }
     label, legend { font-size: 0.86rem; font-weight: 600; color: var(--sage-900); }
-    .req { color: #a0281c; }
+    .req { color: var(--danger-text); }
     .opt { font-weight: 400; color: var(--text-muted); font-size: 0.78rem; }
     .hint { font-size: 0.74rem; color: var(--text-muted); align-self: flex-end; }
     .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0 1rem; }
@@ -83,7 +83,7 @@ import { CareersService } from '../../services/careers.service';
     .stars button { border: none; background: none; font-size: 1.7rem; line-height: 1; color: var(--border-light); cursor: pointer; padding: 0.1rem; }
     .stars button.on { color: #e0a526; }
     .hp { position: absolute; left: -10000px; width: 1px; height: 1px; opacity: 0; }
-    .error-msg { color: #a0281c; font-size: 0.85rem; margin-bottom: 0.75rem; }
+    .error-msg { color: var(--danger-text); font-size: 0.85rem; margin-bottom: 0.75rem; }
     .done { text-align: center; }
     .done mat-icon { color: var(--blush-700); font-size: 2.2rem; width: 2.2rem; height: 2.2rem; }
     .done h2 { color: var(--sage-900); }
@@ -119,7 +119,7 @@ export class FeedbackComponent {
       error: err => {
         this.sending.set(false);
         this.error.set(err?.status === 429 ? 'Too many messages. Please wait a few minutes.'
-          : err?.status === 404 ? 'Feedback isn’t open on this server yet. Please email admin@narturebelle.com instead.'
+          : err?.status === 404 ? 'Feedback isn’t open on this server yet. Please email hello@narturebelle.com instead.'
           : 'We couldn’t send that. Please try again.');
       }
     });

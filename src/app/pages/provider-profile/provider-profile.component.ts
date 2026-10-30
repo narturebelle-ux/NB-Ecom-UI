@@ -112,21 +112,21 @@ import { Provider, ServiceOffering, Slot, providerInitials } from '../../models/
 
     .status-banner { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; padding: 0.85rem 1.1rem; border-radius: 10px; margin-bottom: 1.5rem; font-size: 0.88rem; font-weight: 600; }
     .status-banner a { text-decoration: underline; color: inherit; }
-    .status-banner.is-warning { background: #fff8eb; color: #92610a; border: 1px solid #fbd38d; }
+    .status-banner.is-warning { background: var(--warn-bg); color: var(--warn-text); border: 1px solid var(--warn-border); }
     .status-banner.is-info { background: var(--trust-50); color: var(--trust-900); border: 1px solid var(--trust-200); }
-    .status-banner.is-success { background: #e8f5ec; color: #1b6b3a; border: 1px solid #b2dfca; }
+    .status-banner.is-success { background: var(--success-bg); color: var(--success-text); border: 1px solid var(--success-border); }
     .sessions-left { display: flex; align-items: center; gap: 0.4rem; font-size: 0.86rem; font-weight: 600; color: var(--trust-700); background: var(--trust-50); border: 1px solid var(--trust-200); border-radius: var(--radius-md); padding: 0.65rem 0.9rem; margin-bottom: 1.5rem; }
 
     .section-title { font-family: var(--font-sans); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-secondary); margin-bottom: 0.85rem; }
     .service-list { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 1.75rem; }
-    .service-option { display: flex; flex-direction: column; align-items: flex-start; gap: 0.2rem; padding: 0.85rem 1.1rem; border-radius: var(--radius-md); border: 1.5px solid var(--border-light); background: #fff; text-align: left; transition: all var(--transition-fast); }
+    .service-option { display: flex; flex-direction: column; align-items: flex-start; gap: 0.2rem; padding: 0.85rem 1.1rem; border-radius: var(--radius-md); border: 1.5px solid var(--border-light); background: var(--bg-surface); text-align: left; transition: all var(--transition-fast); }
     .service-option strong { font-size: 0.9rem; color: var(--sage-900); }
     .service-option span { font-size: 0.78rem; color: var(--text-muted); }
     .service-option.selected { border-color: var(--sage-700); box-shadow: var(--shadow-glow-trust); }
     .single-service { display: flex; align-items: center; gap: 0.4rem; font-size: 0.88rem; color: var(--text-secondary); margin-bottom: 1.75rem; }
 
     .slots-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; }
-    .slot-btn { display: flex; flex-direction: column; gap: 0.15rem; padding: 0.75rem; border-radius: var(--radius-md); border: 1.5px solid var(--border-light); background: #fff; cursor: pointer; transition: all var(--transition-fast); }
+    .slot-btn { display: flex; flex-direction: column; gap: 0.15rem; padding: 0.75rem; border-radius: var(--radius-md); border: 1.5px solid var(--border-light); background: var(--bg-surface); cursor: pointer; transition: all var(--transition-fast); }
     .slot-btn:hover:not(:disabled) { border-color: var(--sage-600); background: var(--sage-50); transform: translateY(-2px); }
     .slot-btn:disabled { opacity: 0.5; cursor: not-allowed; }
     .slot-day { font-size: 0.75rem; color: var(--text-muted); font-weight: 600; }

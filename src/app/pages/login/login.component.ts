@@ -214,8 +214,8 @@ import { RecaptchaVerifier, GoogleAuthProvider, AuthCredential } from 'firebase/
       align-items: center;
       justify-content: center;
       padding: 3rem 1rem;
-      background: radial-gradient(circle at 20% 30%, rgba(251, 230, 221, 0.45) 0%, transparent 50%),
-                  radial-gradient(circle at 80% 70%, rgba(226, 237, 230, 0.45) 0%, transparent 50%);
+      background: radial-gradient(circle at 20% 30%, var(--glow-blush) 0%, transparent 50%),
+                  radial-gradient(circle at 80% 70%, var(--glow-sage) 0%, transparent 50%);
     }
     .login-container {
       max-width: 520px;
@@ -224,7 +224,7 @@ import { RecaptchaVerifier, GoogleAuthProvider, AuthCredential } from 'firebase/
     .login-box {
       padding: 2.5rem;
       border-radius: var(--radius-xl);
-      background: #ffffff;
+      background: var(--bg-surface);
       box-shadow: 0 20px 45px rgba(27, 51, 39, 0.08);
       border: 1px solid var(--border-light);
     }
@@ -234,7 +234,7 @@ import { RecaptchaVerifier, GoogleAuthProvider, AuthCredential } from 'firebase/
     }
     .next-steps { list-style: none; padding: 0.85rem 1rem; margin: 0 0 1.5rem; display: flex; flex-direction: column; gap: 0.5rem; background: var(--sage-50); border: 1px solid var(--sage-100); border-radius: var(--radius-md); }
     .next-steps li { display: flex; align-items: center; gap: 0.6rem; font-size: 0.85rem; color: var(--sage-900); }
-    .next-steps span { width: 22px; height: 22px; flex-shrink: 0; border-radius: 50%; display: grid; place-items: center; background: var(--sage-700); color: #fff; font-size: 0.72rem; font-weight: 700; }
+    .next-steps span { width: 22px; height: 22px; flex-shrink: 0; border-radius: 50%; display: grid; place-items: center; background: var(--solid-sage-700); color: #fff; font-size: 0.72rem; font-weight: 700; }
     .switch-page { text-align: center; font-size: 0.88rem; color: var(--text-secondary); margin: 1.5rem 0 0; }
     .switch-page a { font-weight: 700; color: var(--sage-700); }
     .logo-icon {
@@ -258,8 +258,8 @@ import { RecaptchaVerifier, GoogleAuthProvider, AuthCredential } from 'firebase/
 
     /* Configuration status boxes */
     .firebase-guide-box {
-      background: #fff8eb;
-      border: 1px solid #fbd38d;
+      background: var(--warn-bg);
+      border: 1px solid var(--warn-border);
       border-radius: var(--radius-md);
       padding: 0.85rem 1rem;
       margin-bottom: 1.25rem;
@@ -271,8 +271,8 @@ import { RecaptchaVerifier, GoogleAuthProvider, AuthCredential } from 'firebase/
       margin-bottom: 0.35rem;
     }
     .badge-warning {
-      background: #feebc8;
-      color: #744210;
+      background: var(--warn-bg);
+      color: var(--warn-text);
       font-size: 0.72rem;
       padding: 0.2rem 0.6rem;
       border-radius: var(--radius-full);
@@ -280,8 +280,8 @@ import { RecaptchaVerifier, GoogleAuthProvider, AuthCredential } from 'firebase/
       text-transform: uppercase;
     }
     .badge-mandatory {
-      background: #dcfce7;
-      color: #166534;
+      background: var(--success-bg);
+      color: var(--success-text);
       font-size: 0.72rem;
       padding: 0.2rem 0.6rem;
       border-radius: var(--radius-full);
@@ -290,16 +290,16 @@ import { RecaptchaVerifier, GoogleAuthProvider, AuthCredential } from 'firebase/
     }
     .guide-text {
       font-size: 0.8rem;
-      color: #4a5568;
+      color: var(--text-secondary);
       line-height: 1.45;
       margin: 0;
     }
     .guide-text code {
-      background: #edf2f7;
+      background: var(--bg-subtle);
       padding: 0.15rem 0.35rem;
       border-radius: 4px;
       font-size: 0.75rem;
-      color: #2d3748;
+      color: var(--text-primary);
     }
 
     .link-notice {
@@ -349,7 +349,7 @@ import { RecaptchaVerifier, GoogleAuthProvider, AuthCredential } from 'firebase/
       justify-content: center;
       gap: 0.75rem;
       padding: 0.85rem 1.25rem;
-      background: #ffffff;
+      background: var(--bg-surface);
       border: 1.5px solid var(--border-color);
       border-radius: var(--radius-pill);
       font-size: 0.95rem;
@@ -389,7 +389,7 @@ import { RecaptchaVerifier, GoogleAuthProvider, AuthCredential } from 'firebase/
     }
     .or-divider span {
       position: relative;
-      background: #fff;
+      background: var(--bg-surface);
       padding: 0 0.75rem;
       font-size: 0.7rem;
       font-weight: 700;
@@ -403,7 +403,7 @@ import { RecaptchaVerifier, GoogleAuthProvider, AuthCredential } from 'firebase/
       border: 1.5px solid var(--border-color);
       border-radius: var(--radius-md);
       overflow: hidden;
-      background: #fff;
+      background: var(--bg-surface);
     }
     .country-prefix {
       padding: 0.65rem 0.85rem;

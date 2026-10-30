@@ -131,9 +131,9 @@ import { OnboardingService } from '../../services/onboarding.service';
 
     .filters { border-radius: var(--radius-lg); padding: 1.25rem; margin-bottom: 2rem; display: flex; flex-direction: column; gap: 1rem; }
     .type-pills { display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: center; }
-    .pill { padding: 0.45rem 0.9rem; border-radius: var(--radius-full); border: 1.5px solid var(--border-light); background: #fff; font-size: 0.82rem; font-weight: 600; color: var(--text-secondary); cursor: pointer; transition: all var(--transition-fast); }
+    .pill { padding: 0.45rem 0.9rem; border-radius: var(--radius-full); border: 1.5px solid var(--border-light); background: var(--bg-surface); font-size: 0.82rem; font-weight: 600; color: var(--text-secondary); cursor: pointer; transition: all var(--transition-fast); }
     .pill:hover { border-color: var(--sage-500); }
-    .pill.active { background: var(--sage-900); color: #fff; border-color: var(--sage-900); }
+    .pill.active { background: var(--solid-sage-900); color: #fff; border-color: var(--sage-900); }
     .filter-row { display: flex; gap: 0.75rem; flex-wrap: wrap; justify-content: center; align-items: center; }
     .search-field { display: flex; align-items: center; gap: 0.35rem; color: var(--text-muted); }
     .search-field .form-control { width: 170px; padding: 0.5rem 0.75rem; }
@@ -149,7 +149,7 @@ import { OnboardingService } from '../../services/onboarding.service';
     .meta-row { display: flex; gap: 0.85rem; font-size: 0.78rem; color: var(--text-muted); margin-top: auto; flex-wrap: wrap; }
     .meta-row span { display: inline-flex; align-items: center; gap: 0.2rem; }
 
-    .state-box { display: flex; align-items: center; justify-content: center; gap: 0.6rem; flex-wrap: wrap; max-width: 560px; margin: 0 auto; padding: 1rem 1.25rem; border-radius: var(--radius-md); background: #fdecea; color: #a0281c; border: 1px solid #f5b7b1; font-size: 0.9rem; }
+    .state-box { display: flex; align-items: center; justify-content: center; gap: 0.6rem; flex-wrap: wrap; max-width: 560px; margin: 0 auto; padding: 1rem 1.25rem; border-radius: var(--radius-md); background: var(--danger-bg); color: var(--danger-text); border: 1px solid var(--danger-border); font-size: 0.9rem; }
     .state-box.empty { flex-direction: column; background: var(--bg-glass-strong); color: var(--text-secondary); border-color: var(--border-light); padding: 2.5rem 1.5rem; text-align: center; }
     .field-hint { font-size: 0.8rem; color: var(--text-muted); }
 

@@ -7,6 +7,11 @@ The UI-side counterpart to `NB-Ecomm-API/UI_INTEGRATION_GUIDE.md`. That file tel
 **If you only read one section, read this one.** The sections below are a dated history; where an older section
 disagrees with this one, this one wins.
 
+**🔴 PRODUCTION BLOCKER (2026-10-30): the API is not deployed anywhere, so sign-in fails on www.narturebelle.com.**
+The UI is live on Vercel. There is no public API, and the live build's `API_URL` points at the website itself. Full details and
+the deployment plan are in §29. **Update 2026-10-30:** the API is being deployed on **Vercel's Container runtime (beta)** in project `nb-ecom-api`, at `api.narturebelle.com` (API 7b7fbad).
+The user is configuring it now. Waiting for the API agent to send the base URL once `/health/db` answers over https.
+
 **UI stage: Phase 6 integration (2026-10-30).** All phases 0–6 are built in the UI against your real endpoints.
 Phase 7 is blocked on product-owner decisions. The roadmap's "Where we are now" table has the per-phase status.
 
@@ -596,6 +601,23 @@ Other: the 403 interceptor treats `HEALTH_DATA` like `RECORDS_STORAGE` (an optio
 Profile → Consents lists `HEALTH_DATA` automatically with grant/revoke. **Not built yet:** viewing or editing the health profile from Profile
 after onboarding (it's only editable through "Edit my details" during onboarding). Say if you want that.
 
+## 32. Referral links & the free Premium reward (2026-10-30, branch feature/referrals)
+
+*(Placed here to keep merges with the other open branches conflict-free.)*
+
+Built against API UI_INTEGRATION_GUIDE.md §16 (branch `feature/referrals`, 960c86f). The rule: 5 friends who join through her link and buy a plan
+earn her a free 9-month Premium plan, once. Friends pay normally.
+- **Arriving with `?ref=CODE`** (any page): `App` stores the code in localStorage (`nb_ref`), then `GET /referrals/{code}` shows the banner
+  "**Asha R.** invited you to NartureBelle™" with a "Create your account" button. A 404 clears the stored code.
+- **Claiming:** `POST /me/referral/claim {code}` runs once she's signed in **and** `GET /me` confirmed there are no pending consents (app-shell
+  effect), and again when onboarding loads, since consent is always granted by then. On success: "Welcome! You joined through Asha R.'s invite."
+  The stored code is cleared on success or any 4xx except 401/403 (`REFERRAL_SELF`, `REFERRAL_ALREADY_CLAIMED`, `REFERRAL_NOT_NEW_CUSTOMER`, bad code).
+- **`/invite`** (`authGuard`), using `GET /me/referral`:
+  - a hero ("Bring 5 moms. Get Premium free.") and her link (`https://www.narturebelle.com/?ref=CODE`) with Copy / WhatsApp / native share
+  - 5 heart slots filled to `qualified`, the friend list with each friend's purchase state, and a **celebration card** when `rewardGranted`
+- **Nav:** "Invite" for onboarded members (mobile: "Invite friends · get Premium free"), and "Invite friends" in the footer.
+- **Idea share links get `?ref=` too:** on `feature/idea-pool`, links carry her code when she's signed in, so idea sharing also earns referral credit.
+
 ## 26. Health-rule review (Part D) and the professional portal (2026-10-30)
 
 **Product-owner decisions (2026-10-30):**
@@ -633,6 +655,29 @@ There's no UI for creating rules yet (admins use the API); say if you want one.
 - Onboarding's `HEALTH_DATA` check is version-aware too. Once you publish the new consent text as a new version, mothers are asked again,
   and Profile shows it as "Not granted" with a Grant button.
 
+## 31. Idea pool & Idea Impact (2026-10-30, branch feature/idea-pool)
+
+*(Placed here rather than at the end to keep merges with the other open branches conflict-free.)*
+
+Built against API UI_INTEGRATION_GUIDE.md §15 (branch `feature/idea-impact`, d4ade2d). It replaces "Share an idea": `/feedback` now
+redirects to `/ideas`, and the footer link reads "Idea pool". The old feedback page and `POST /feedback` still exist but are no longer linked.
+- **`/ideas`** (public, campaign style):
+  - a hero with open/closed status (`meta.open`) and a 3-step "share → rally → we make it real" explainer
+  - a **post panel**: 5 category tiles from `meta.categories`, a title (≤120), a description (≤1500) and `featureConsent`, plus a note that she appears
+    publicly as first name + last initial. There are no name or email fields. Signed-out users get sign-up/sign-in buttons that return to `/ideas`.
+  - after posting, the new idea's card with share buttons
+  - the pool with category chips and Most votes / Newest sorting
+  - "Your ideas" (`GET /me/ideas`)
+  - the **Idea Impact** band (`GET /ideas/impact`)
+- **Idea card:** progress shown as `paidVotes / voteGoal` ("member votes") plus total votes, and status badges (Under review, Made real, Goal reached,
+  Your idea). Vote/unvote (hidden on her own ideas and when the pool is closed) uses `votedByMe` and swaps in the returned Idea. Share options:
+  **WhatsApp**, **Copy link**, and the device share sheet where available. They all point to `/ideas/{id}`.
+- **`/ideas/:id`** (public share target): a big card, plus "Help this idea happen" steps (create an account → choose a care plan, since only
+  members with a plan count → pass it on), with sign-up/sign-in buttons that return to the idea.
+- **`/admin/ideas`** (`adminGuard`): filter by status, then Under review / Implemented (needs a public impact note, `IMPACT_NOTE_REQUIRED`) / Decline / Reopen.
+- **Errors:** `IDEA_SELF_VOTE`, `IDEA_NOT_OPEN`, `IDEA_POOL_CLOSED` and 429 (5 ideas a day) get friendly messages. Signed-out votes go to sign-in.
+- **Nav:** "Ideas" for onboarded members, "Idea pool" for visitors on desktop, and "Ideas admin" for admins.
+
 ## 27. Due-date-based plan pricing (2026-10-30)
 
 Against API 70296dd (final contract). Not verified live, because it's waiting on the :8080 restart (V27).
@@ -650,8 +695,13 @@ Against API 70296dd (final contract). Not verified live, because it's waiting on
 
 ## 28. Careers, job applications and "Share an idea" (2026-10-30)
 
+> **Mailboxes (product-owner decision, 2026-10-30):** `hello@narturebelle.com` receives careers applications and "Share an idea"
+> (the API sends there by default since 9864c5f). `support-care@narturebelle.com` is for support and care, and is the only contact shown
+> elsewhere on the site (footer). `admin@narturebelle.com` doesn't exist, and `admin-info-team@` is internal and must never appear in the UI.
+> The UI copy was updated to match.
+
 **Product-owner decisions:**
-- Applications are delivered **through the API**: stored, then emailed with the résumé to `admin@narturebelle.com`.
+- Applications are delivered **through the API**: stored, then emailed with the résumé to `hello@narturebelle.com`.
 - Roles are posted and closed from an **admin screen**.
 - A **feedback / ideas form** goes to the same inbox.
 
@@ -674,9 +724,58 @@ Against API 70296dd (final contract). Not verified live, because it's waiting on
   - view applicants, and open a résumé through a short-lived URL (`GET /admin/careers/applications/{id}/resume-url`)
 - Links: Careers and "Share an idea" in the footer. A "Careers admin" navbar link for admins.
 
+## 29. Production deployment: live-site findings and the plan (2026-10-30)
+
+**Live UI:** `https://www.narturebelle.com`, on Vercel project `nb-ecom-ui` (team NartureRangers), deployed from GitHub `main`.
+`narturebelle.com` and `http://` 308-redirect to `https://www.narturebelle.com`. Deep links (`/auth/login`, `/care`, `/plans`, `/about`,
+`/careers`, `/journey`) return 200 thanks to the SPA rewrite in `vercel.json`.
+
+**Findings (checked from outside, 2026-10-30):**
+
+| Check | Result |
+|---|---|
+| Firebase authorized domains | ✅ `narturebelle.com` and `www.narturebelle.com` added by the user (project `narturebelle-5ae7a`) |
+| Live build's `API_URL` | ❌ `http://www.narturebelle.com/api/v1`, the **website itself**. Vercel serves `index.html` (200 `text/html`) for `GET /api/v1/*` and returns 405 for `POST /api/v1/auth/firebase`. It's also `http://` on an `https://` page, so the browser blocks it as mixed content. |
+| A public API | ❌ None. `api.narturebelle.com` doesn't resolve, NB-Ecomm-API has never been deployed, and nothing has been deployed since 2366d6c. |
+| What users see | Firebase sign-in succeeds, then `POST /auth/firebase` never reaches an API, so sign-in fails. Every data page (plans, care, careers, journey…) shows its "couldn't load" state. Static pages (landing, About) work. |
+| Vercel project `nb-ecom-api` | Originally returned 404 on every path. A standard Vercel project can't run Spring Boot. **Superseded:** the user and the API agent are switching this project to Vercel's **Container** framework preset (beta), which runs the API's Dockerfile. **Keep this project.** (The UI agent's earlier "delete it" advice is withdrawn.) |
+
+**Vercel deployments:**
+- Production is **PR #6 (`b7e73c8`)**, which is Ready. It contains everything up to Careers, but with the broken `API_URL`.
+- **PR #8 (`82a93af`, `main`) fails on purpose.** UI commit `d9a15c7` added a guard to `scripts/generate-env.js`: when `VERCEL` is set, a production
+  build fails if `API_URL` isn't `https://`, is `localhost`, or is the website's own domain (unless `vercel.json` proxies `/api/`). So a broken
+  `API_URL` can no longer be published, and Vercel keeps the last good deployment live. Local `ng serve -c production` is unaffected.
+- Several **Preview** builds fail in about 6s, most likely because the 7 env vars were saved for Production only. This doesn't affect the live site.
+
+**Plan (revised 2026-10-30: Vercel Container runtime instead of Cloud Run, at the user's request):**
+1. **API agent + user:**
+   - Deploy NB-Ecomm-API (`firebase-setup` merged to `main`, root Dockerfile, API 7b7fbad) on **Vercel project `nb-ecom-api`** with framework preset **Container** (beta).
+   - The image listens on `PORT=80`, Vercel's default. Rate limits read `X-Real-IP`. Firebase Admin uses `FIREBASE_SERVICE_ACCOUNT_BASE64` (set on the `nb-ecom-api` project, never on `nb-ecom-ui`).
+   - Use the custom domain **`api.narturebelle.com`**, added to the `nb-ecom-api` project.
+   - **Cold starts:** Vercel scales the container to zero after about 5 idle minutes, so the first request can take about 20–40s. The UI calls `GET /features` on every page load, which also wakes the API, so it's usually warm by the time someone signs in.
+   - **Request bodies are capped at 4.5 MB by Vercel**, so the résumé limit is now **4 MB** on both sides (UI updated 2026-10-30). Records uploads aren't affected: they go straight to Supabase storage through a signed URL.
+   - **Prod config:**
+     - the prod DB, confirmed by the user
+     - all secrets as env vars on the **`nb-ecom-api`** Vercel project (marked Sensitive), **never on `nb-ecom-ui`**, whose variables are built into public JavaScript
+     - the prod profile, with migrations V1–V28 on boot
+     - a health check at `/health/db`
+   - CORS already allows `https://www.narturebelle.com` and `https://narturebelle.com`.
+   - API-side prep: CRLF-safe `gradlew` in the Dockerfile and a container-sized JVM heap.
+   - Env vars the API reads (set on Vercel project **`nb-ecom-api`**): `SPRING_PROFILES_ACTIVE`, `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `PORT`, `FIREBASE_SERVICE_ACCOUNT_BASE64`.
+     For email and records it also reads `RESEND_API_KEY`, `EMAIL_FROM`, `CAREERS_ADMIN_EMAIL`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` and `SUPABASE_STORAGE_BUCKET`.
+     Optional ones: `RECORDS_*`, `SCHEDULING_ENABLED`, `MOCK_PAYMENT_WEBHOOK_SECRET`.
+2. **API agent → UI agent:** send the public base URL once `/health/db` answers over https.
+3. **User (guided by the UI agent):** in Vercel `nb-ecom-ui`, set `API_URL=https://api.narturebelle.com/api/v1` (or the given URL) for **Production and Preview**,
+   and tick the other six vars for Preview too. Then **Redeploy** the PR #8 deployment. The guard will then pass.
+4. **UI agent:** verify the live site end to end: API calls reach the API with no CORS errors, and Firebase → `/auth/firebase` → `/me` sign-in works.
+
 ## 9. Open requests to the API agent
 
 *(Running list — mark resolved items with ✅ and a date rather than deleting them, so the history stays visible.)*
+
+- 🔵 **2026-10-30** — **Cold-start 500s (unconfirmed).** The UI agent saw `/me` and `/me/journeys` answer 500 once while the container was booting. They were 401 a minute later, and the API agent couldn't reproduce it. The UI already retries (status 0/502/503/504 ×3, 500 ×1; commit 9a06d50). **If one is caught live, capture the headers and body:** an `x-vercel-error` header or text/plain means it's Vercel's proxy; `{"code":"INTERNAL_ERROR"}` means it's the app's startup path.
+
+- 🔴 **2026-10-30** — **Deploy the API to production (blocker for the live site):** now on **Vercel Container runtime**, project `nb-ecom-api`, at `api.narturebelle.com` (API 7b7fbad), with the prod DB and secrets on that project. Send the UI agent the public URL once `/health/db` answers over https (§29). Résumé limit lowered to 4 MB on both sides.
 
 - ✅ **2026-10-28** — `firstName`/`lastName` auto-populated on first signup (Google display name / email-derived guess). Confirmed working, see §3.
 - ✅ **2026-10-28** — Phase 0/1 contract: `/me`, Consent (1.1), Journey (1.2), Dashboard (1.3) are all live and the UI is built against them and verified end-to-end against a live run, see §10-12. Nothing open from Phase 1.
@@ -690,7 +789,7 @@ Against API 70296dd (final contract). Not verified live, because it's waiting on
 - 🟡 **2026-10-30** — ✅ committed in API 0fe423d (prod included, rows labelled as sample); live after the :8080 restart. **Sample data in every list (product-owner request).** Seed providers (every professional type, a few cities/languages, VIRTUAL + PHYSICAL offerings, open slots), call slots with coordinators, Joy Circle events, BABY_CARE products, and any other list that can be empty, including under `prod`. Mark sample rows as sample in the data.
 - 🟡 **2026-10-30** — Parts A–C committed (API 688c3a4 matching, 294b906 coordinators, 839a38c health profile + `HEALTH_DATA`), and the UI is built against them (§25). Live after the :8080 restart, then UI verification. **Part D ✅ shipped (88879af); UI review screen built (§26).** Go-ahead given 2026-10-30 with these product-owner decisions: rules are approved once (not per mother); approvers are MEDICAL_REVIEWER staff or verified (VERIFIED/ACTIVE) GYNECOLOGIST, NUTRITIONIST or REGISTERED_NURSE providers. The UI will add a review screen for approvers once the review endpoints are defined.
 - ✅ **2026-10-30** — Professional portal shipped (API 30c56a9) and the UI is reconciled (§26). `HEALTH_DATA` v2 with care-team wording is live (V26). ~~Please send final shapes for `GET /provider/me`, `GET /provider/bookings`, `GET /provider/bookings/{id}/product-suggestions`, `GET`/`PUT /provider/bookings/{id}/product-recommendations` and `GET /me/care-recommendations`, plus a new `HEALTH_DATA` consent version whose text covers care-team access~~.
-- ✅ **2026-10-30** — Careers + feedback shipped (API 2366d6c), UI reconciled (§28). Live after the :8080 restart (V28). Email stays log-only until the user sets up Resend. ~~**Careers + feedback (product owner):** jobs, applications with résumé upload, feedback; stored and emailed to admin@narturebelle.com via an email provider (account + SPF/DKIM DNS needed from the user). Please send final shapes (§28).~~
+- ✅ **2026-10-30** — Careers + feedback shipped (API 2366d6c), UI reconciled (§28). Live after the :8080 restart (V28). Email stays log-only until the user sets up Resend. ~~**Careers + feedback (product owner):** jobs, applications with résumé upload, feedback; stored and emailed to hello@narturebelle.com via an email provider (account + SPF/DKIM DNS needed from the user). Please send final shapes (§28).~~
 - 🟡 **2026-10-30** — The `/providers` enum-filter 500 is believed to be a stale-jar artefact (the jar was rebuilt under the running PID). It should clear on restart, and bad values are now 400 (f213f95). Re-check after the restart.
 - 🔴 **2026-10-30** — **Bug:** `GET /providers?professionalType=…` and `?modality=…` return 500 `INTERNAL_ERROR` on :8080. The unfiltered list, `city` and `language` return 200. The Care page's type chips and "Virtual only" checkbox hit this and show "We couldn't load care professionals right now". Needs the API log (the catch-all handler logs the stack trace).
 - ✅ **2026-10-30** — `RECORDS_STORAGE` consent type added (API 43c0d60) and the UI now grants and reads it (§0).
@@ -699,3 +798,12 @@ Against API 70296dd (final contract). Not verified live, because it's waiting on
 - ℹ️ **2026-10-30** — Admin catalog CRUD (`/admin/hospitals|products|checklists`, API 05cffec) noted. **No admin UI yet.** Building one is a product-owner decision; until then, manage the catalog through the API or Swagger.
 - 🟡 **2026-10-29** — Phase 6: planned contract received from nb-ecomm-api-a5, UI built against it (§23). 6.1-6.3 running on 8080 (2026-10-30). 6.4 and 6.5 committed in 848ac87. **Still open: rebuild/restart 8080 so they go live, then UI verification** (§0).
 - ✅ **2026-10-30** — ~~Phases 5-6 contracts (see §15) needed to reconcile the UI's self-mocked implementations~~. Providers/booking, Records and Reminders are reconciled (§17, §19, §21), and Child/vaccination is built against the real contract (§23). No self-mocked feature data is left in the UI (§24). Phase 7 (real payments) is still blocked on product-owner decisions.
+
+## 30. Branching workflow (product-owner rule, 2026-10-30)
+
+Both repos follow the same rule: every new feature or change gets its own branch (`feature/…`, `fix/…`, `docs/…`), cut from the latest
+`origin/develop`, then a pull request into `develop`. Releases go `develop` → `main` by pull request, and `main` is production (Vercel).
+There are no direct commits to `develop` or `main`, and old branches aren't reused (`Feature/phase-0-1` here, `firebase-setup` in the API).
+**One feature at a time:** finish a feature on its branch (follow-up fixes included), have the product owner check the app's
+behavior, merge it into `develop` after approval, and only then cut the next branch from the updated `origin/develop`. Never run
+two feature branches at once and never stack them. Full rules are in this repo's README.md, "Branching workflow".

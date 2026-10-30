@@ -27,7 +27,7 @@ import {
           <div>
             <span class="kicker">Admin</span>
             <h1>Careers</h1>
-            <p class="hint">Open roles appear on <a routerLink="/careers">/careers</a>. Every application is also emailed to admin&#64;narturebelle.com.</p>
+            <p class="hint">Open roles appear on <a routerLink="/careers">/careers</a>. Every application is also emailed to hello&#64;narturebelle.com.</p>
           </div>
           @if (!editing()) { <button class="btn btn-primary" (click)="startNew()"><mat-icon class="icon-sm">add</mat-icon> Post a role</button> }
         </header>
@@ -127,7 +127,7 @@ import {
     .kicker { font-size: 0.78rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--trust-700); }
     h1 { font-size: 2rem; color: var(--sage-900); }
     h2 { font-size: 1.15rem; color: var(--sage-900); margin-bottom: 0.8rem; }
-    .card { border-radius: var(--radius-lg, 14px); background: #fff; border: 1px solid var(--border-light); padding: 1.1rem 1.25rem; margin-bottom: 0.8rem; }
+    .card { border-radius: var(--radius-lg, 14px); background: var(--bg-surface); border: 1px solid var(--border-light); padding: 1.1rem 1.25rem; margin-bottom: 0.8rem; }
     .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0 1rem; }
     .field { display: flex; flex-direction: column; gap: 0.3rem; margin-bottom: 0.85rem; }
     label { font-size: 0.82rem; font-weight: 600; color: var(--sage-900); }
@@ -138,16 +138,16 @@ import {
     .job-main { display: flex; flex-direction: column; gap: 0.2rem; }
     .job-main strong { color: var(--sage-900); }
     .status { font-size: 0.7rem; font-weight: 800; text-transform: uppercase; padding: 0.15rem 0.55rem; border-radius: var(--radius-full); background: var(--sage-50); color: var(--text-muted); }
-    .status.open { background: var(--sage-700); color: #fff; }
+    .status.open { background: var(--solid-sage-700); color: #fff; }
     .applicants { border-top: 1px solid var(--border-subtle); margin-top: 0.75rem; padding-top: 0.5rem; }
     .applicant { display: flex; justify-content: space-between; gap: 1rem; padding: 0.6rem 0; border-bottom: 1px solid var(--border-subtle); }
     .applicant > div { display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; }
     .applicant strong { color: var(--sage-900); }
-    .not-emailed { display: inline-block; margin-left: 0.35rem; font-size: 0.68rem; font-weight: 800; text-transform: uppercase; color: #92610a; background: #fff8eb; border: 1px solid #fbd38d; border-radius: 999px; padding: 0 0.4rem; }
+    .not-emailed { display: inline-block; margin-left: 0.35rem; font-size: 0.68rem; font-weight: 800; text-transform: uppercase; color: var(--warn-text); background: var(--warn-bg); border: 1px solid var(--warn-border); border-radius: 999px; padding: 0 0.4rem; }
     .note { font-size: 0.82rem; color: var(--text-secondary); white-space: pre-line; margin-top: 0.25rem; }
     .links { display: flex; gap: 0.75rem; font-size: 0.82rem; }
     .hint { font-size: 0.8rem; color: var(--text-muted); }
-    .error-msg { color: #a0281c; font-size: 0.85rem; }
+    .error-msg { color: var(--danger-text); font-size: 0.85rem; }
     .empty { text-align: center; color: var(--text-secondary); }
   `]
 })

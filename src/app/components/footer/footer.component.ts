@@ -32,9 +32,10 @@ import { FeatureDirective } from '../../directives/feature.directive';
             <li *appFeature="'joyCircle'"><a routerLink="/joy-circle">Joy Circle events</a></li>
             <li><a routerLink="/about">About us</a></li>
             <li><a routerLink="/careers">Careers</a></li>
-            <li><a routerLink="/feedback">Share an idea</a></li>
+            <li><a routerLink="/ideas">Idea pool</a></li>
             <li><a routerLink="/journey">My Journey</a></li>
             <li><a routerLink="/plans">Care Plans</a></li>
+            <li><a routerLink="/invite">Invite friends</a></li>
             <li><a routerLink="/care">Find a Professional</a></li>
             <li><a routerLink="/checklists">Checkup & Scan Checklist</a></li>
           </ul>
@@ -96,7 +97,7 @@ import { FeatureDirective } from '../../directives/feature.directive';
   `,
   styles: [`
     .main-footer {
-      background-color: var(--sage-900);
+      background-color: var(--solid-sage-900);
       color: #e2ede6;
       margin-top: 5rem;
       border-top: 1px solid rgba(255, 255, 255, 0.08);
@@ -168,7 +169,7 @@ import { FeatureDirective } from '../../directives/feature.directive';
       text-decoration: underline;
     }
     .coming-soon {
-      color: #8c9e94;
+      color: var(--text-muted);
       font-size: 0.85rem;
       font-style: italic;
     }
@@ -197,7 +198,7 @@ import { FeatureDirective } from '../../directives/feature.directive';
       font-size: 1.3rem;
       width: 1.3rem;
       height: 1.3rem;
-      color: var(--sage-200);
+      color: var(--solid-sage-200);
     }
     .contact-item strong {
       display: block;

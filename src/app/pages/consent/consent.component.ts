@@ -77,7 +77,7 @@ import { ConsentDocument } from '../../models/maternal.models';
       padding: 2.5rem;
       text-align: center;
       border-radius: var(--radius-xl);
-      background: #fff;
+      background: var(--bg-surface);
       box-shadow: 0 20px 45px rgba(27, 51, 39, 0.08);
       border: 1px solid var(--border-light);
     }
@@ -132,9 +132,9 @@ import { ConsentDocument } from '../../models/maternal.models';
       text-align: left;
     }
     .status-banner.is-error {
-      background: #fdecea;
-      color: #a0281c;
-      border: 1px solid #f5b7b1;
+      background: var(--danger-bg);
+      color: var(--danger-text);
+      border: 1px solid var(--danger-border);
     }
 
     .btn { padding: 0.8rem 1.25rem; border-radius: 10px; font-weight: 700; font-size: 0.95rem; cursor: pointer; border: none; transition: all 0.2s; }

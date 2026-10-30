@@ -63,7 +63,7 @@ const RESEND_COOLDOWN_SECONDS = 60;
       padding: 2.5rem;
       text-align: center;
       border-radius: var(--radius-xl);
-      background: #fff;
+      background: var(--bg-surface);
       box-shadow: 0 20px 45px rgba(27, 51, 39, 0.08);
       border: 1px solid var(--border-light);
     }
@@ -77,14 +77,14 @@ const RESEND_COOLDOWN_SECONDS = 60;
       margin-bottom: 1.25rem;
       font-size: 0.88rem;
       font-weight: 600;
-      background: #e8f5ec;
-      color: #1b6b3a;
-      border: 1px solid #b2dfca;
+      background: var(--success-bg);
+      color: var(--success-text);
+      border: 1px solid var(--success-border);
     }
     .status-banner.is-error {
-      background: #fdecea;
-      color: #a0281c;
-      border-color: #f5b7b1;
+      background: var(--danger-bg);
+      color: var(--danger-text);
+      border-color: var(--danger-border);
     }
 
     .actions { display: flex; flex-direction: column; gap: 0.6rem; }
@@ -102,10 +102,10 @@ const RESEND_COOLDOWN_SECONDS = 60;
     .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
     .btn-outline {
       background: transparent;
-      border: 1.5px solid #d5e0d8;
-      color: #4a6355;
+      border: 1.5px solid var(--border-light);
+      color: var(--text-secondary);
     }
-    .btn-outline:hover:not(:disabled) { background: #f0f5f1; }
+    .btn-outline:hover:not(:disabled) { background: var(--bg-subtle); }
     .btn-outline:disabled { opacity: 0.6; cursor: not-allowed; }
     .btn-link {
       background: none;

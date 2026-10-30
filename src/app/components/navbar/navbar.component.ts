@@ -5,6 +5,7 @@ import { ApiService } from '../../services/api.service';
 import { FirebaseAuthService } from '../../services/firebase-auth.service';
 import { NotificationService } from '../../services/notification.service';
 import { OnboardingService } from '../../services/onboarding.service';
+import { ThemeService } from '../../services/theme.service';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { FeatureDirective } from '../../directives/feature.directive';
@@ -39,6 +40,7 @@ import { FeatureDirective } from '../../directives/feature.directive';
         @if (isAdmin()) {
           <nav class="nav-links">
             <a routerLink="/admin/careers" routerLinkActive="active" class="nav-link"><mat-icon class="icon-sm">admin_panel_settings</mat-icon> Careers admin</a>
+            <a routerLink="/admin/ideas" routerLinkActive="active" class="nav-link"><mat-icon class="icon-sm">lightbulb</mat-icon> Ideas admin</a>
           </nav>
         }
         @if (isProfessional()) {
@@ -57,6 +59,7 @@ import { FeatureDirective } from '../../directives/feature.directive';
         @if (api.currentUser() && !isProfessional() && onboarding.onboarded()) {
         <nav class="nav-links">
           <a routerLink="/journey" routerLinkActive="active" class="nav-link">My Journey</a>
+          <a routerLink="/invite" routerLinkActive="active" class="nav-link invite-nav"><mat-icon class="icon-sm">card_giftcard</mat-icon> Invite</a>
           <a *appFeature="'careBooking'" routerLink="/care" routerLinkActive="active" class="nav-link">Care</a>
           <a *appFeature="'recordsVault'" routerLink="/records" routerLinkActive="active" class="nav-link">Records</a>
           <a *appFeature="'childTracker'" routerLink="/child" routerLinkActive="active" class="nav-link">Child</a>
@@ -64,6 +67,7 @@ import { FeatureDirective } from '../../directives/feature.directive';
           <a *appFeature="'productRecommendations'" routerLink="/recommendations" routerLinkActive="active" class="nav-link">For you</a>
           <a *appFeature="'aiAssistant'" routerLink="/ai" routerLinkActive="active" class="nav-link">AI</a>
           <a routerLink="/plans" routerLinkActive="active" class="nav-link">Plans</a>
+          <a routerLink="/ideas" routerLinkActive="active" class="nav-link">Ideas</a>
 
 
           <a routerLink="/checklists" routerLinkActive="active" class="nav-link highlight-link">
@@ -82,6 +86,12 @@ import { FeatureDirective } from '../../directives/feature.directive';
 
         <!-- Right Header Actions -->
         <div class="header-actions">
+          <button type="button" class="cart-btn theme-toggle" (click)="theme.toggle()"
+                  [attr.aria-label]="theme.theme() === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'"
+                  [attr.title]="theme.theme() === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'">
+            <mat-icon class="cart-icon">{{ theme.theme() === 'dark' ? 'light_mode' : 'dark_mode' }}</mat-icon>
+          </button>
+
           <!-- Cart Drawer Toggle -->
           <button *appFeature="'productRecommendations'" (click)="toggleCart()" class="cart-btn" aria-label="Shopping Cart">
             <mat-icon class="cart-icon">shopping_bag</mat-icon>
@@ -144,6 +154,7 @@ import { FeatureDirective } from '../../directives/feature.directive';
               }
             </div>
           } @else {
+            <a routerLink="/ideas" class="btn btn-ghost-nav btn-sm about-link">Idea pool</a>
             <a routerLink="/about" class="btn btn-ghost-nav btn-sm about-link">About us</a>
             <a routerLink="/auth/login" class="btn btn-ghost-nav btn-sm login-btn">Sign in</a>
             <a routerLink="/auth/signup" class="btn btn-primary btn-sm get-started-btn">Get started</a>
@@ -172,6 +183,7 @@ import { FeatureDirective } from '../../directives/feature.directive';
 
           @if (api.currentUser()) {
             <a routerLink="/journey" (click)="isMobileOpen = false" class="mobile-nav-link"><mat-icon class="icon-sm">eco</mat-icon> My Journey</a>
+            <a routerLink="/invite" (click)="isMobileOpen = false" class="mobile-nav-link"><mat-icon class="icon-sm">card_giftcard</mat-icon> Invite friends · get Premium free</a>
             <a *appFeature="'careBooking'" routerLink="/care" (click)="isMobileOpen = false" class="mobile-nav-link">Care</a>
             <a *appFeature="'recordsVault'" routerLink="/records" (click)="isMobileOpen = false" class="mobile-nav-link">Records</a>
             <a *appFeature="'childTracker'" routerLink="/child" (click)="isMobileOpen = false" class="mobile-nav-link">Child</a>
@@ -317,7 +329,7 @@ import { FeatureDirective } from '../../directives/feature.directive';
       border-radius: var(--radius-full);
     }
     .stage-pill.active {
-      background: #fff;
+      background: var(--bg-surface);
       box-shadow: 0 2px 6px rgba(46,79,62,0.1);
       color: var(--sage-900);
     }
@@ -325,14 +337,14 @@ import { FeatureDirective } from '../../directives/feature.directive';
       width: 6px;
       height: 6px;
       border-radius: 50%;
-      background-color: var(--blush-700);
+      background-color: var(--solid-blush-700);
       display: inline-block;
     }
 
     .highlight-link { color: var(--sage-800); font-weight: 700; }
     .onboarding-link { color: var(--sage-900); font-weight: 700; background: var(--sage-50); border: 1px solid var(--sage-200); border-radius: var(--radius-full); padding: 0.4rem 0.9rem; }
     .nurse-link { color: var(--blush-800); font-weight: 700; }
-    .doctor-link { color: #a32222; font-weight: 700; }
+    .doctor-link { color: var(--danger-text); font-weight: 700; }
 
     .header-actions {
       display: flex;
@@ -366,7 +378,7 @@ import { FeatureDirective } from '../../directives/feature.directive';
       position: absolute;
       top: -4px;
       right: -4px;
-      background-color: var(--blush-700);
+      background-color: var(--solid-blush-700);
       color: #fff;
       font-size: 0.7rem;
       font-weight: 800;
@@ -376,7 +388,7 @@ import { FeatureDirective } from '../../directives/feature.directive';
       display: flex;
       align-items: center;
       justify-content: center;
-      border: 2px solid #fff;
+      border: 2px solid var(--bg-surface);
     }
 
     /* Reminder bell (roadmap §Phase 5) */
@@ -398,7 +410,7 @@ import { FeatureDirective } from '../../directives/feature.directive';
       position: absolute;
       top: calc(100% + 8px);
       right: 0;
-      background: #fff;
+      background: var(--bg-surface);
       border: 1px solid var(--border-light);
       border-radius: 12px;
       box-shadow: 0 8px 30px rgba(27,51,39,0.12);
@@ -417,7 +429,7 @@ import { FeatureDirective } from '../../directives/feature.directive';
       margin-bottom: 0.25rem;
     }
     .bell-item:hover { background: var(--sage-50); }
-    .bell-item.unread { background: #f0f7f3; }
+    .bell-item.unread { background: var(--sage-50); }
     .bell-item strong { display: block; font-size: 0.85rem; color: var(--sage-900); }
     .bell-item p { font-size: 0.78rem; color: var(--text-secondary); margin: 0.2rem 0 0.35rem; }
     .dismiss-btn { background: none; border: none; color: var(--text-muted); font-size: 0.72rem; text-decoration: underline; cursor: pointer; padding: 0; }
@@ -439,7 +451,7 @@ import { FeatureDirective } from '../../directives/feature.directive';
     }
     .user-pill:hover, .menu-open .user-pill {
       border-color: var(--sage-700);
-      background: #e8f0ec;
+      background: var(--sage-100);
     }
     .user-avatar { font-size: 1.3rem; width: 1.3rem; height: 1.3rem; color: var(--sage-700); }
     .user-name {
@@ -459,7 +471,7 @@ import { FeatureDirective } from '../../directives/feature.directive';
       position: absolute;
       top: calc(100% + 8px);
       right: 0;
-      background: #fff;
+      background: var(--bg-surface);
       border: 1px solid var(--border-light);
       border-radius: 12px;
       box-shadow: 0 8px 30px rgba(27,51,39,0.12);
@@ -494,8 +506,8 @@ import { FeatureDirective } from '../../directives/feature.directive';
       border-top: 1px solid var(--border-subtle);
       margin: 0;
     }
-    .sign-out-item { color: #a32222; }
-    .sign-out-item:hover { background: #fdecea; }
+    .sign-out-item { color: var(--danger-text); }
+    .sign-out-item:hover { background: var(--danger-bg); }
 
     .mobile-toggle {
       display: none;
@@ -533,7 +545,7 @@ import { FeatureDirective } from '../../directives/feature.directive';
       gap: 0.5rem;
     }
     .mobile-stage-btn {
-      background: #fff;
+      background: var(--bg-surface);
       padding: 0.6rem;
       border-radius: var(--radius-md);
       border: 1px solid var(--border-light);
@@ -562,6 +574,7 @@ export class NavbarComponent {
   firebaseAuth = inject(FirebaseAuthService);
   notifications = inject(NotificationService);
   onboarding = inject(OnboardingService);
+  theme = inject(ThemeService);
   isProfessional = computed(() => isProfessionalUser(this.api.currentUser()));
   /** Reviewers include MEDICAL_REVIEWER staff, who aren't professionals, so they get the link even outside the portal. */
   isReviewer = computed(() => isReviewerUser(this.api.currentUser()));

@@ -11,6 +11,8 @@ import { onboardingGuard } from './guards/onboarding.guard';
 import { landingGuard } from './guards/landing.guard';
 
 export const routes: Routes = [
+  // "Share an idea" is now the Idea pool; first match wins, so this takes over the old /feedback route below.
+  { path: 'feedback', redirectTo: 'ideas', pathMatch: 'full' },
   // Public landing page for visitors; signed-in users are sent to My Journey (or onboarding).
   { path: '', component: HomeComponent, title: 'NartureBelle™ | Professional-Led Care, Pregnancy to Postpartum', canActivate: [landingGuard] },
 
@@ -152,6 +154,14 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/joy-circle/joy-circle.component').then(m => m.JoyCircleComponent)
   },
 
+  // Referral links: her invite link and progress toward the free Premium plan (5 friends who buy a plan).
+  {
+    path: 'invite',
+    title: 'Invite Friends | NartureBelle™',
+    canActivate: [authGuard],
+    loadComponent: () => import('./pages/invite/invite.component').then(m => m.InviteComponent)
+  },
+
   // Professional portal: sessions, in-session product recommendations (Essential / Optional).
   {
     path: 'provider/sessions/:id',
@@ -171,6 +181,16 @@ export const routes: Routes = [
     title: 'Health Rule Review | NartureBelle™',
     canActivate: [reviewerGuard],
     loadComponent: () => import('./pages/health-rule-review/health-rule-review.component').then(m => m.HealthRuleReviewComponent)
+  },
+
+  // Idea pool & Idea Impact (public; posting/voting need sign-in). /ideas/:id is the share target.
+  { path: 'ideas', title: 'Idea Pool | NartureBelle™', loadComponent: () => import('./pages/ideas/ideas.component').then(m => m.IdeasComponent) },
+  { path: 'ideas/:id', title: 'An Idea for Moms | NartureBelle™', loadComponent: () => import('./pages/idea-detail/idea-detail.component').then(m => m.IdeaDetailComponent) },
+  {
+    path: 'admin/ideas',
+    title: 'Ideas Admin | NartureBelle™',
+    canActivate: [adminGuard],
+    loadComponent: () => import('./pages/admin-ideas/admin-ideas.component').then(m => m.AdminIdeasComponent)
   },
 
   // No dedicated /cart route exists yet — cart is a navbar drawer, not a routed page.
