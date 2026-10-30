@@ -6,6 +6,7 @@ import { FirebaseAuthService } from '../../services/firebase-auth.service';
 import { NotificationService } from '../../services/notification.service';
 import { OnboardingService } from '../../services/onboarding.service';
 import { ThemeService } from '../../services/theme.service';
+import { CommerceService } from '../../services/commerce.service';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { FeatureDirective } from '../../directives/feature.directive';
@@ -65,7 +66,7 @@ import { FeatureDirective } from '../../directives/feature.directive';
           <a *appFeature="'joyCircle'" routerLink="/joy-circle" routerLinkActive="active" class="nav-link">Joy Circle</a>
           <a *appFeature="'productRecommendations'" routerLink="/recommendations" routerLinkActive="active" class="nav-link">For you</a>
           <a *appFeature="'aiAssistant'" routerLink="/ai" routerLinkActive="active" class="nav-link">AI</a>
-          <a routerLink="/plans" routerLinkActive="active" class="nav-link">Plans</a>
+          @if (!hasActivePlan()) { <a routerLink="/plans" routerLinkActive="active" class="nav-link">Plans</a> }
 
 
           <a routerLink="/checklists" routerLinkActive="active" class="nav-link highlight-link">
@@ -198,7 +199,9 @@ import { FeatureDirective } from '../../directives/feature.directive';
             <a *appFeature="'productRecommendations'" routerLink="/recommendations" (click)="isMobileOpen = false" class="mobile-nav-link">For you</a>
             <a *appFeature="'aiAssistant'" routerLink="/ai" (click)="isMobileOpen = false" class="mobile-nav-link">AI</a>
           }
-          <a routerLink="/plans" (click)="isMobileOpen = false" class="mobile-nav-link"><mat-icon class="icon-sm">workspace_premium</mat-icon> Care Plans</a>
+          @if (!hasActivePlan()) {
+            <a routerLink="/plans" (click)="isMobileOpen = false" class="mobile-nav-link"><mat-icon class="icon-sm">workspace_premium</mat-icon> Care Plans</a>
+          }
 
           <hr class="mobile-divider">
           <a routerLink="/checklists" (click)="isMobileOpen = false" class="mobile-nav-link">
@@ -604,6 +607,10 @@ export class NavbarComponent {
   notifications = inject(NotificationService);
   onboarding = inject(OnboardingService);
   theme = inject(ThemeService);
+  private commerce = inject(CommerceService);
+  /** Once she has a plan, it lives on My Journey instead of the nav. If the check fails, Plans stays visible. */
+  hasActivePlan = computed(() => this.commerce.entitlements().some(e => !this.commerce.isExpired(e)));
+  private planCheckedFor: number | null = null;
   isProfessional = computed(() => isProfessionalUser(this.api.currentUser()));
   /** Reviewers include MEDICAL_REVIEWER staff, who aren't professionals, so they get the link even outside the portal. */
   isReviewer = computed(() => isReviewerUser(this.api.currentUser()));
@@ -618,6 +625,15 @@ export class NavbarComponent {
     // Reminders are generated server-side every 15 min; load them once the app is unlocked.
     effect(() => {
       if (this.api.currentUser() && this.onboarding.onboarded()) untracked(() => this.notifications.refresh());
+    });
+    effect(() => {
+      const id = this.api.currentUser()?.id ?? null;
+      if (id === this.planCheckedFor) return;
+      this.planCheckedFor = id;
+      untracked(() => {
+        this.commerce.entitlements.set([]);
+        if (id) this.commerce.loadEntitlements().subscribe({ error: () => {} });
+      });
     });
   }
 
