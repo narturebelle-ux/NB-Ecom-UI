@@ -31,7 +31,7 @@ cd NB-Ecomm-UI
 cp .env.staging.example .env.staging   # already has the real NonProd Firebase config baked in
 npm run serve:staging                  # generates environment.staging.ts, then ng serve -c staging
 ```
-Defaults to `http://localhost:4200`, pointed at `http://localhost:8085/api/v1` (matches your default `PORT`). `.env.staging.example` is already filled in with the real Firebase web config — no secrets to request, per your own note that these values are safe to ship client-side.
+Defaults to `http://localhost:4200`, pointed at `http://localhost:8080/api/v1` (start the API with `PORT=8080`; its own default is 8085). `.env.staging.example` is already filled in with the real Firebase web config — no secrets to request, per your own note that these values are safe to ship client-side.
 
 Local dev without a running backend at all also works (`npm start` / `ng serve`, no `.env` needed) — that config intentionally keeps a placeholder Firebase key, which makes `FirebaseAuthService` fall into a client-only mock mode (fake Google user, OTP always `123456`) with zero setup. Useful for frontend-only work; not useful for testing anything that actually hits your API.
 

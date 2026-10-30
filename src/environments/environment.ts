@@ -4,7 +4,7 @@
 // and are swapped in via the "fileReplacements" entries in angular.json.
 export const environment = {
   production: false,
-  apiUrl: 'http://localhost:8085/api/v1',
+  apiUrl: 'http://localhost:8080/api/v1',
   firebase: {
     // Replace with your Firebase Web configuration from Firebase Console:
     // Firebase Console -> Project Settings -> General -> Your apps -> Web app
