@@ -7,6 +7,17 @@ The UI-side counterpart to `NB-Ecomm-API/UI_INTEGRATION_GUIDE.md`. That file tel
 **If you only read one section, read this one.** The sections below are a dated history; where an older section
 disagrees with this one, this one wins.
 
+**UI stage: Phase 6 integration (2026-10-30).** All phases 0–6 are built in the UI against your real endpoints.
+Phase 7 is blocked on product-owner decisions. The roadmap's "Where we are now" table has the per-phase status.
+
+**Live check of :8080 (2026-10-30, unauthenticated):**
+- Responding: `/features`, `/plans` (3), `/products` (15), `/checklists` (9), `/hospitals` (5), `/doctor-sessions` (3),
+  `/joy-circle/events` (3), `/consent-documents/current`. Every `/me/**` route and `/records` return 401 without a token, as expected.
+- **It is still the old jar.** `/consent-documents/current` has no `RECORDS_STORAGE` and no `required` field,
+  `/nurse-companion/packages` still returns 500, and there's no `Access-Control-Expose-Headers`. Until it's restarted from the latest
+  `firebase-setup`, **Records uploads are blocked in the UI**, because the page waits for the `RECORDS_STORAGE` agreement.
+- `/providers` returns `[]`, so the care-team directory is empty and no booking can be made. There's no admin endpoint for adding providers yet.
+
 **Where things run (local):**
 - API: `http://localhost:8080/api/v1`. The UI is built against this. Start the API with `PORT=8080`, because `application.yml` still defaults to 8085.
   An old API build (5af528d) may still be listening on 8085; nothing uses it.
