@@ -39,7 +39,7 @@ import { Idea, IdeaStatus, IdeasService } from '../../services/ideas.service';
                 <span class="st">{{ statusLabel(i.status) }}</span>
               </div>
               <p class="desc">{{ i.description }}</p>
-              <p class="votes"><strong>{{ i.paidVotes | number }}</strong> / {{ i.voteGoal | number }} member votes · {{ i.votes | number }} total @if (i.goalReached) { · <strong class="goal">goal reached</strong> }</p>
+              <p class="votes"><strong>{{ i.paidVotes | number }}</strong> / {{ i.voteGoal | number }} paid votes · {{ i.votes - i.paidVotes | number }} unpaid @if (i.goalReached) { · <strong class="goal">goal reached</strong> }</p>
               @if (i.impactNote) { <p class="note"><mat-icon class="icon-sm">celebration</mat-icon> {{ i.impactNote }}</p> }
 
               @if (implementingId() === i.id) {
@@ -119,7 +119,7 @@ export class AdminIdeasComponent implements OnInit {
     this.loading.set(true);
     this.errorMsg.set(null);
     this.ideas.adminList(this.status()).subscribe({
-      next: list => { this.list.set(list); this.loading.set(false); },
+      next: list => { this.list.set([...list].sort((a, b) => b.paidVotes - a.paidVotes)); this.loading.set(false); },
       error: err => {
         this.loading.set(false);
         this.errorMsg.set(err?.status === 403 ? 'Only NartureBelle™ admins can manage ideas.' : err?.status === 404 ? 'The idea pool isn’t available on this server yet.' : 'We couldn’t load ideas.');

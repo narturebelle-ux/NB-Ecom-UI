@@ -55,7 +55,7 @@ import { CareersService, EMPLOYMENT_TYPE_LABELS, Job, WORK_MODE_LABELS } from '.
             <strong>Not looking for a job, but have an idea?</strong>
             <p>We’re early and listening. Tell us what would make NartureBelle™ better.</p>
           </div>
-          <a [routerLink]="commerce.hasActivePlan() ? '/ideas' : '/plans'" class="btn btn-outline btn-sm">{{ commerce.hasActivePlan() ? 'Share an idea' : 'See care plans' }}</a>
+          <a [routerLink]="commerce.canShareIdeas() ? '/ideas' : '/plans'" class="btn btn-outline btn-sm">{{ commerce.canShareIdeas() ? 'Share an idea' : 'See care plans' }}</a>
         </div>
       </section>
     </div>

@@ -15,14 +15,14 @@ import { Idea, IdeasMeta, IdeasService, ideaErrorMessage } from '../../services/
   template: `
     <div class="idea-page">
       <div class="container narrow">
-        @if (commerce.hasActivePlan()) { <a routerLink="/ideas" class="back"><mat-icon class="icon-sm">arrow_back</mat-icon> All ideas</a> }
+        @if (commerce.canShareIdeas()) { <a routerLink="/ideas" class="back"><mat-icon class="icon-sm">arrow_back</mat-icon> All ideas</a> }
 
         @if (loading()) {
           <p class="hint">Loading…</p>
         } @else if (!idea()) {
           <div class="card empty">
             <p>{{ notFound() ? 'This idea isn’t in the pool any more.' : 'We couldn’t load this idea right now.' }}</p>
-            @if (commerce.hasActivePlan()) { <a routerLink="/ideas" class="btn btn-outline btn-sm">See all ideas</a> }
+            @if (commerce.canShareIdeas()) { <a routerLink="/ideas" class="btn btn-outline btn-sm">See all ideas</a> }
           </div>
         } @else {
           <span class="kicker"><mat-icon class="icon-sm">lightbulb</mat-icon> A mom’s idea for NartureBelle™</span>

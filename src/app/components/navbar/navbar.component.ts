@@ -145,7 +145,7 @@ import { FeatureDirective } from '../../directives/feature.directive';
                   <a routerLink="/profile" class="dropdown-item" (click)="isUserMenuOpen = false">
                     <mat-icon class="icon-sm">person</mat-icon> My Profile
                   </a>
-                  @if (hasActivePlan()) {
+                  @if (canShareIdeas()) {
                     <a routerLink="/ideas" class="dropdown-item" (click)="isUserMenuOpen = false">
                       <mat-icon class="icon-sm">lightbulb</mat-icon> Share an Idea
                     </a>
@@ -221,7 +221,7 @@ import { FeatureDirective } from '../../directives/feature.directive';
             <a routerLink="/profile" (click)="isMobileOpen = false" class="mobile-nav-link profile-link">
               <mat-icon class="icon-sm">person</mat-icon> My Profile ({{ getDisplayName(user) }})
             </a>
-            @if (hasActivePlan()) {
+            @if (canShareIdeas()) {
               <a routerLink="/ideas" (click)="isMobileOpen = false" class="mobile-nav-link">
                 <mat-icon class="icon-sm">lightbulb</mat-icon> Share an Idea
               </a>
@@ -612,8 +612,9 @@ export class NavbarComponent {
   onboarding = inject(OnboardingService);
   theme = inject(ThemeService);
   private commerce = inject(CommerceService);
-  /** Once she has a plan, it lives on My Journey instead of the nav, and Share an Idea opens up. If the check fails, Plans stays visible. */
+  /** Once she has a plan, it lives on My Journey instead of the nav, and Share an Idea opens after her first session. If the check fails, Plans stays visible. */
   hasActivePlan = this.commerce.hasActivePlan;
+  canShareIdeas = this.commerce.canShareIdeas;
   private planCheckedFor: number | null = null;
   isProfessional = computed(() => isProfessionalUser(this.api.currentUser()));
   /** Reviewers include MEDICAL_REVIEWER staff, who aren't professionals, so they get the link even outside the portal. */

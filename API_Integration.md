@@ -773,7 +773,8 @@ Against API 70296dd (final contract). Not verified live, because it's waiting on
 
 *(Running list — mark resolved items with ✅ and a date rather than deleting them, so the history stays visible.)*
 
-- 🔴 **2026-10-30** — **API: enforce paid-only ideas on the server.** The UI now limits `/ideas` to users with an unexpired entitlement (§33), but that is not security. `POST /me/ideas` should refuse others. Owner to decide: can non-paying users vote from a shared `/ideas/:id` link, and should `GET /ideas` stay public?
+- 🔴 **2026-10-30** — **API: paid-only ideas (owner's rules in §33).** Add `canPostIdeas`, refuse `POST /me/ideas` with `409 PLAN_REQUIRED`, and stop counting ₹0 referral orders as paid votes.
+- 🟡 **2026-10-30** — **Refund reason.** The owner wants the reason for each refund reviewed. Today only the admin refund endpoint takes a reason; a member request and admin queue are a separate story, and the reason list is needed from the owner.
 
 - 🟡 **2026-10-30** — **Next feature (not started): current plan, upgrade and invoices.** API and UI tasks and the open decisions are in §34.
 
@@ -825,11 +826,14 @@ while any entitlement is unexpired. It stays visible with no plan, an expired pl
 Care Plans link. `FirebaseAuthService.getIdToken()` now awaits `authStateReady()`, so requests right after a page reload carry the restored token rather than
 risking a 401 that signs the user out.
 
-Also on this branch: **Share an Idea is for paying members** (product owner, 2026-10-30). `paidMemberGuard` protects `/ideas` (and `/feedback`, which redirects to it): signed out goes to
-login, no unexpired entitlement goes to `/plans` with a message, a failed check goes home with a "try again" message, and admins always pass. "Paid" means at least one unexpired entitlement
-(`CommerceService.hasActivePlan`), so referral reward plans count. The menu, phone menu, footer and "All ideas" links show only to plan holders; the Careers card offers Care Plans instead.
-`/ideas/:id` stays public because it is the share link friends sign up and buy through.
-**This is only a UI gate.** The API must also reject `POST /me/ideas` (and decide on voting) for users without an active plan; see §9.
+Also on this branch: **Share an Idea is for members who have paid and used a session** (product owner, 2026-10-30). `paidMemberGuard` protects `/ideas` (and `/feedback`, which redirects to it):
+signed out goes to login, a plan with no session yet goes to `/care`, no plan goes to `/plans`, a failed check goes home with a "try again" message, and admins always pass. The menu, phone
+menu, footer and "All ideas" links show only to those who qualify. `/ideas/:id` stays public because it is the share link. Admin ideas shows paid and unpaid votes separately, with the most paid votes first.
+
+Owner's rules: paid for a care plan and done at least one session; referral reward plans don't count; a refunded member stays a user (whether she keeps her sessions is being confirmed); anyone signed in can vote from a shared link, with paid and
+unpaid votes kept apart so paid requests take priority; `GET /ideas` stays public.
+
+**The UI check is interim:** `CommerceService.canShareIdeas` uses `usedSessions > 0`, which also counts booked sessions and referral plans. It must switch to the API's `canPostIdeas`; see §9.
 
 ## 34. Next feature: current plan, upgrade and invoices (backlog, 2026-10-30)
 

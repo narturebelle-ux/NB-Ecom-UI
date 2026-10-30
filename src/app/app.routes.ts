@@ -183,7 +183,7 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/health-rule-review/health-rule-review.component').then(m => m.HealthRuleReviewComponent)
   },
 
-  // Idea pool: paying members only. /ideas/:id stays public because it's the share link friends sign up and buy through.
+  // Idea pool: members who have paid and used a session. /ideas/:id stays public because it's the share link friends sign up and buy through.
   { path: 'ideas', title: 'Idea Pool | NartureBelle™', canActivate: [paidMemberGuard], loadComponent: () => import('./pages/ideas/ideas.component').then(m => m.IdeasComponent) },
   { path: 'ideas/:id', title: 'An Idea for Moms | NartureBelle™', loadComponent: () => import('./pages/idea-detail/idea-detail.component').then(m => m.IdeaDetailComponent) },
   {

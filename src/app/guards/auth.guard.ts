@@ -73,7 +73,7 @@ export const reviewerGuard: CanActivateFn = (_route, state) => {
   return true;
 };
 
-/** Members with an active plan (admins too, to moderate). Everyone else: sign in first, then Plans with an explanation. */
+/** Members who have paid and used a session (admins too, to moderate). Everyone else: sign in first, then the next step with an explanation. */
 export const paidMemberGuard: CanActivateFn = (_route, state) => {
   const api = inject(ApiService);
   const router = inject(Router);
@@ -83,9 +83,9 @@ export const paidMemberGuard: CanActivateFn = (_route, state) => {
   if (isAdminUser(user)) return true;
   return commerce.loadEntitlements().pipe(
     map(() => {
-      if (commerce.hasActivePlan()) return true;
-      api.showToast('Share an Idea is for members with a care plan.');
-      return router.createUrlTree(['/plans']);
+      if (commerce.canShareIdeas()) return true;
+      api.showToast('Share an Idea opens after your first session with a care plan.');
+      return router.createUrlTree([commerce.hasActivePlan() ? '/care' : '/plans']);
     }),
     // A failed check says nothing about her plan, so don't send a paying member to Plans.
     catchError(() => {
