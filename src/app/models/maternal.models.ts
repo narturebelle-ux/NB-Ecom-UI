@@ -134,7 +134,8 @@ export interface CartItem {
 
 // --- Phase 1: Consent (roadmap §1.1) ---
 
-export type ConsentDocumentType = 'TERMS' | 'PRIVACY';
+/** RECORDS_STORAGE (API 43c0d60) is optional: never in /me pending, only enforced on record uploads. */
+export type ConsentDocumentType = 'TERMS' | 'PRIVACY' | 'RECORDS_STORAGE';
 
 export interface ConsentDocument {
   id: number;
@@ -144,6 +145,8 @@ export interface ConsentDocument {
   bodyMarkdown: string;
   effectiveAt?: string;
   active: boolean;
+  /** true for TERMS/PRIVACY (sign-up consent step); false for RECORDS_STORAGE. */
+  required?: boolean;
 }
 
 export interface Consent {

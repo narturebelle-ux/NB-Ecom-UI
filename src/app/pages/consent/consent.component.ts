@@ -170,7 +170,7 @@ export class ConsentComponent implements OnInit {
         }
         this.api.getConsentDocuments().subscribe({
           next: (docs) => {
-            this.documents.set(docs.filter(d => this.pendingTypes.includes(d.type)));
+            this.documents.set(docs.filter(d => d.required !== false && this.pendingTypes.includes(d.type)));
             this.loading.set(false);
           },
           error: () => {

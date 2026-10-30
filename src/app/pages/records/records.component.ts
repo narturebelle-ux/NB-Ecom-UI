@@ -6,6 +6,7 @@ import { RouterLink } from '@angular/router';
 import { RecordsService } from '../../services/records.service';
 import { ProviderService } from '../../services/provider.service';
 import { ApiService } from '../../services/api.service';
+import { ConsentDocument } from '../../models/maternal.models';
 import {
   HealthRecord,
   RECORD_CATEGORY_LABELS,
@@ -16,7 +17,8 @@ import {
 } from '../../models/records.models';
 import { Booking, Provider } from '../../models/provider.models';
 
-const CONSENT_KEY = 'nb_records_storage_consent';
+/** Browser-only flag from before the API had RECORDS_STORAGE; cleared once the real grant is checked. */
+const LEGACY_CONSENT_KEY = 'nb_records_storage_consent';
 const CATEGORIES: RecordCategory[] = ['SCAN', 'LAB_REPORT', 'PRESCRIPTION', 'DISCHARGE_SUMMARY', 'OTHER'];
 
 /** Records vault against the real API (UI_INTEGRATION_GUIDE.md §10). */
@@ -48,8 +50,16 @@ const CATEGORIES: RecordCategory[] = ['SCAN', 'LAB_REPORT', 'PRESCRIPTION', 'DIS
               <input type="checkbox" [(ngModel)]="consentChecked" />
               I agree to NartureBelle storing the documents I upload, as described above.
             </label>
-            <p class="hint"><span class="demo-badge">Device only</span> This agreement is remembered on this device only. The API doesn't record a storage consent yet.</p>
-            <button class="btn btn-primary" [disabled]="!consentChecked" (click)="giveConsent()">Continue</button>
+            @if (storageDoc(); as doc) {
+              <details class="consent-doc">
+                <summary>Read the full {{ doc.title || 'records storage agreement' }} (version {{ doc.version }})</summary>
+                <p class="consent-doc-body">{{ doc.bodyMarkdown }}</p>
+              </details>
+            }
+            @if (consentError()) { <p class="error-msg">{{ consentError() }}</p> }
+            <button class="btn btn-primary" [disabled]="!consentChecked || !storageDoc() || consentSaving()" (click)="giveConsent()">
+              {{ consentSaving() ? 'Saving…' : 'Continue' }}
+            </button>
           </div>
         } @else {
           <div class="card glass upload-box">
@@ -186,6 +196,10 @@ const CATEGORIES: RecordCategory[] = ['SCAN', 'LAB_REPORT', 'PRESCRIPTION', 'DIS
     .consent-points { list-style: none; text-align: left; max-width: 520px; margin: 0 auto 1.5rem; display: flex; flex-direction: column; gap: 0.65rem; }
     .consent-points li { display: flex; gap: 0.6rem; align-items: flex-start; font-size: 0.9rem; color: var(--text-secondary); }
     .consent-points mat-icon { color: var(--trust-700); margin-top: 0.15rem; }
+    .consent-doc { margin: 0.75rem 0; font-size: 0.85rem; }
+    .error-msg { color: #a0281c; font-size: 0.85rem; margin: 0.5rem 0; }
+    .consent-doc summary { cursor: pointer; color: var(--trust-700); font-weight: 600; }
+    .consent-doc-body { white-space: pre-line; color: var(--text-secondary); margin-top: 0.5rem; }
     .consent-row { display: flex; gap: 0.6rem; justify-content: center; font-size: 0.88rem; color: var(--text-secondary); margin-bottom: 1.25rem; align-items: center; }
 
     .upload-row { display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center; }
@@ -233,6 +247,9 @@ export class RecordsComponent implements OnInit {
   categories = CATEGORIES;
   hasConsented = signal(false);
   consentChecked = false;
+  storageDoc = signal<ConsentDocument | null>(null);
+  consentSaving = signal(false);
+  consentError = signal<string | null>(null);
 
   loading = signal(true);
   list = signal<HealthRecord[]>([]);
@@ -254,7 +271,7 @@ export class RecordsComponent implements OnInit {
   private providerNames = new Map<number, string>();
 
   ngOnInit() {
-    try { this.hasConsented.set(localStorage.getItem(CONSENT_KEY) === 'true'); } catch { /* blocked storage */ }
+    this.loadStorageConsent();
     this.refresh();
     this.providerService.getProviders().subscribe({
       next: (ps) => {
@@ -277,10 +294,36 @@ export class RecordsComponent implements OnInit {
     });
   }
 
+  /** RECORDS_STORAGE consent (API 43c0d60): read from GET /me/consents, document text from /consent-documents/current. */
+  private loadStorageConsent() {
+    try { localStorage.removeItem(LEGACY_CONSENT_KEY); } catch { /* blocked storage */ }
+    this.api.getMyConsents().subscribe({
+      next: status => this.hasConsented.set(
+        status.history.some(c => c.documentType === 'RECORDS_STORAGE' && !c.revokedAt)
+      ),
+      error: () => {}
+    });
+    this.api.getConsentDocuments().subscribe({
+      next: docs => this.storageDoc.set(docs.find(d => d.type === 'RECORDS_STORAGE') ?? null),
+      error: () => this.consentError.set('We couldn’t load the storage agreement. Please reload the page.')
+    });
+  }
+
   giveConsent() {
-    if (!this.consentChecked) return;
-    try { localStorage.setItem(CONSENT_KEY, 'true'); } catch { /* ignore */ }
-    this.hasConsented.set(true);
+    const doc = this.storageDoc();
+    if (!this.consentChecked || !doc) return;
+    this.consentSaving.set(true);
+    this.consentError.set(null);
+    this.api.grantConsent('RECORDS_STORAGE', doc.version).subscribe({
+      next: () => {
+        this.consentSaving.set(false);
+        this.hasConsented.set(true);
+      },
+      error: () => {
+        this.consentSaving.set(false);
+        this.consentError.set('We couldn’t save your agreement. Please try again.');
+      }
+    });
   }
 
   categoryLabel(c: RecordCategory): string {
@@ -324,6 +367,12 @@ export class RecordsComponent implements OnInit {
       },
       error: (err) => {
         this.uploading.set(false);
+        if (err?.error?.code === 'CONSENT_REQUIRED' && (err.error.pending ?? []).includes('RECORDS_STORAGE')) {
+          // Agreement was revoked (e.g. from Profile) since this page loaded: ask again.
+          this.hasConsented.set(false);
+          this.consentChecked = false;
+          return;
+        }
         if (err?.status === 401 || err?.status === 403) return;
         if (err?.error?.code === 'VALIDATION_FAILED') {
           this.uploadError.set(err.error.message || 'That file type or size isn’t supported.');

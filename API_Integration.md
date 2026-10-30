@@ -19,8 +19,8 @@ the user sees an error. The UI no longer substitutes seed data or fakes success,
 - **Seed rows in your DB are what users see.** Products, checklists, hospitals, doctor sessions and Joy Circle events
   all come from your seed data. Where seed content is a placeholder, please mark it in the data itself
   (as Joy Circle's `hostBio` already does), because the UI shows it as-is.
-- Only three things are still simulated or saved only in the browser, each labelled on screen: the plan payment (your
-  `mockSucceedPath`/`mockFailPath`), the product basket (no ordering endpoint) and the Records storage agreement (no consent type).
+- Only two things are still simulated, each labelled on screen: the plan payment (your `mockSucceedPath`/`mockFailPath`)
+  and the product basket (no ordering endpoint). The Records storage agreement now uses your `RECORDS_STORAGE` consent (UI 2026-10-30).
   §24 has the full table of which endpoint each screen calls.
 
 **Phase 6 status:**
@@ -44,10 +44,15 @@ Content has to come from admin tooling (you're adding admin CRUD next).
 **What the UI needs from you, in priority order:**
 1. **Rebuild and restart the API on 8080 from `firebase-setup`** (848ac87 + 0cd5f32). Until then 6.4, 6.5 and the
    nurse-packages fix aren't live and the UI can't verify them.
-2. **Expose `Content-Disposition` in CORS** (`Access-Control-Expose-Headers: Content-Disposition`), so the browser can read
-   the export's filename (`narturebelle-export-<date>.json`). Without it the UI builds the same name itself, so this is low priority.
-3. **Add a records-storage consent type** (e.g. `RECORDS_STORAGE` in `/consent-documents/current`, accepted by `POST /me/consents`),
-   so the Records agreement before the first upload is saved server-side, not just on the device. (You've said it's next after admin CRUD.)
+2. ~~Expose `Content-Disposition` in CORS~~. Done in 2fa71d8 (live after the rebuild). The UI reads the filename and falls back to the same pattern.
+3. ~~Records-storage consent type~~. Done in 43c0d60. **The UI now uses it** (live after the rebuild):
+   - The Records page reads the grant from `GET /me/consents`.
+   - It shows the `RECORDS_STORAGE` document text and grants it with `POST /me/consents {documentType:"RECORDS_STORAGE", documentVersion}`.
+   - The old browser flag is deleted, so users who agreed in the browser are asked once more.
+   - If an upload gets 403 `CONSENT_REQUIRED` with `pending:["RECORDS_STORAGE"]`, the page asks again. It doesn't redirect.
+   - The global interceptor only redirects to the sign-up consent step when `pending` has something other than `RECORDS_STORAGE`.
+   - The sign-up consent step only shows documents with `required !== false`.
+   - Profile → Consents lists all three documents with grant/revoke.
 4. ~~`GET /nurse-companion/packages` returns 500~~. Fixed in 0cd5f32 (live after the rebuild).
 4. When an item ships, note it in `UI_INTEGRATION_GUIDE.md` (or message the UI session). The UI then verifies it with a
    signed-in test user. **Feature flags are the product owner's call:** don't flip `childTracker`/`joyCircle`/`productRecommendations` on your own.
@@ -557,7 +562,6 @@ Firebase sign-ins (fake tokens and OTP `123456`). If the API or Firebase is unav
 |---|---|---|
 | Plan payment | The API's own mock gateway (`mockSucceedPath`/`mockFailPath`) until Phase 7 | "Demo payment" badge + "nothing is charged" |
 | Product basket / cart checkout | No product-ordering endpoint exists | "Demo" banner. The button says "Place demo order (nothing is charged)". No shipping or security claims. |
-| Records storage agreement | The API has no records-storage consent type (only TERMS/PRIVACY) | "Device only" badge |
 | Plan recommendation during onboarding | Client-side rule by design (decided with the API) | Already says it's a suggestion, not a clinical judgement |
 
 Seeded content that comes from the real API but is still a placeholder (labelled where the API marks it): consent and
@@ -577,8 +581,9 @@ onboarding documents (DRAFT, pending legal review), the vaccine schedule (PENDIN
 - ✅ **2026-10-29** — Phase 5 contract shipped and the UI is reconciled against it (§21).
 - ✅ **2026-10-29** — `careBooking` and `recordsVault` flags turned on (V14); `GET /features` confirmed. `callbackRequestedAt` added to the onboarding status and read by the UI.
 - ✅ **2026-10-29** — Phase 4 contract shipped and the UI is reconciled against it (§19). Real uploads still need `SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY` configured.
-- 🔵 **2026-10-30** — Please add a records-storage consent type (e.g. `RECORDS_STORAGE`) so the Records agreement is recorded server-side instead of on the device (§24).
+- ✅ **2026-10-30** — `RECORDS_STORAGE` consent type added (API 43c0d60) and the UI now grants and reads it (§0).
 - ✅ **2026-10-30** — `GET /nurse-companion/packages` 500 fixed in API 0cd5f32 (live after the 8080 rebuild).
-- 🔵 **2026-10-30** — Expose `Content-Disposition` in CORS so the export filename reaches the browser (§0).
+- ✅ **2026-10-30** — `Content-Disposition` exposed in CORS (API 2fa71d8).
+- ℹ️ **2026-10-30** — Admin catalog CRUD (`/admin/hospitals|products|checklists`, API 05cffec) noted. **No admin UI yet.** Building one is a product-owner decision; until then, manage the catalog through the API or Swagger.
 - 🟡 **2026-10-29** — Phase 6: planned contract received from nb-ecomm-api-a5, UI built against it (§23). 6.1-6.3 running on 8080 (2026-10-30). 6.4 and 6.5 committed in 848ac87. **Still open: rebuild/restart 8080 so they go live, then UI verification** (§0).
 - ✅ **2026-10-30** — ~~Phases 5-6 contracts (see §15) needed to reconcile the UI's self-mocked implementations~~. Providers/booking, Records and Reminders are reconciled (§17, §19, §21), and Child/vaccination is built against the real contract (§23). No self-mocked feature data is left in the UI (§24). Phase 7 (real payments) is still blocked on product-owner decisions.

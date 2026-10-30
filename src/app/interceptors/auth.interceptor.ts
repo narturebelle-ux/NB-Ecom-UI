@@ -42,7 +42,11 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
         if (err.error?.code === 'EMAIL_NOT_VERIFIED') {
           router.navigate(['/auth/verify-email']);
         } else if (err.error?.code === 'CONSENT_REQUIRED') {
-          router.navigate(['/auth/consent'], { queryParams: { returnUrl: router.url } });
+          // Optional consents (RECORDS_STORAGE on uploads) are asked for by the page itself.
+          const pending: string[] = err.error?.pending ?? [];
+          if (!pending.length || pending.some(t => t !== 'RECORDS_STORAGE')) {
+            router.navigate(['/auth/consent'], { queryParams: { returnUrl: router.url } });
+          }
         } else {
           api.showToast(err.error?.message || "You're not allowed to do that.");
         }
