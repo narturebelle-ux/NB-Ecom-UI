@@ -93,7 +93,7 @@ import {
                     <div class="field">
                       <label for="resume">Résumé <span class="req">*</span></label>
                       <input id="resume" type="file" class="form-control" [accept]="resumeAccept" (change)="pickResume($event)" />
-                      <span class="hint">PDF or Word, up to 5 MB.</span>
+                      <span class="hint">PDF or Word, up to 4 MB.</span>
                     </div>
                   </div>
                   <div class="field">
@@ -182,7 +182,7 @@ export class CareerDetailComponent implements OnInit {
     if (file && file.size > RESUME_MAX_BYTES) {
       this.resume = null;
       (e.target as HTMLInputElement).value = '';
-      this.formError.set('Your résumé is larger than 5 MB. Please upload a smaller file.');
+      this.formError.set('Your résumé is larger than 4 MB. Please upload a smaller file.');
       return;
     }
     if (file && !/\.(pdf|docx?)$/i.test(file.name)) {
@@ -219,7 +219,7 @@ export class CareerDetailComponent implements OnInit {
         const code = err?.error?.code;
         this.formError.set(
           code === 'JOB_CLOSED' ? 'Sorry, this role has just closed.'
-          : code === 'RESUME_TOO_LARGE' || err?.status === 413 ? 'Your résumé is larger than 5 MB.'
+          : code === 'RESUME_TOO_LARGE' || err?.status === 413 ? 'Your résumé is larger than 4 MB.'
           : code === 'RESUME_TYPE_NOT_ALLOWED' ? 'Please upload your résumé as a PDF or Word document.'
           : code === 'TOO_MANY_REQUESTS' || err?.status === 429 ? 'Too many attempts. Please wait a few minutes and try again.'
           : code === 'VALIDATION_FAILED' ? (err?.error?.fields?.resume ? 'Please attach your résumé.' : err?.error?.message || 'Please check your details and try again.')

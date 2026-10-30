@@ -9,8 +9,8 @@ disagrees with this one, this one wins.
 
 **🔴 PRODUCTION BLOCKER (2026-10-30): the API is not deployed anywhere, so sign-in fails on www.narturebelle.com.**
 The UI is live on Vercel. There is no public API, and the live build's `API_URL` points at the website itself. Full details and
-the deployment plan are in §29. **This is the top priority for the API agent**: it's on hold, waiting for the product owner's go-ahead
-and two answers (whether Supabase `lvtyxr…` is the prod DB, and whether to keep sample data on the live site).
+the deployment plan are in §29. **Update 2026-10-30:** the API is being deployed on **Vercel's Container runtime (beta)** in project `nb-ecom-api`, at `api.narturebelle.com` (API 7b7fbad).
+The user is configuring it now. Waiting for the API agent to send the base URL once `/health/db` answers over https.
 
 **UI stage: Phase 6 integration (2026-10-30).** All phases 0–6 are built in the UI against your real endpoints.
 Phase 7 is blocked on product-owner decisions. The roadmap's "Where we are now" table has the per-phase status.
@@ -693,7 +693,7 @@ Against API 70296dd (final contract). Not verified live, because it's waiting on
 | Live build's `API_URL` | ❌ `http://www.narturebelle.com/api/v1`, the **website itself**. Vercel serves `index.html` (200 `text/html`) for `GET /api/v1/*` and returns 405 for `POST /api/v1/auth/firebase`. It's also `http://` on an `https://` page, so the browser blocks it as mixed content. |
 | A public API | ❌ None. `api.narturebelle.com` doesn't resolve, NB-Ecomm-API has never been deployed, and nothing has been deployed since 2366d6c. |
 | What users see | Firebase sign-in succeeds, then `POST /auth/firebase` never reaches an API, so sign-in fails. Every data page (plans, care, careers, journey…) shows its "couldn't load" state. Static pages (landing, About) work. |
-| Vercel project `nb-ecom-api` | ❌ The user tried hosting the API on Vercel, and it returns 404 on every path. **Vercel can't run a Spring Boot server.** The UI agent advised deleting the project, since it holds a copy of `DB_PASSWORD`. |
+| Vercel project `nb-ecom-api` | Originally returned 404 on every path. A standard Vercel project can't run Spring Boot. **Superseded:** the user and the API agent are switching this project to Vercel's **Container** framework preset (beta), which runs the API's Dockerfile. **Keep this project.** (The UI agent's earlier "delete it" advice is withdrawn.) |
 
 **Vercel deployments:**
 - Production is **PR #6 (`b7e73c8`)**, which is Ready. It contains everything up to Careers, but with the broken `API_URL`.
@@ -702,18 +702,21 @@ Against API 70296dd (final contract). Not verified live, because it's waiting on
   `API_URL` can no longer be published, and Vercel keeps the last good deployment live. Local `ng serve -c production` is unaffected.
 - Several **Preview** builds fail in about 6s, most likely because the 7 env vars were saved for Production only. This doesn't affect the live site.
 
-**Plan:**
+**Plan (revised 2026-10-30: Vercel Container runtime instead of Cloud Run, at the user's request):**
 1. **API agent + user:**
-   - Deploy NB-Ecomm-API (`firebase-setup`, Dockerfile) to **Google Cloud Run** in project `narturebelle-5ae7a`, so Firebase Admin works without a key file.
-   - Use the custom domain **`api.narturebelle.com`**.
+   - Deploy NB-Ecomm-API (`firebase-setup` merged to `main`, root Dockerfile, API 7b7fbad) on **Vercel project `nb-ecom-api`** with framework preset **Container** (beta).
+   - The image listens on `PORT=80`, Vercel's default. Rate limits read `X-Real-IP`. Firebase Admin uses `FIREBASE_SERVICE_ACCOUNT_BASE64` (set on the `nb-ecom-api` project, never on `nb-ecom-ui`).
+   - Use the custom domain **`api.narturebelle.com`**, added to the `nb-ecom-api` project.
+   - **Cold starts:** Vercel scales the container to zero after about 5 idle minutes, so the first request can take about 20–40s. The UI calls `GET /features` on every page load, which also wakes the API, so it's usually warm by the time someone signs in.
+   - **Request bodies are capped at 4.5 MB by Vercel**, so the résumé limit is now **4 MB** on both sides (UI updated 2026-10-30). Records uploads aren't affected: they go straight to Supabase storage through a signed URL.
    - **Prod config:**
      - the prod DB, confirmed by the user
-     - all secrets as Cloud Run env vars / Secret Manager, never in Vercel
+     - all secrets as env vars on the **`nb-ecom-api`** Vercel project (marked Sensitive), **never on `nb-ecom-ui`**, whose variables are built into public JavaScript
      - the prod profile, with migrations V1–V28 on boot
      - a health check at `/health/db`
    - CORS already allows `https://www.narturebelle.com` and `https://narturebelle.com`.
-   - API-side prep is ready but not committed: CRLF-safe `gradlew` in the Dockerfile, container-sized JVM heap, and `.gcloudignore` excluding `.env*` and the Firebase key.
-   - Env vars the API reads: `SPRING_PROFILES_ACTIVE`, `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `PORT`, `FIREBASE_SERVICE_ACCOUNT_BASE…`.
+   - API-side prep: CRLF-safe `gradlew` in the Dockerfile and a container-sized JVM heap.
+   - Env vars the API reads (set on Vercel project **`nb-ecom-api`**): `SPRING_PROFILES_ACTIVE`, `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `PORT`, `FIREBASE_SERVICE_ACCOUNT_BASE64`.
      For email and records it also reads `RESEND_API_KEY`, `EMAIL_FROM`, `CAREERS_ADMIN_EMAIL`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` and `SUPABASE_STORAGE_BUCKET`.
      Optional ones: `RECORDS_*`, `SCHEDULING_ENABLED`, `MOCK_PAYMENT_WEBHOOK_SECRET`.
 2. **API agent → UI agent:** send the public base URL once `/health/db` answers over https.
@@ -725,7 +728,7 @@ Against API 70296dd (final contract). Not verified live, because it's waiting on
 
 *(Running list — mark resolved items with ✅ and a date rather than deleting them, so the history stays visible.)*
 
-- 🔴 **2026-10-30** — **Deploy the API to production (blocker for the live site):** Cloud Run in `narturebelle-5ae7a` at `api.narturebelle.com`, prod DB, secrets on the host. Then send the UI agent the public URL (§29). On hold until the product owner gives the go-ahead.
+- 🔴 **2026-10-30** — **Deploy the API to production (blocker for the live site):** now on **Vercel Container runtime**, project `nb-ecom-api`, at `api.narturebelle.com` (API 7b7fbad), with the prod DB and secrets on that project. Send the UI agent the public URL once `/health/db` answers over https (§29). Résumé limit lowered to 4 MB on both sides.
 
 - ✅ **2026-10-28** — `firstName`/`lastName` auto-populated on first signup (Google display name / email-derived guess). Confirmed working, see §3.
 - ✅ **2026-10-28** — Phase 0/1 contract: `/me`, Consent (1.1), Journey (1.2), Dashboard (1.3) are all live and the UI is built against them and verified end-to-end against a live run, see §10-12. Nothing open from Phase 1.

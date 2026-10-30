@@ -71,7 +71,8 @@ export interface ApplicationForm {
   website: string;
 }
 
-export const RESUME_MAX_BYTES = 5 * 1024 * 1024;
+/** 4 MB: the API is hosted on Vercel, which rejects request bodies over 4.5 MB. */
+export const RESUME_MAX_BYTES = 4 * 1024 * 1024;
 export const RESUME_ACCEPT = '.pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 
 @Injectable({ providedIn: 'root' })
