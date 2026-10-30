@@ -40,6 +40,7 @@ import { FeatureDirective } from '../../directives/feature.directive';
         @if (isAdmin()) {
           <nav class="nav-links">
             <a routerLink="/admin/careers" routerLinkActive="active" class="nav-link"><mat-icon class="icon-sm">admin_panel_settings</mat-icon> Careers admin</a>
+            <a routerLink="/admin/ideas" routerLinkActive="active" class="nav-link"><mat-icon class="icon-sm">lightbulb</mat-icon> Ideas admin</a>
           </nav>
         }
         @if (isProfessional()) {
@@ -65,6 +66,7 @@ import { FeatureDirective } from '../../directives/feature.directive';
           <a *appFeature="'productRecommendations'" routerLink="/recommendations" routerLinkActive="active" class="nav-link">For you</a>
           <a *appFeature="'aiAssistant'" routerLink="/ai" routerLinkActive="active" class="nav-link">AI</a>
           <a routerLink="/plans" routerLinkActive="active" class="nav-link">Plans</a>
+          <a routerLink="/ideas" routerLinkActive="active" class="nav-link">Ideas</a>
 
 
           <a routerLink="/checklists" routerLinkActive="active" class="nav-link highlight-link">
@@ -151,6 +153,7 @@ import { FeatureDirective } from '../../directives/feature.directive';
               }
             </div>
           } @else {
+            <a routerLink="/ideas" class="btn btn-ghost-nav btn-sm about-link">Idea pool</a>
             <a routerLink="/about" class="btn btn-ghost-nav btn-sm about-link">About us</a>
             <a routerLink="/auth/login" class="btn btn-ghost-nav btn-sm login-btn">Sign in</a>
             <a routerLink="/auth/signup" class="btn btn-primary btn-sm get-started-btn">Get started</a>
