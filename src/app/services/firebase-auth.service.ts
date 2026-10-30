@@ -21,6 +21,11 @@ import {
 } from 'firebase/auth';
 import { environment } from '../../environments/environment';
 
+/** Shown instead of the old simulated sign-in when the build has no real Firebase web config. */
+const FIREBASE_NOT_CONFIGURED =
+  'Sign-in isn’t available: this build has no Firebase configuration. Run it with the staging or production settings.';
+const RECAPTCHA_NOT_READY = 'Phone verification couldn’t start. Please reload the page and try again.';
+
 @Injectable({
   providedIn: 'root'
 })
@@ -65,16 +70,7 @@ export class FirebaseAuthService {
    */
   async loginWithGoogle(): Promise<{ idToken: string; user: any }> {
     if (!this.isConfigured() || !this.auth) {
-      // Dev simulation fallback when API keys are pending
-      return {
-        idToken: 'mock_google_id_token_' + Date.now(),
-        user: {
-          displayName: 'Ananya Verma',
-          email: 'ananya.verma@example.com',
-          emailVerified: true,
-          photoURL: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&q=80'
-        }
-      };
+      throw new Error(FIREBASE_NOT_CONFIGURED);
     }
 
     const provider = new GoogleAuthProvider();
@@ -102,10 +98,7 @@ export class FirebaseAuthService {
    */
   async signUpWithEmail(email: string, password: string): Promise<{ idToken: string; user: any }> {
     if (!this.isConfigured() || !this.auth) {
-      return {
-        idToken: 'mock_email_id_token_' + Date.now(),
-        user: { email, emailVerified: false, uid: 'mock_uid_' + Date.now() }
-      };
+      throw new Error(FIREBASE_NOT_CONFIGURED);
     }
 
     const credential = await createUserWithEmailAndPassword(this.auth, email, password);
@@ -123,10 +116,7 @@ export class FirebaseAuthService {
    */
   async loginWithEmail(email: string, password: string): Promise<{ idToken: string; user: any }> {
     if (!this.isConfigured() || !this.auth) {
-      return {
-        idToken: 'mock_email_id_token_' + Date.now(),
-        user: { email, emailVerified: true, uid: 'mock_uid_' + Date.now() }
-      };
+      throw new Error(FIREBASE_NOT_CONFIGURED);
     }
 
     const credential = await signInWithEmailAndPassword(this.auth, email, password);
@@ -166,7 +156,7 @@ export class FirebaseAuthService {
    */
   async reloadAndGetFreshToken(): Promise<string | null> {
     if (!this.isConfigured() || !this.auth?.currentUser) {
-      return 'mock_refreshed_token_' + Date.now(); // dev simulation: treat as always-verified
+      return null;
     }
     await this.auth.currentUser.reload();
     return await this.auth.currentUser.getIdToken(true);
@@ -242,15 +232,14 @@ export class FirebaseAuthService {
   async sendPhoneOtp(
     phoneNumber: string,
     appVerifier?: RecaptchaVerifier | null
-  ): Promise<ConfirmationResult | { isMock: boolean; verificationId: string }> {
+  ): Promise<ConfirmationResult> {
     const formattedPhone = phoneNumber.startsWith('+') ? phoneNumber : `+91${phoneNumber}`;
 
-    if (!this.isConfigured() || !this.auth || !appVerifier) {
-      // Dev simulation fallback
-      return {
-        isMock: true,
-        verificationId: 'mock_vid_' + Date.now()
-      };
+    if (!this.isConfigured() || !this.auth) {
+      throw new Error(FIREBASE_NOT_CONFIGURED);
+    }
+    if (!appVerifier) {
+      throw new Error(RECAPTCHA_NOT_READY);
     }
 
     return await signInWithPhoneNumber(this.auth, formattedPhone, appVerifier);
@@ -263,16 +252,8 @@ export class FirebaseAuthService {
     confirmationResult: any,
     otpCode: string
   ): Promise<{ idToken: string; phone: string }> {
-    if (!this.isConfigured() || confirmationResult?.isMock) {
-      // Dev simulation fallback
-      if (otpCode === '123456') {
-        return {
-          idToken: 'mock_phone_id_token_' + Date.now(),
-          phone: '+919876543210'
-        };
-      } else {
-        throw new Error('Invalid OTP code. For demo mode, enter 123456.');
-      }
+    if (!this.isConfigured() || !confirmationResult) {
+      throw new Error(FIREBASE_NOT_CONFIGURED);
     }
 
     // Real Firebase confirmation
@@ -292,11 +273,14 @@ export class FirebaseAuthService {
   async linkPhoneToAccount(
     phoneNumber: string,
     appVerifier?: RecaptchaVerifier | null
-  ): Promise<ConfirmationResult | { isMock: boolean; verificationId: string }> {
+  ): Promise<ConfirmationResult> {
     const formattedPhone = phoneNumber.startsWith('+') ? phoneNumber : `+91${phoneNumber}`;
 
-    if (!this.isConfigured() || !this.auth?.currentUser || !appVerifier) {
-      return { isMock: true, verificationId: 'mock_link_vid_' + Date.now() };
+    if (!this.isConfigured() || !this.auth?.currentUser) {
+      throw new Error(FIREBASE_NOT_CONFIGURED);
+    }
+    if (!appVerifier) {
+      throw new Error(RECAPTCHA_NOT_READY);
     }
 
     return await linkWithPhoneNumber(this.auth.currentUser, formattedPhone, appVerifier);
@@ -307,11 +291,8 @@ export class FirebaseAuthService {
    * force-refreshed ID token so the new phone_number claim is picked up immediately.
    */
   async confirmPhoneLink(confirmationResult: any, otpCode: string): Promise<{ idToken: string; phone: string }> {
-    if (!this.isConfigured() || confirmationResult?.isMock) {
-      if (otpCode === '123456') {
-        return { idToken: 'mock_linked_phone_token_' + Date.now(), phone: '+919876543210' };
-      }
-      throw new Error('Invalid OTP code. For demo mode, enter 123456.');
+    if (!this.isConfigured() || !confirmationResult) {
+      throw new Error(FIREBASE_NOT_CONFIGURED);
     }
 
     const userCredential = await confirmationResult.confirm(otpCode);

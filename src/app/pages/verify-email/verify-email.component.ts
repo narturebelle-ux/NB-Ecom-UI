@@ -1,17 +1,20 @@
 import { Component, OnDestroy, inject, signal } from '@angular/core';
+import { MatIconModule } from '@angular/material/icon';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ApiService } from '../../services/api.service';
 import { FirebaseAuthService } from '../../services/firebase-auth.service';
+import { goToPostAuthDestination } from '../../services/post-auth-redirect';
 
 const RESEND_COOLDOWN_SECONDS = 60;
 
 @Component({
   selector: 'app-verify-email',
   standalone: true,
+  imports: [MatIconModule],
   template: `
     <div class="verify-wrapper">
       <div class="verify-card card glass">
-        <span class="icon">📧</span>
+        <mat-icon class="hero-icon">mark_email_unread</mat-icon>
         <h2>Verify your email</h2>
         <p class="lead">
           We've sent a verification link to <strong>{{ email() }}</strong>.
@@ -158,7 +161,8 @@ export class VerifyEmailComponent implements OnDestroy {
                 ? `Email verified! We guessed your name as ${res.firstName}${res.lastName ? ' ' + res.lastName : ''} — update it in your profile if that's not right.`
                 : 'Email verified! Welcome back.'
             );
-            this.syncPendingStageThenRedirect(res);
+            const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
+            goToPostAuthDestination(this.api, this.router, returnUrl);
           } else {
             this.statusMsg.set("Still not verified — make sure you've clicked the link in the email, then try again.");
             this.isError.set(true);
@@ -200,39 +204,6 @@ export class VerifyEmailComponent implements OnDestroy {
       this.api.logout();
       this.router.navigate(['/auth/login']);
     });
-  }
-
-  /**
-   * The pregnancy-stage pill chosen at signup time couldn't be saved then (PUT /users/me
-   * requires a verified user) — login.component.ts stashed it in localStorage instead.
-   * Apply it now that verification just succeeded, then redirect either way.
-   */
-  private syncPendingStageThenRedirect(user: any) {
-    const pendingStage = localStorage.getItem('nb_pending_stage');
-    if (!pendingStage || user?.stage) {
-      localStorage.removeItem('nb_pending_stage');
-      this.redirectAfterVerification();
-      return;
-    }
-
-    this.api.updateProfile({ stage: pendingStage }).subscribe({
-      next: (res: any) => {
-        if (res?.id) {
-          this.api.setUser(res);
-        }
-        localStorage.removeItem('nb_pending_stage');
-        this.redirectAfterVerification();
-      },
-      error: () => {
-        localStorage.removeItem('nb_pending_stage');
-        this.redirectAfterVerification();
-      }
-    });
-  }
-
-  private redirectAfterVerification() {
-    const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
-    this.router.navigateByUrl(returnUrl || '/');
   }
 
   private startCooldown() {

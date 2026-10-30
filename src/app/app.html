@@ -6,9 +6,8 @@
 
 <app-footer></app-footer>
 
-<!-- Global Modals & Drawers -->
-<app-assessment-modal></app-assessment-modal>
-<app-cart-drawer></app-cart-drawer>
+<!-- Global Drawer — hidden behind its flag, not deleted (roadmap Phase 0) -->
+<app-cart-drawer *appFeature="'productRecommendations'"></app-cart-drawer>
 
 <!-- Global Toast Notification -->
 @if (api.toastMessage(); as msg) {

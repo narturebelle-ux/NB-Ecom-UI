@@ -1,79 +1,69 @@
 import { Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { MatIconModule } from '@angular/material/icon';
+import { FeatureDirective } from '../../directives/feature.directive';
 
 @Component({
   selector: 'app-footer',
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, MatIconModule, FeatureDirective],
   template: `
     <footer class="main-footer">
-      <!-- Newsletter / Lead Magnet Strip -->
-      <div class="footer-cta-strip">
-        <div class="container cta-content">
-          <div class="cta-text">
-            <h3>Join 25,000+ Expecting Mothers Across India</h3>
-            <p>Get weekly doctor-reviewed trimester guides, scan test reminders, and 10% off your first mandatory care package.</p>
-          </div>
-          <div class="cta-form">
-            <input type="email" placeholder="Enter your email address" class="cta-input" />
-            <button class="btn btn-gold btn-sm">Subscribe & Get Guide</button>
-          </div>
-        </div>
-      </div>
-
       <div class="container footer-grid">
         <!-- Col 1: Brand Story -->
         <div class="footer-col brand-col">
           <div class="footer-brand">
-            <span class="brand-leaf">🌿</span>
+            <img src="favicon.svg" alt="" class="brand-leaf">
             <span class="brand-name">NartureBelle™</span>
           </div>
           <p class="brand-mission">
-            Your partner in conscious motherhood. We provide radical transparency on what pregnant mothers genuinely need vs. what to skip, paired with certified nurse care and doctor guidance.
+            Care coordination for mothers and young families — from pregnancy through early childhood, with verified professionals and records you control.
           </p>
           <div class="trust-pill">
-            <span>🛡️</span> 100% Doctor Vetted & Toxins-Free Formulations
+            <mat-icon class="icon-sm">verified_user</mat-icon> Credential-verified professionals
           </div>
         </div>
 
         <!-- Col 2: Pregnancy Stages -->
         <div class="footer-col">
-          <h4 class="col-title">Pregnancy Milestones</h4>
+          <h4 class="col-title">Your Journey</h4>
           <ul class="footer-links">
-            <li><a routerLink="/products/month-3">Month 3: 1st Trimester Essentials</a></li>
-            <li><a routerLink="/products/month-6">Month 6: 2nd Trimester & Sleep</a></li>
-            <li><a routerLink="/products/month-9">Month 9: Hospital Bag & Delivery</a></li>
-            <li><a routerLink="/checklists">Doctor Checkup & Scan Checklist</a></li>
-            <li><span class="coming-soon">Baby Care 0–5 Years (Coming Soon)</span></li>
+            <li *appFeature="'productRecommendations'"><a routerLink="/recommendations">Recommended for you</a></li>
+            <li *appFeature="'joyCircle'"><a routerLink="/joy-circle">Joy Circle events</a></li>
+            <li><a routerLink="/journey">My Journey</a></li>
+            <li><a routerLink="/plans">Care Plans</a></li>
+            <li><a routerLink="/care">Find a Professional</a></li>
+            <li><a routerLink="/checklists">Checkup & Scan Checklist</a></li>
           </ul>
         </div>
 
         <!-- Col 3: Dedicated Healthcare Services -->
         <div class="footer-col">
-          <h4 class="col-title">Maternal Services</h4>
+          <h4 class="col-title">Care & Privacy</h4>
           <ul class="footer-links">
-            <li><a routerLink="/services/nurse-companion">Dedicated Care Nurse ("Maa Sakhi")</a></li>
-            <li><a routerLink="/doctors-live">Live OB-GYN Webinars & Q&As</a></li>
-            <li><a routerLink="/checklists">Accredited Maternity Hospitals</a></li>
-            <li><a routerLink="/checklists">Fetal Scan Labs & 4D Anomaly Scans</a></li>
-            <li><a routerLink="/auth/login">My Routine & Due Date Tracker</a></li>
+            <li *appFeature="'legacyLeadForms'"><a routerLink="/services/nurse-companion">Dedicated Care Nurse ("Maa Sakhi")</a></li>
+            <li *appFeature="'legacyLeadForms'"><a routerLink="/doctors-live">Live OB-GYN Webinars & Q&As</a></li>
+            <li><a routerLink="/checklists">Maternity Hospitals & Scan Labs</a></li>
+            <li *appFeature="'recordsVault'"><a routerLink="/records">Records Vault</a></li>
+            <li *appFeature="'childTracker'"><a routerLink="/child">Child & Vaccinations</a></li>
+            <li><a routerLink="/profile">Profile & Privacy</a></li>
           </ul>
         </div>
 
         <!-- Col 4: Clinical Helpline & Contact -->
         <div class="footer-col">
-          <h4 class="col-title">Maternal Support</h4>
-          <p class="support-text">Have a question regarding safe pregnancy ingredients or our nurse care companion?</p>
+          <h4 class="col-title">Support</h4>
+          <p class="support-text">Questions about your plan, a booking or your privacy? Our care team is here to help.</p>
           <div class="contact-card">
             <div class="contact-item">
-              <span class="icon">💬</span>
+              <mat-icon class="icon">chat</mat-icon>
               <div>
                 <strong>WhatsApp Care Desk:</strong>
                 <span>+91 99880 12345</span>
               </div>
             </div>
             <div class="contact-item">
-              <span class="icon">✉️</span>
+              <mat-icon class="icon">mail</mat-icon>
               <div>
                 <strong>Care Team:</strong>
                 <span>care&#64;narturebelle.com</span>
@@ -87,7 +77,7 @@ import { RouterLink } from '@angular/router';
       <div class="container footer-bottom">
         <div class="disclaimer-box">
           <p>
-            <strong>Medical Disclaimer:</strong> Information and products presented on NartureBelle™ are intended for supportive maternal wellness and educational guidance. They do not substitute for emergency medical care or direct clinical instructions from your registered obstetrician. Always consult your personal doctor regarding high-risk medical conditions.
+            <strong>Medical Disclaimer:</strong> Information and guidance on NartureBelle™ supports maternal and child wellbeing and is not a diagnosis. It does not substitute for emergency medical care or direct clinical instructions from your own doctor or obstetrician. Always consult your personal doctor regarding high-risk medical conditions.
           </p>
         </div>
         <div class="bottom-links">
@@ -96,8 +86,6 @@ import { RouterLink } from '@angular/router';
             <a href="#">Privacy Policy</a>
             <span>•</span>
             <a href="#">Terms of Service</a>
-            <span>•</span>
-            <a href="#">Shipping & Returns</a>
           </div>
         </div>
       </div>
@@ -109,49 +97,6 @@ import { RouterLink } from '@angular/router';
       color: #e2ede6;
       margin-top: 5rem;
       border-top: 1px solid rgba(255, 255, 255, 0.08);
-    }
-    .footer-cta-strip {
-      background: linear-gradient(135deg, #254434, #1b3327);
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-      padding: 2.5rem 0;
-    }
-    .cta-content {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 2rem;
-      flex-wrap: wrap;
-    }
-    .cta-text h3 {
-      font-size: 1.5rem;
-      color: #fff;
-      margin-bottom: 0.35rem;
-    }
-    .cta-text p {
-      color: #cfe0d5;
-      font-size: 0.95rem;
-    }
-    .cta-form {
-      display: flex;
-      gap: 0.5rem;
-      flex-wrap: wrap;
-    }
-    .cta-input {
-      padding: 0.75rem 1.25rem;
-      border-radius: var(--radius-full);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      background: rgba(255, 255, 255, 0.1);
-      color: #fff;
-      font-size: 0.95rem;
-      min-width: 280px;
-    }
-    .cta-input::placeholder {
-      color: #a4b8ac;
-    }
-    .cta-input:focus {
-      outline: none;
-      background: rgba(255, 255, 255, 0.2);
-      border-color: #fff;
     }
 
     .footer-grid {
@@ -172,7 +117,11 @@ import { RouterLink } from '@angular/router';
       margin-bottom: 1rem;
     }
     .brand-leaf {
-      font-size: 1.8rem;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.92);
+      padding: 2px;
     }
     .brand-mission {
       font-size: 0.9rem;
@@ -243,6 +192,9 @@ import { RouterLink } from '@angular/router';
     }
     .contact-item .icon {
       font-size: 1.3rem;
+      width: 1.3rem;
+      height: 1.3rem;
+      color: var(--sage-200);
     }
     .contact-item strong {
       display: block;
@@ -297,14 +249,6 @@ import { RouterLink } from '@angular/router';
     @media (max-width: 600px) {
       .footer-grid {
         grid-template-columns: 1fr;
-      }
-      .cta-content {
-        flex-direction: column;
-        align-items: flex-start;
-      }
-      .cta-input {
-        width: 100%;
-        min-width: unset;
       }
     }
   `]
