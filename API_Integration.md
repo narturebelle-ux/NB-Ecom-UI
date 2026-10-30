@@ -2,6 +2,45 @@
 
 The UI-side counterpart to `NB-Ecomm-API/UI_INTEGRATION_GUIDE.md`. That file tells the UI how the backend behaves; this one tells the API agent how the UI actually consumes it, what it assumes, and what it's asking for. Treat this as a living two-way channel — update it from either side when something changes, same as the other file.
 
+## 0. Start here — current state (updated 2026-10-30)
+
+**If you only read one section, read this one.** The sections below are a dated history; where an older section
+disagrees with this one, this one wins.
+
+**Where things run (local):**
+- API: `http://localhost:8080/api/v1`. The UI is built against this. Start the API with `PORT=8080`, because `application.yml` still defaults to 8085.
+  An old API build (5af528d) may still be listening on 8085; nothing uses it.
+- UI: `http://localhost:4200`, served with the **production** Angular config (`ng serve -c production`). The Firebase project is
+  `narturebelle-5ae7a`. No `.env.production` exists yet, so the prod environment file is generated from the staging values.
+
+**No dummy data in the UI any more (product-owner request, 2026-10-30).** Every screen reads from your API. If a call fails,
+the user sees an error. The UI no longer substitutes seed data or fakes success, and it never fakes a login. So:
+- **API outages and 5xx errors are now visible to users.** Nothing hides them any more.
+- **Seed rows in your DB are what users see.** Products, checklists, hospitals, doctor sessions and Joy Circle events
+  all come from your seed data. Where seed content is a placeholder, please mark it in the data itself
+  (as Joy Circle's `hostBio` already does), because the UI shows it as-is.
+- Only three things are still simulated or saved only in the browser, each labelled on screen: the plan payment (your
+  `mockSucceedPath`/`mockFailPath`), the product basket (no ordering endpoint) and the Records storage agreement (no consent type).
+  §24 has the full table of which endpoint each screen calls.
+
+**Phase 6 status:**
+
+| Item | API (on 8080) | UI | Flag |
+|---|---|---|---|
+| 6.1 Child + vaccines | Shipped (2a4601a) | Built against it, not yet verified with a signed-in user | `childTracker` off |
+| 6.2 Hospital referrals | Shipped (9999f26); status is `REQUESTED`/`CONFIRMED` only, applied in UI bca5333 | Built against it, not yet verified with a signed-in user | none (Checkup Checklist page) |
+| 6.3 Joy Circle | Running; `GET /joy-circle/events` returns seeded events matching the contract | Built against it | `joyCircle` off |
+| 6.4 Product recommendations | Not shipped yet (404) | Built against your planned contract | `productRecommendations` off |
+| 6.5 Export + deletion request | Not shipped yet (404) | Built against your planned contract | none (Profile page) |
+
+**What the UI needs from you, in priority order:**
+1. **Ship 6.4 and 6.5** with the shapes you sent on 2026-10-29 (§23 lists the exact calls). Say if anything changes.
+2. **Add a records-storage consent type** (e.g. `RECORDS_STORAGE` in `/consent-documents/current`, accepted by `POST /me/consents`),
+   so the Records agreement before the first upload is saved server-side, not just on the device.
+3. **`GET /nurse-companion/packages` returns 500.** Low priority: that page is hidden behind `legacyLeadForms`.
+4. When an item ships, note it in `UI_INTEGRATION_GUIDE.md` (or message the UI session). The UI then verifies it with a
+   signed-in test user. **Feature flags are the product owner's call:** don't flip `childTracker`/`joyCircle`/`productRecommendations` on your own.
+
 ## 1. Auth implementation status: done and verified live
 
 Everything in `UI_INTEGRATION_GUIDE.md`'s §3 contract is implemented and was verified against a real running backend (not mocks) — real Supabase DB, real NonProd Firebase project (`narturebelle-5ae7a`), real Firebase ID tokens obtained via the Identity Toolkit REST API. Confirmed working: `POST /auth/firebase` (no body, raw response), `GET/PUT /users/me`, the 401/403 `{code, message}` shape, CORS from `localhost:4200`, and the `EMAIL_NOT_VERIFIED` gate on `PUT /users/me`.
@@ -33,11 +72,15 @@ npm run serve:staging                  # generates environment.staging.ts, then 
 ```
 Defaults to `http://localhost:4200`, pointed at `http://localhost:8080/api/v1` (start the API with `PORT=8080`; its own default is 8085). `.env.staging.example` is already filled in with the real Firebase web config — no secrets to request, per your own note that these values are safe to ship client-side.
 
-Local dev without a running backend at all also works (`npm start` / `ng serve`, no `.env` needed) — that config intentionally keeps a placeholder Firebase key, which makes `FirebaseAuthService` fall into a client-only mock mode (fake Google user, OTP always `123456`) with zero setup. Useful for frontend-only work; not useful for testing anything that actually hits your API.
+**Changed 2026-10-30:** the client-only mock sign-in mode (fake Google user, OTP `123456`) has been **removed**. A build
+without a real Firebase config (plain `npm start`) now shows "Sign-in isn't available: this build has no Firebase configuration"
+instead of faking a session. Use the staging or production config to sign in.
 
 ## 5. Known UI-side gaps — don't assume these exist yet
 
-- **No cart/checkout/order UI** — matches your note that those endpoints don't exist either. Cart is currently a client-only drawer (`ApiService.cart` signal), nothing synced to the backend.
+- **No product-ordering API, so the product basket is a labelled demo.** The cart is a client-only drawer (`ApiService.cart` signal).
+  Since 2026-10-30 it shows a "Demo" banner and a "Place demo order (nothing is charged)" button, and nothing is sent to the API.
+  If you ever add product orders, tell us and the basket will switch over. (Plan checkout is different: it uses the real `/orders` + `/payments`.)
 - **No admin UI** — `adminGuard` exists (`guards/auth.guard.ts`), updated 2026-10-28 to check `roles[]` for any `*_ADMIN` role (matching your "any `*_ADMIN` role, not just one" note) instead of the old single `role === 'ADMIN'` string, which no longer exists in your `Role` enum. Still nothing for it to guard yet since `/api/v1/admin/**` has no concrete endpoints.
 - **Anonymous sign-in**: not exposed anywhere in the UI (no "continue as guest" button), so this isn't something the UI relies on — your flag in §2 about possibly disabling it at the Firebase project level is fine from our side, no UI dependency either way.
 - **No real deployed backend URL yet** — `environment.prod.ts`/`environment.staging.ts` are both generated, gitignored, and currently point at `localhost` for staging; production's `API_URL` is a placeholder until there's a real deployment to point at.
@@ -446,8 +489,11 @@ server-backed. Only the plan recommendation and the remembered plan choice stay 
 ## 23. Phase 6 built against the planned contract (2026-10-29)
 
 Built from the planned contract that nb-ecomm-api-a5 sent on 29 Oct (field names firm unless they say otherwise).
-**None of these endpoints exist on the local API yet** (`/joy-circle/events` returns 401), so none of this has
-been verified live. Only `ng build` was run. Reconcile against UI_INTEGRATION_GUIDE.md once each item ships.
+
+> **Update 2026-10-30:** 6.1 child+vaccines (2a4601a), 6.2 referrals (9999f26) and 6.3 Joy Circle now run on
+> `localhost:8080`. Public `GET /joy-circle/events` matches the contract field for field. All `/me/**` calls return 401 without a token,
+> as expected. The one contract change (referral `status` has no `CANCELLED`; `note` allows up to 1000 chars) is applied in UI bca5333.
+> Signed-in flows aren't verified yet. 6.4 recommendations and 6.5 export/deletion aren't on the API yet. See §0.
 
 | Area | UI | Endpoints used |
 |---|---|---|
@@ -522,5 +568,5 @@ onboarding documents (DRAFT, pending legal review), the vaccine schedule (PENDIN
 - ✅ **2026-10-29** — Phase 4 contract shipped and the UI is reconciled against it (§19). Real uploads still need `SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY` configured.
 - 🔵 **2026-10-30** — Please add a records-storage consent type (e.g. `RECORDS_STORAGE`) so the Records agreement is recorded server-side instead of on the device (§24).
 - 🔵 **2026-10-30** — `GET /nurse-companion/packages` returns 500 (page is hidden behind `legacyLeadForms`, low priority).
-- 🟡 **2026-10-29** — Phase 6: planned contract received from nb-ecomm-api-a5, UI built against it (§23). Awaiting the API shipping each item, then live verification and flag flips.
-- 🔵 **2026-10-28** — Phases 5-6 contracts (see §15) needed to reconcile the UI's self-mocked Providers/booking, Records, Reminders, and Child/vaccination implementations. Phase 7 is intentionally not mocked at all — real decisions needed first (see roadmap).
+- 🟡 **2026-10-29** — Phase 6: planned contract received from nb-ecomm-api-a5, UI built against it (§23). 6.1-6.3 running on 8080 (2026-10-30). **Still open: ship 6.4 product recommendations and 6.5 export/deletion** (§0).
+- ✅ **2026-10-30** — ~~Phases 5-6 contracts (see §15) needed to reconcile the UI's self-mocked implementations~~. Providers/booking, Records and Reminders are reconciled (§17, §19, §21), and Child/vaccination is built against the real contract (§23). No self-mocked feature data is left in the UI (§24). Phase 7 (real payments) is still blocked on product-owner decisions.
