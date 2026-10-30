@@ -6,7 +6,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { ApiService } from '../../services/api.service';
 import { CareersService } from '../../services/careers.service';
 
-/** "Share an idea": feedback for the team, emailed to admin@narturebelle.com by the API. */
+/** "Share an idea": feedback for the team, emailed to hello@narturebelle.com by the API. */
 @Component({
   selector: 'app-feedback',
   standalone: true,
@@ -119,7 +119,7 @@ export class FeedbackComponent {
       error: err => {
         this.sending.set(false);
         this.error.set(err?.status === 429 ? 'Too many messages. Please wait a few minutes.'
-          : err?.status === 404 ? 'Feedback isn’t open on this server yet. Please email admin@narturebelle.com instead.'
+          : err?.status === 404 ? 'Feedback isn’t open on this server yet. Please email hello@narturebelle.com instead.'
           : 'We couldn’t send that. Please try again.');
       }
     });

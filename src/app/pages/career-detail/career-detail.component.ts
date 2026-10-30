@@ -15,7 +15,7 @@ import {
   WORK_MODE_LABELS
 } from '../../services/careers.service';
 
-/** One open role, with the application form (résumé upload). Applications are emailed to admin@narturebelle.com by the API. */
+/** One open role, with the application form (résumé upload). Applications are emailed to hello@narturebelle.com by the API. */
 @Component({
   selector: 'app-career-detail',
   standalone: true,
@@ -223,7 +223,7 @@ export class CareerDetailComponent implements OnInit {
           : code === 'RESUME_TYPE_NOT_ALLOWED' ? 'Please upload your résumé as a PDF or Word document.'
           : code === 'TOO_MANY_REQUESTS' || err?.status === 429 ? 'Too many attempts. Please wait a few minutes and try again.'
           : code === 'VALIDATION_FAILED' ? (err?.error?.fields?.resume ? 'Please attach your résumé.' : err?.error?.message || 'Please check your details and try again.')
-          : err?.status === 404 ? 'Applications aren’t open on this server yet. Please email admin@narturebelle.com instead.'
+          : err?.status === 404 ? 'Applications aren’t open on this server yet. Please email hello@narturebelle.com instead.'
           : 'We couldn’t send your application. Please try again.'
         );
       }

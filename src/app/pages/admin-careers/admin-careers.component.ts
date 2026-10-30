@@ -27,7 +27,7 @@ import {
           <div>
             <span class="kicker">Admin</span>
             <h1>Careers</h1>
-            <p class="hint">Open roles appear on <a routerLink="/careers">/careers</a>. Every application is also emailed to admin&#64;narturebelle.com.</p>
+            <p class="hint">Open roles appear on <a routerLink="/careers">/careers</a>. Every application is also emailed to hello&#64;narturebelle.com.</p>
           </div>
           @if (!editing()) { <button class="btn btn-primary" (click)="startNew()"><mat-icon class="icon-sm">add</mat-icon> Post a role</button> }
         </header>

@@ -5,7 +5,7 @@ import { environment } from '../../environments/environment';
 
 /**
  * Careers + ideas/feedback — API 2366d6c (UI_INTEGRATION_GUIDE.md §14). Applications and feedback are stored by
- * the API and emailed to admin@narturebelle.com (log-only until the API's email provider is configured).
+ * the API and emailed to hello@narturebelle.com (log-only until the API's email provider is configured).
  */
 
 /** Same rules as the API: 7-20 of + digits spaces ( ) - */

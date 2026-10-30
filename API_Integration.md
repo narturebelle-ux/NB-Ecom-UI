@@ -655,8 +655,13 @@ Against API 70296dd (final contract). Not verified live, because it's waiting on
 
 ## 28. Careers, job applications and "Share an idea" (2026-10-30)
 
+> **Mailboxes (product-owner decision, 2026-10-30):** `hello@narturebelle.com` receives careers applications and "Share an idea"
+> (the API sends there by default since 9864c5f). `support-care@narturebelle.com` is for support and care, and is the only contact shown
+> elsewhere on the site (footer). `admin@narturebelle.com` doesn't exist, and `admin-info-team@` is internal and must never appear in the UI.
+> The UI copy was updated to match.
+
 **Product-owner decisions:**
-- Applications are delivered **through the API**: stored, then emailed with the résumé to `admin@narturebelle.com`.
+- Applications are delivered **through the API**: stored, then emailed with the résumé to `hello@narturebelle.com`.
 - Roles are posted and closed from an **admin screen**.
 - A **feedback / ideas form** goes to the same inbox.
 
@@ -744,7 +749,7 @@ Against API 70296dd (final contract). Not verified live, because it's waiting on
 - 🟡 **2026-10-30** — ✅ committed in API 0fe423d (prod included, rows labelled as sample); live after the :8080 restart. **Sample data in every list (product-owner request).** Seed providers (every professional type, a few cities/languages, VIRTUAL + PHYSICAL offerings, open slots), call slots with coordinators, Joy Circle events, BABY_CARE products, and any other list that can be empty, including under `prod`. Mark sample rows as sample in the data.
 - 🟡 **2026-10-30** — Parts A–C committed (API 688c3a4 matching, 294b906 coordinators, 839a38c health profile + `HEALTH_DATA`), and the UI is built against them (§25). Live after the :8080 restart, then UI verification. **Part D ✅ shipped (88879af); UI review screen built (§26).** Go-ahead given 2026-10-30 with these product-owner decisions: rules are approved once (not per mother); approvers are MEDICAL_REVIEWER staff or verified (VERIFIED/ACTIVE) GYNECOLOGIST, NUTRITIONIST or REGISTERED_NURSE providers. The UI will add a review screen for approvers once the review endpoints are defined.
 - ✅ **2026-10-30** — Professional portal shipped (API 30c56a9) and the UI is reconciled (§26). `HEALTH_DATA` v2 with care-team wording is live (V26). ~~Please send final shapes for `GET /provider/me`, `GET /provider/bookings`, `GET /provider/bookings/{id}/product-suggestions`, `GET`/`PUT /provider/bookings/{id}/product-recommendations` and `GET /me/care-recommendations`, plus a new `HEALTH_DATA` consent version whose text covers care-team access~~.
-- ✅ **2026-10-30** — Careers + feedback shipped (API 2366d6c), UI reconciled (§28). Live after the :8080 restart (V28). Email stays log-only until the user sets up Resend. ~~**Careers + feedback (product owner):** jobs, applications with résumé upload, feedback; stored and emailed to admin@narturebelle.com via an email provider (account + SPF/DKIM DNS needed from the user). Please send final shapes (§28).~~
+- ✅ **2026-10-30** — Careers + feedback shipped (API 2366d6c), UI reconciled (§28). Live after the :8080 restart (V28). Email stays log-only until the user sets up Resend. ~~**Careers + feedback (product owner):** jobs, applications with résumé upload, feedback; stored and emailed to hello@narturebelle.com via an email provider (account + SPF/DKIM DNS needed from the user). Please send final shapes (§28).~~
 - 🟡 **2026-10-30** — The `/providers` enum-filter 500 is believed to be a stale-jar artefact (the jar was rebuilt under the running PID). It should clear on restart, and bad values are now 400 (f213f95). Re-check after the restart.
 - 🔴 **2026-10-30** — **Bug:** `GET /providers?professionalType=…` and `?modality=…` return 500 `INTERNAL_ERROR` on :8080. The unfiltered list, `city` and `language` return 200. The Care page's type chips and "Virtual only" checkbox hit this and show "We couldn't load care professionals right now". Needs the API log (the catch-all handler logs the stack trace).
 - ✅ **2026-10-30** — `RECORDS_STORAGE` consent type added (API 43c0d60) and the UI now grants and reads it (§0).
