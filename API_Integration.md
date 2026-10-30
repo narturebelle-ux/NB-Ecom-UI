@@ -699,3 +699,10 @@ Against API 70296dd (final contract). Not verified live, because it's waiting on
 - ℹ️ **2026-10-30** — Admin catalog CRUD (`/admin/hospitals|products|checklists`, API 05cffec) noted. **No admin UI yet.** Building one is a product-owner decision; until then, manage the catalog through the API or Swagger.
 - 🟡 **2026-10-29** — Phase 6: planned contract received from nb-ecomm-api-a5, UI built against it (§23). 6.1-6.3 running on 8080 (2026-10-30). 6.4 and 6.5 committed in 848ac87. **Still open: rebuild/restart 8080 so they go live, then UI verification** (§0).
 - ✅ **2026-10-30** — ~~Phases 5-6 contracts (see §15) needed to reconcile the UI's self-mocked implementations~~. Providers/booking, Records and Reminders are reconciled (§17, §19, §21), and Child/vaccination is built against the real contract (§23). No self-mocked feature data is left in the UI (§24). Phase 7 (real payments) is still blocked on product-owner decisions.
+
+## 30. Branching workflow (product-owner rule, 2026-10-30)
+
+Both repos follow the same rule: every new feature or change gets its own branch (`feature/…`, `fix/…`, `docs/…`), cut from the latest
+`origin/develop`, then a pull request into `develop`. Releases go `develop` → `main` by pull request, and `main` is production (Vercel).
+There are no direct commits to `develop` or `main`, and old branches aren't reused (`Feature/phase-0-1` here, `firebase-setup` in the API).
+Full rules are in this repo's README.md, "Branching workflow".
