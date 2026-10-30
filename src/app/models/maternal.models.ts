@@ -124,6 +124,31 @@ export function isAdminUser(user: User | null | undefined): boolean {
   return !!user?.roles?.some(r => r.endsWith('_ADMIN'));
 }
 
+function isoDate(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+/** Due-date bounds while pregnant: not in the past, at most 42 weeks ahead (the API enforces the same). */
+export function eddBounds(): { min: string; max: string } {
+  const today = new Date();
+  const max = new Date(today);
+  max.setDate(max.getDate() + 42 * 7);
+  return { min: isoDate(today), max: isoDate(max) };
+}
+
+/** A user-facing problem with a due date, or null if it's fine. */
+export function eddProblem(edd: string | null | undefined): string | null {
+  if (!edd) return null;
+  const { min, max } = eddBounds();
+  if (edd < min) return 'Your due date can’t be in the past. If your baby has arrived, choose a postpartum stage instead.';
+  if (edd > max) return 'Your due date can’t be more than 42 weeks from today.';
+  return null;
+}
+
+/** Shown before paying and when an edit is refused (409 DUE_DATE_LOCKED). */
+export const DUE_DATE_LOCK_NOTE =
+  'Your plan price is based on your due date. After you pay, the due date can only be changed by up to 3 weeks. For a bigger change, please contact support.';
+
 /** Professional roles granted when an admin verifies a provider (API Phase 3). */
 export const PROFESSIONAL_ROLES = [
   'GYNECOLOGIST', 'NUTRITIONIST', 'LACTATION_CONSULTANT', 'PEDIATRICIAN',

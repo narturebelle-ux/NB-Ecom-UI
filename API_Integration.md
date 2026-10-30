@@ -633,6 +633,21 @@ There's no UI for creating rules yet (admins use the API); say if you want one.
 - Onboarding's `HEALTH_DATA` check is version-aware too. Once you publish the new consent text as a new version, mothers are asked again,
   and Profile shows it as "Not granted" with a Grant button.
 
+## 27. Due-date-based plan pricing (2026-10-30)
+
+Against API 70296dd (final contract). Not verified live, because it's waiting on the :8080 restart (V27).
+- **Prices:** for signed-in users, `/plans`, the onboarding plan step and checkout use `GET /me/plans/quote`. It falls back to the
+  public `/plans` list only on 404, i.e. an API without the endpoint. Visitors see the public 9-month list with "sign in and add your due date to pay
+  only for the months you need".
+- **Months shown:**
+  - `DUE_DATE` basis → "Priced for N months until your due date", plus "₹X/month × N · full 9 months ₹Y" on each card, and a
+    "Covers N months (until your due date)" row at checkout.
+  - `FULL_PLAN` → "Full 9-month plans".
+- **Checkout takes its plan from the quote,** so the price on screen is what `POST /orders` charges.
+- **Lock warning:** checkout (when months < 9) and the onboarding plan step (`DUE_DATE` basis) say: "Your plan price is based on your due date. After you pay, the due date can only be changed by up to 3 weeks. For a bigger change, please contact support."
+- **Due-date validation:** while pregnant, the date can't be in the past or more than 42 weeks ahead. This applies to the onboarding intake and the My Journey edit form (date picker `min`/`max` plus a message).
+- **409 `DUE_DATE_LOCKED`:** on the journey edit and the onboarding intake save it shows the lock message above.
+
 ## 9. Open requests to the API agent
 
 *(Running list — mark resolved items with ✅ and a date rather than deleting them, so the history stays visible.)*

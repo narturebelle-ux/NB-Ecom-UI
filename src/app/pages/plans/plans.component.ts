@@ -2,8 +2,10 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
+import { ApiService } from '../../services/api.service';
+import { map, tap } from 'rxjs';
 import { CommerceService } from '../../services/commerce.service';
-import { PLAN_PRESENTATION, Plan } from '../../models/commerce.models';
+import { PLAN_PRESENTATION, Plan, PlanQuote } from '../../models/commerce.models';
 import { PROFESSIONAL_TYPE_LABELS } from '../../models/maternal.models';
 
 /** Plan comparison — public (GET /api/v1/plans needs no auth); checkout is where verifiedGuard applies. */
@@ -17,6 +19,15 @@ import { PROFESSIONAL_TYPE_LABELS } from '../../models/maternal.models';
         <div class="plans-header animate-in">
           <h1>Choose Your Care Plan</h1>
           <p>Every plan includes access to your care coordination team — pick the level of support that fits you.</p>
+          @if (quote(); as q) {
+            <p class="quote-note">
+              <mat-icon class="icon-sm">event</mat-icon>
+              @if (q.basis === 'DUE_DATE') { Priced for <strong>{{ q.months }} {{ q.months === 1 ? 'month' : 'months' }}</strong> until your due date. Sessions are adjusted to match. }
+              @else { Full 9-month plans. Add your due date on My Journey to pay only for the months you need. }
+            </p>
+          } @else if (!api.currentUser() || api.currentUser()?.pendingConsents?.length) {
+            <p class="quote-note"><mat-icon class="icon-sm">info</mat-icon> Prices below are for 9 months. Sign in and add your due date to pay only for the months until your baby arrives.</p>
+          }
         </div>
 
         <div class="draft-notice">
@@ -55,6 +66,9 @@ import { PROFESSIONAL_TYPE_LABELS } from '../../models/maternal.models';
                   <span class="price-note">{{ installment() ? 'total, in ' + plan.installmentCount + ' installments' : 'one-time' }}</span>
                 </div>
 
+                @if (plan.months && plan.months < 9 && plan.fullOneTimePrice) {
+                  <div class="prorated">₹{{ plan.monthlyPrice | number:'1.0-0' }}/month × {{ plan.months }} · full 9 months ₹{{ plan.fullOneTimePrice | number:'1.0-0' }}</div>
+                }
                 <div class="session-count">{{ plan.totalSessions }} sessions · valid {{ validityLabel(plan.validityDays) }}</div>
 
                 <div class="allocations">
@@ -81,6 +95,8 @@ import { PROFESSIONAL_TYPE_LABELS } from '../../models/maternal.models';
     </div>
   `,
   styles: [`
+    .quote-note { display: inline-flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; justify-content: center; margin-top: 0.75rem; font-size: 0.88rem; color: var(--sage-900); background: var(--sage-50); border: 1px solid var(--border-subtle); border-radius: var(--radius-full); padding: 0.4rem 0.9rem; }
+    .prorated { font-size: 0.78rem; color: var(--text-muted); margin-top: 0.15rem; }
     .plans-page { padding: 3.5rem 0 5rem; }
     .plans-header { text-align: center; max-width: 620px; margin: 0 auto 1.5rem; }
     .plans-header h1 { font-size: 2.1rem; color: var(--sage-900); margin-bottom: 0.5rem; }
@@ -215,6 +231,8 @@ import { PROFESSIONAL_TYPE_LABELS } from '../../models/maternal.models';
 })
 export class PlansComponent implements OnInit {
   private commerce = inject(CommerceService);
+  api = inject(ApiService);
+  quote = signal<PlanQuote | null>(null);
   private router = inject(Router);
 
   plans = signal<Plan[]>([]);
@@ -229,7 +247,13 @@ export class PlansComponent implements OnInit {
   load() {
     this.loading.set(true);
     this.errorMsg.set(null);
-    this.commerce.getPlans().subscribe({
+    // Signed in with consent: her own prorated prices (the quote reads her journey, so it's consent-gated).
+    // Visitors, and anyone who hasn't consented yet: the public 9-month list. Consent is asked at checkout.
+    const user = this.api.currentUser();
+    const plans$ = user && !user.pendingConsents?.length
+      ? this.commerce.getQuote().pipe(tap(q => this.quote.set(q)), map(q => q.plans))
+      : this.commerce.getPlans();
+    plans$.subscribe({
       next: (plans) => {
         this.plans.set(plans);
         this.loading.set(false);
