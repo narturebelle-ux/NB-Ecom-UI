@@ -728,6 +728,8 @@ Against API 70296dd (final contract). Not verified live, because it's waiting on
 
 *(Running list — mark resolved items with ✅ and a date rather than deleting them, so the history stays visible.)*
 
+- 🔵 **2026-10-30** — **Cold-start 500s (unconfirmed).** The UI agent saw `/me` and `/me/journeys` answer 500 once while the container was booting. They were 401 a minute later, and the API agent couldn't reproduce it. The UI already retries (status 0/502/503/504 ×3, 500 ×1; commit 9a06d50). **If one is caught live, capture the headers and body:** an `x-vercel-error` header or text/plain means it's Vercel's proxy; `{"code":"INTERNAL_ERROR"}` means it's the app's startup path.
+
 - 🔴 **2026-10-30** — **Deploy the API to production (blocker for the live site):** now on **Vercel Container runtime**, project `nb-ecom-api`, at `api.narturebelle.com` (API 7b7fbad), with the prod DB and secrets on that project. Send the UI agent the public URL once `/health/db` answers over https (§29). Résumé limit lowered to 4 MB on both sides.
 
 - ✅ **2026-10-28** — `firstName`/`lastName` auto-populated on first signup (Google display name / email-derived guess). Confirmed working, see §3.
