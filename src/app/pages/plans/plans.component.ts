@@ -25,7 +25,7 @@ import { PROFESSIONAL_TYPE_LABELS } from '../../models/maternal.models';
               @if (q.basis === 'DUE_DATE') { Priced for <strong>{{ q.months }} {{ q.months === 1 ? 'month' : 'months' }}</strong> until your due date. Sessions are adjusted to match. }
               @else { Full 9-month plans. Add your due date on My Journey to pay only for the months you need. }
             </p>
-          } @else if (!api.currentUser()) {
+          } @else if (!api.currentUser() || api.currentUser()?.pendingConsents?.length) {
             <p class="quote-note"><mat-icon class="icon-sm">info</mat-icon> Prices below are for 9 months. Sign in and add your due date to pay only for the months until your baby arrives.</p>
           }
         </div>
@@ -247,8 +247,10 @@ export class PlansComponent implements OnInit {
   load() {
     this.loading.set(true);
     this.errorMsg.set(null);
-    // Signed in: her own prorated prices. Visitors: the public 9-month list.
-    const plans$ = this.api.currentUser()
+    // Signed in with consent: her own prorated prices (the quote reads her journey, so it's consent-gated).
+    // Visitors, and anyone who hasn't consented yet: the public 9-month list. Consent is asked at checkout.
+    const user = this.api.currentUser();
+    const plans$ = user && !user.pendingConsents?.length
       ? this.commerce.getQuote().pipe(tap(q => this.quote.set(q)), map(q => q.plans))
       : this.commerce.getPlans();
     plans$.subscribe({
