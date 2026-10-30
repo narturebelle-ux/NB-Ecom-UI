@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 
-export type ReferralStatus = 'REQUESTED' | 'CONFIRMED' | 'CANCELLED';
+export type ReferralStatus = 'REQUESTED' | 'CONFIRMED';
 
 export interface Referral {
   id: number;
