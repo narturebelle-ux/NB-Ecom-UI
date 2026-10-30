@@ -846,7 +846,11 @@ risking a 401 that signs the user out.
 | Session covered by a plan | No charge, so a booking confirmation, not an invoice |
 
 **API tasks**
-- `invoices` and credit-note storage; a sequence allocated inside the payment transaction so numbers stay consecutive and are never reused.
+- `invoices` and credit-note storage. Numbers come from a counter row per series and financial year, updated inside the payment transaction (a database sequence would leave gaps on rollback). No PDF or email inside that transaction.
+- Allocate only on the PENDING→PAID transition, with a unique constraint per order (per refund for credit notes), so a webhook replay can't issue a second document. Refund creation must become transactional, with one credit note per refund row.
+- Separate series for credit notes (e.g. `CN/26-27/000001`) and for demo documents, so real numbering starts at 1. Work out the financial year and file timestamp in Asia/Kolkata, not server time.
+- Generate PDFs on demand from the snapshot (Vercel's filesystem is read-only apart from /tmp, and responses cap at 4.5 MB). This adds a PDF library to the build.
+- Upgrade needs its own endpoint and a link to the earlier order, granting only the extra sessions.
 - Issue on PAID, upgrade and refund. Store a snapshot of buyer, item, amounts and tax on the document, so later profile or price changes don't alter it.
 - `GET /me/invoices`, `GET /me/invoices/{id}/pdf`, admin list. Upgrade endpoint and pricing rule.
 - While payments are simulated, documents must be clearly marked as demo and must not look like real tax invoices.
@@ -856,7 +860,9 @@ risking a 401 that signs the user out.
 - "Invoices & receipts" list with download, on My Profile. Show the invoice number on the order confirmation page.
 
 **Decisions needed from the product owner**
-1. Upgrade pricing: pay the difference, or something else?
+1. Upgrade rules: what she pays (the difference against the amount she actually paid, not list price, since reduced-price and ₹0 referral orders exist), whether the 12 months restart, and how used sessions count. Premium buyers have nothing to upgrade to.
 2. GST: registered? GSTIN, legal name and address for the invoice, and tax rate (linked to the open Phase 7 merchant-of-record decision).
 3. Invoice format confirmed by the accountant.
-4. Which is first in the build order: this story or the waiting validations and pricing-removal work (API branch `feature/pricing-and-validations`)? The owner has said this story is next, but upgrade and checkout depend on that pricing change.
+4. Which is first in the build order: this story or the waiting validations and pricing-removal work (API branch `feature/pricing-and-validations`)? The owner has said this story is next, but upgrade and checkout depend on that pricing change. The UI and API agents both recommend merging it first.
+5. Refunds: a fully refunded order keeps its sessions today, and she can then buy again. Should a refund remove them?
+6. For the accountant: whether plan prices include GST (no tax fields exist yet), whether ₹0 referral rewards need a document, how long invoices are kept after an account deletion request, and whether each instalment gets its own document once real instalments exist (today one payment covers the whole total).
