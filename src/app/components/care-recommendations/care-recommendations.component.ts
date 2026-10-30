@@ -67,10 +67,9 @@ export class CareRecommendationsComponent implements OnInit {
   private reco = inject(RecommendationService);
   private api = inject(ApiService);
 
+  /** Kept in the API's order: newest session first, Essential first within each session. */
   items = signal<SessionProductRecommendation[]>([]);
-  /** Essential first, then newest. */
-  sorted = computed(() => [...this.items()].sort((a, b) =>
-    (a.priority === b.priority ? 0 : a.priority === 'ESSENTIAL' ? -1 : 1) || b.createdAt.localeCompare(a.createdAt)));
+  sorted = computed(() => this.items());
 
   ngOnInit() {
     this.reco.getCareRecommendations().subscribe({ next: list => this.items.set(list), error: () => {} });

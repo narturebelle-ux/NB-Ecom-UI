@@ -8,6 +8,7 @@ import { ApiService } from '../../services/api.service';
 import { ProviderPortalService } from '../../services/provider-portal.service';
 import { RISK_FACTOR_LABELS, RiskFactor } from '../../models/onboarding.models';
 import {
+  MAX_SESSION_PICKS,
   PRIORITY_LABELS,
   ProductSuggestions,
   ProviderBooking,
@@ -52,25 +53,29 @@ interface Pick { priority: RecommendationPriority; note: string; }
           @if (suggestions(); as s) {
             <section class="card">
               <h2>About {{ s.mother.firstName }}</h2>
-              <p><strong>Stage:</strong> {{ stageLabel(s.mother.stage) }}@if (booking()?.mother?.gestationalWeek) { · week {{ booking()!.mother.gestationalWeek }} }</p>
+              <p><strong>Stage:</strong> {{ stageLabel(s.mother.stage) }}@if (s.mother.gestationalWeek) { · week {{ s.mother.gestationalWeek }} }</p>
               @if (s.mother.healthProfile; as h) {
+                <p class="hint">Shared with her care team{{ h.updatedAt ? ' · updated ' + (h.updatedAt | date:'d MMM y') : '' }}. Viewing is recorded.</p>
                 <p><strong>Health details:</strong>
                   {{ h.firstPregnancy === true ? 'First pregnancy' : h.firstPregnancy === false ? 'Not her first pregnancy' : '' }}{{ h.multiples ? ' · expecting twins or more' : '' }}
                 </p>
                 <p><strong>Conditions:</strong> {{ h.riskFactors.length ? riskLabels(h.riskFactors) : 'None reported' }}</p>
               } @else {
-                <p class="hint">She hasn’t shared health details with her care team.</p>
+                <p class="hint">She hasn’t shared health details with her care team (or hasn’t confirmed the updated health-data consent), so health rules aren’t applied to these suggestions.</p>
               }
             </section>
 
             <section class="card">
               <h2>Recommend products</h2>
-              <p class="hint">Suggestions for her stage. Approved health rules have already been applied. Tick what you recommend and mark it Essential or Optional. She’ll see your picks on her account after the session is completed.</p>
+              <p class="hint">Suggestions for her stage{{ s.mother.healthProfile ? ', with approved health rules applied' : '' }}. Tick what you recommend (up to {{ maxPicks }}) and mark it Essential or Optional. She’ll see your picks after the session is completed. You can change them until 48 hours after.</p>
+              @if (booking()?.status === 'BOOKED') {
+                <p class="notice">Start the session to recommend products.</p>
+              }
 
               @for (p of s.items; track p.productId) {
                 <div class="product" [class.picked]="picks()[p.productId]">
                   <label class="pick">
-                    <input type="checkbox" [checked]="!!picks()[p.productId]" (change)="togglePick(p)" [disabled]="!canEdit()" />
+                    <input type="checkbox" [checked]="!!picks()[p.productId]" (change)="togglePick(p)" [disabled]="!canEdit() || (!picks()[p.productId] && pickedCount() >= maxPicks)" />
                     <img [src]="p.imageUrl" [alt]="p.name" loading="lazy" />
                     <span class="p-main">
                       <strong>{{ p.name }}</strong>
@@ -107,7 +112,7 @@ interface Pick { priority: RecommendationPriority; note: string; }
             </section>
           }
 
-          @if (booking()?.status === 'BOOKED' || booking()?.status === 'IN_PROGRESS') {
+          @if (booking()?.status === 'IN_PROGRESS') {
             <section class="card">
               <h2>Complete the session</h2>
               <p class="hint">Your session note is required. It locks once the session is completed. Your saved product picks become visible to her at this point.</p>
@@ -146,6 +151,7 @@ interface Pick { priority: RecommendationPriority; note: string; }
     .seg button { border: none; background: #fff; padding: 0.3rem 0.8rem; font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); cursor: pointer; }
     .seg button.on { background: var(--sage-700); color: #fff; }
     .note { flex: 1; min-width: 12rem; padding: 0.4rem 0.6rem; font-size: 0.82rem; }
+    .notice { font-size: 0.84rem; color: #92610a; background: #fff8eb; border: 1px solid #fbd38d; border-radius: var(--radius-md); padding: 0.55rem 0.8rem; }
     .avoided { margin-top: 0.75rem; font-size: 0.82rem; color: var(--text-secondary); }
     .avoided summary { cursor: pointer; font-weight: 600; color: var(--trust-700); }
     .save-row { display: flex; justify-content: space-between; align-items: center; margin-top: 0.75rem; gap: 0.75rem; }
@@ -170,8 +176,16 @@ export class ProviderSessionComponent implements OnInit {
   sessionNote = '';
 
   pickedCount = computed(() => Object.keys(this.picks()).length);
-  /** Picks can be edited during the session and after it (the API sets the cut-off). */
-  canEdit = computed(() => ['BOOKED', 'IN_PROGRESS', 'COMPLETED'].includes(this.booking()?.status ?? ''));
+  maxPicks = MAX_SESSION_PICKS;
+  /** IN_PROGRESS, or COMPLETED within 48h (the API enforces the cut-off with 409 SESSION_RECOMMENDATIONS_CLOSED). */
+  canEdit = computed(() => {
+    const b = this.booking();
+    if (!b || this.closed()) return false;
+    if (b.status === 'IN_PROGRESS') return true;
+    return b.status === 'COMPLETED' && Date.now() - new Date(b.scheduledEnd).getTime() < 48 * 3600 * 1000;
+  });
+  /** Set when the API says picks can no longer be changed. */
+  closed = signal(false);
 
   ngOnInit() {
     this.bookingId = Number(this.route.snapshot.paramMap.get('id'));
@@ -229,8 +243,21 @@ export class ProviderSessionComponent implements OnInit {
     this.busy.set(true);
     this.portal.saveRecommendations(this.bookingId, this.picksPayload()).subscribe({
       next: () => { this.busy.set(false); this.api.showToast('Recommendations saved.'); },
-      error: err => { this.busy.set(false); this.api.showToast(err?.error?.message || 'Couldn’t save your recommendations.'); }
+      error: err => { this.busy.set(false); this.saveError(err); }
     });
+  }
+
+  private saveError(err: any) {
+    const code = err?.error?.code;
+    if (code === 'SESSION_RECOMMENDATIONS_CLOSED') {
+      this.closed.set(true);
+      this.api.showToast('Recommendations can only be changed during the session and for 48 hours after it.');
+    } else if (code === 'PRODUCT_NOT_FOUND') {
+      this.api.showToast('One of these products is no longer available. Reloading suggestions.');
+      this.load();
+    } else {
+      this.api.showToast(err?.error?.message || 'Couldn’t save your recommendations.');
+    }
   }
 
   start() {
@@ -255,7 +282,7 @@ export class ProviderSessionComponent implements OnInit {
         },
         error: err => { this.busy.set(false); this.api.showToast(err?.error?.message || 'Couldn’t complete the session.'); }
       }),
-      error: err => { this.busy.set(false); this.api.showToast(err?.error?.message || 'Couldn’t save your recommendations, so the session wasn’t completed.'); }
+      error: err => { this.busy.set(false); this.saveError(err); }
     });
   }
 
@@ -267,7 +294,8 @@ export class ProviderSessionComponent implements OnInit {
     return list.map(r => RISK_FACTOR_LABELS[r] ?? r).join(', ');
   }
 
-  stageLabel(s: string): string {
+  stageLabel(s: string | null): string {
+    if (!s) return 'Not set';
     return ({ MONTH_3: 'First trimester', MONTH_6: 'Second trimester', MONTH_9: 'Third trimester', BABY_CARE: 'Postpartum / baby care',
       PREGNANCY: 'Pregnant', PRE_DELIVERY: 'Close to delivery', POSTPARTUM: 'Postpartum' } as Record<string, string>)[s] ?? s;
   }

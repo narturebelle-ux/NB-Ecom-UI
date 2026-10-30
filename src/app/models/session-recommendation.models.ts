@@ -4,9 +4,11 @@ import { RiskFactor } from './onboarding.models';
 
 /**
  * Products a verified professional recommends to a mother during a session, labelled Essential/Optional.
- * Built against the UI's PROPOSED contract (sent to the API agent 2026-10-30) — reconcile with
- * UI_INTEGRATION_GUIDE.md once the API publishes the final shapes.
+ * Final contract: API 30c56a9. Picks are editable while IN_PROGRESS and for 48h after COMPLETED
+ * (409 SESSION_RECOMMENDATIONS_CLOSED otherwise, including before the session starts); max 30 per session.
  */
+
+export const MAX_SESSION_PICKS = 30;
 
 export type RecommendationPriority = 'ESSENTIAL' | 'OPTIONAL';
 
@@ -33,6 +35,7 @@ export interface SuggestedProduct {
   name: string;
   description: string;
   price: number;
+  originalPrice: number | null;
   imageUrl: string;
   category: string;
   whyRecommended: string[];
@@ -41,27 +44,29 @@ export interface SuggestedProduct {
 export interface ProductSuggestions {
   mother: {
     firstName: string;
-    stage: PregnancyStage | string;
-    /** Null unless the mother granted the HEALTH_DATA consent. */
-    healthProfile: { firstPregnancy: boolean | null; multiples: boolean | null; riskFactors: RiskFactor[] } | null;
+    stage: PregnancyStage | string | null;
+    gestationalWeek: number | null;
+    /** Null unless she holds an unrevoked grant of the current HEALTH_DATA version (v2, which covers care-team access). */
+    healthProfile: { firstPregnancy: boolean | null; multiples: boolean | null; riskFactors: RiskFactor[]; updatedAt?: string } | null;
   };
   items: SuggestedProduct[];
-  /** Hidden by an approved health rule, with that rule's reason. */
+  /** Hidden by an approved health rule, with its reason. Always [] when healthProfile is null (it would reveal her conditions). */
   avoided: { productId: number; name: string; reason: string }[];
 }
 
 export interface SessionProductRecommendation {
   id: number;
   bookingId: number;
+  sessionDate: string;
   productId: number;
   name: string;
+  description: string;
   imageUrl: string;
   price: number;
+  originalPrice: number | null;
   category: string;
   priority: RecommendationPriority;
   note: string | null;
   recommendedBy: { providerId: number; displayName: string; professionalType: string };
   createdAt: string;
-  /** Only on the mother's list. */
-  sessionDate?: string;
 }

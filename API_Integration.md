@@ -609,7 +609,13 @@ role; the API also requires VERIFIED/ACTIVE). It has tabs for the pending queue,
 who reviewed each rule and their role. 409 `RULE_SELF_REVIEW_NOT_ALLOWED` / `RULE_ALREADY_REVIEWED` and 404 `PRODUCT_HEALTH_RULE_NOT_FOUND` are explained.
 There's no UI for creating rules yet (admins use the API); say if you want one.
 
-**Professional portal: built against the UI's PROPOSED contract (sent 2026-10-30). Waiting for final shapes from the API.**
+**Professional portal: reconciled with the final contract (API 30c56a9).** The proposed shapes stood. The UI also follows these rules from the final contract:
+- Picks are editable only while `IN_PROGRESS` and for 48h after `COMPLETED`. Before the session starts it shows "Start the session to recommend products".
+  On 409 `SESSION_RECOMMENDATIONS_CLOSED` the picker locks. "Complete" is offered only once the session is `IN_PROGRESS`.
+- Max 30 picks per session.
+- With no v2 `HEALTH_DATA` grant, `healthProfile` is null and `avoided` is `[]`. The page explains that health rules weren't applied.
+- `GET /provider/bookings` 403 → "your professional account isn't verified yet".
+- The mother's list keeps the API's order: newest session first, Essential first.
 - `/provider`: the professional's sessions (`GET /provider/bookings`, `GET /provider/me`).
 - `/provider/sessions/:id`:
   - mother's stage and health details (`GET /provider/bookings/{id}/product-suggestions`; a null `healthProfile` shows "hasn't shared")
@@ -642,7 +648,7 @@ There's no UI for creating rules yet (admins use the API); say if you want one.
 - ✅ **2026-10-29** — Phase 4 contract shipped and the UI is reconciled against it (§19). Real uploads still need `SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY` configured.
 - 🟡 **2026-10-30** — ✅ committed in API 0fe423d (prod included, rows labelled as sample); live after the :8080 restart. **Sample data in every list (product-owner request).** Seed providers (every professional type, a few cities/languages, VIRTUAL + PHYSICAL offerings, open slots), call slots with coordinators, Joy Circle events, BABY_CARE products, and any other list that can be empty, including under `prod`. Mark sample rows as sample in the data.
 - 🟡 **2026-10-30** — Parts A–C committed (API 688c3a4 matching, 294b906 coordinators, 839a38c health profile + `HEALTH_DATA`), and the UI is built against them (§25). Live after the :8080 restart, then UI verification. **Part D ✅ shipped (88879af); UI review screen built (§26).** Go-ahead given 2026-10-30 with these product-owner decisions: rules are approved once (not per mother); approvers are MEDICAL_REVIEWER staff or verified (VERIFIED/ACTIVE) GYNECOLOGIST, NUTRITIONIST or REGISTERED_NURSE providers. The UI will add a review screen for approvers once the review endpoints are defined.
-- 🟡 **2026-10-30** — **Professional portal + session product recommendations** (product owner confirmed): please send final shapes for `GET /provider/me`, `GET /provider/bookings`, `GET /provider/bookings/{id}/product-suggestions`, `GET`/`PUT /provider/bookings/{id}/product-recommendations` and `GET /me/care-recommendations`, plus a new `HEALTH_DATA` consent version whose text covers care-team access (§26).
+- ✅ **2026-10-30** — Professional portal shipped (API 30c56a9) and the UI is reconciled (§26). `HEALTH_DATA` v2 with care-team wording is live (V26). ~~Please send final shapes for `GET /provider/me`, `GET /provider/bookings`, `GET /provider/bookings/{id}/product-suggestions`, `GET`/`PUT /provider/bookings/{id}/product-recommendations` and `GET /me/care-recommendations`, plus a new `HEALTH_DATA` consent version whose text covers care-team access~~.
 - 🟡 **2026-10-30** — The `/providers` enum-filter 500 is believed to be a stale-jar artefact (the jar was rebuilt under the running PID). It should clear on restart, and bad values are now 400 (f213f95). Re-check after the restart.
 - 🔴 **2026-10-30** — **Bug:** `GET /providers?professionalType=…` and `?modality=…` return 500 `INTERNAL_ERROR` on :8080. The unfiltered list, `city` and `language` return 200. The Care page's type chips and "Virtual only" checkbox hit this and show "We couldn't load care professionals right now". Needs the API log (the catch-all handler logs the stack trace).
 - ✅ **2026-10-30** — `RECORDS_STORAGE` consent type added (API 43c0d60) and the UI now grants and reads it (§0).
