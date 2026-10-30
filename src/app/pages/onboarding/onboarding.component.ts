@@ -32,7 +32,7 @@ const STAGES: JourneyStatus[] = ['PREGNANCY', 'PRE_DELIVERY', 'POSTPARTUM', 'CHI
     <div class="onboarding-page">
       <div class="container narrow">
         <header class="ob-header animate-in">
-          <span class="kicker">Welcome to NartureBelle</span>
+          <span class="kicker">Welcome to NartureBelle™</span>
           <h1>Let’s set up your care</h1>
           <p>A few short steps so we can understand your needs, suggest the right plan, and introduce you to your care team.</p>
         </header>
@@ -100,7 +100,7 @@ const STAGES: JourneyStatus[] = ['PREGNANCY', 'PRE_DELIVERY', 'POSTPARTUM', 'CHI
                   }
                   <label class="agree">
                     <input type="checkbox" [(ngModel)]="shareHealth" />
-                    I agree to NartureBelle storing my health details
+                    I agree to NartureBelle™ storing my health details
                   </label>
                 }
                 @if (!healthNeedsConsent() || shareHealth) {
@@ -355,7 +355,7 @@ const STAGES: JourneyStatus[] = ['PREGNANCY', 'PRE_DELIVERY', 'POSTPARTUM', 'CHI
             @case ('welcome') {
               <mat-icon class="hero-icon">celebration</mat-icon>
               <h2 class="center">You’re all set, {{ firstName() }}</h2>
-              <p class="sub center">Welcome to NartureBelle. Here’s a summary of your onboarding.</p>
+              <p class="sub center">Welcome to NartureBelle™. Here’s a summary of your onboarding.</p>
               <div class="summary">
                 <div><mat-icon>eco</mat-icon><span>Stage</span><strong>{{ stageLabel(ob.state().intake!.stage) }}</strong></div>
                 <div><mat-icon>workspace_premium</mat-icon><span>Plan</span><strong>Paid · order #{{ ob.state().paidOrderId }}</strong></div>

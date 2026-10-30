@@ -30,7 +30,7 @@ import { Plan } from '../../models/commerce.models';
             Every stage of motherhood, <em>with a team that knows you.</em>
           </h1>
           <p class="hero-lead animate-in" style="animation-delay: 120ms">
-            From your first trimester to your child's seventh birthday, NartureBelle connects you with
+            From your first trimester to your child's seventh birthday, NartureBelle™ connects you with
             verified doctors, nurses and specialists — and keeps your plan, your appointments and your
             records together in one private place.
           </p>
@@ -166,7 +166,7 @@ import { Plan } from '../../models/commerce.models';
           <span class="kicker light">Privacy & trust</span>
           <h2>Your health information stays yours</h2>
           <p>
-            We built NartureBelle around consent. You agree to how your information is used before
+            We built NartureBelle™ around consent. You agree to how your information is used before
             anything is personalised, and you can review or withdraw that consent at any time.
           </p>
           <ul class="trust-list">
@@ -177,7 +177,7 @@ import { Plan } from '../../models/commerce.models';
         </div>
 
         <div class="honesty glass-deep" appReveal [revealDelay]="120">
-          <h3>What NartureBelle is — and isn't</h3>
+          <h3>What NartureBelle™ is — and isn't</h3>
           <div class="honesty-cols">
             <div>
               <span class="honesty-head is"><mat-icon class="icon-sm">check_circle</mat-icon> We are</span>
@@ -461,8 +461,8 @@ export class HomeComponent implements OnInit {
   ];
 
   readonly faqs = [
-    { q: 'Does NartureBelle replace my own doctor?', a: 'No. NartureBelle helps you find and coordinate care with verified professionals, but it isn’t a replacement for your own doctor’s or obstetrician’s clinical advice, and it isn’t a diagnostic service.' },
-    { q: 'What should I do in an emergency?', a: 'NartureBelle is not emergency care. In a medical emergency, contact your local emergency services or go to the nearest hospital immediately.' },
+    { q: 'Does NartureBelle™ replace my own doctor?', a: 'No. NartureBelle™ helps you find and coordinate care with verified professionals, but it isn’t a replacement for your own doctor’s or obstetrician’s clinical advice, and it isn’t a diagnostic service.' },
+    { q: 'What should I do in an emergency?', a: 'NartureBelle™ is not emergency care. In a medical emergency, contact your local emergency services or go to the nearest hospital immediately.' },
     { q: 'Can I join late in pregnancy, or after my baby is born?', a: 'Yes. You can start at any stage — pregnancy, delivery, postpartum or early childhood. Your timeline begins from where you are and never marks earlier stages as missed.' },
     { q: 'What happens after I sign up?', a: 'You’ll answer a few questions about your stage and the support you’d like, see a recommended plan, and — once you’ve chosen and paid — schedule a short onboarding call and sign your onboarding documents. Then your full care journey opens up. You can update your details any time.' },
     { q: 'How are professionals verified?', a: 'Every professional’s credentials are reviewed before they can be booked. Only verified, active professionals appear in the directory.' },

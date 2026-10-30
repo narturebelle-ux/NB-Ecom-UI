@@ -84,7 +84,7 @@ import { FeatureDirective } from '../../directives/feature.directive';
           </p>
         </div>
         <div class="bottom-links">
-          <span>&copy; {{ currentYear }} NartureBelle Technologies Pvt Ltd. All rights reserved.</span>
+          <span>&copy; {{ currentYear }} NartureBelle™ Pvt Ltd. All rights reserved.</span>
           <div class="legal-anchors">
             <a href="#">Privacy Policy</a>
             <span>•</span>

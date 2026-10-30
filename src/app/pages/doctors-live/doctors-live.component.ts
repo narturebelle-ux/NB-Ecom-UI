@@ -14,7 +14,7 @@ import { DoctorSession } from '../../models/maternal.models';
         <span class="live-badge-pill">
           <span class="live-dot"></span> Interactive Masterclasses
         </span>
-        <h1>NartureBelle Doctor Live: Weekly OB-GYN Webinars</h1>
+        <h1>NartureBelle™ Doctor Live: Weekly OB-GYN Webinars</h1>
         <p class="header-desc">
           Direct access to senior Obstetricians, Fetal Medicine Specialists, and Certified Midwives. Ask your live doubts on nausea, ultrasound scans, safe sleep, and natural birthing.
         </p>

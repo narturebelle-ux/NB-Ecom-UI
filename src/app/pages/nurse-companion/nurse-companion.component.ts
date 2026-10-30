@@ -52,7 +52,7 @@ import { NursePackage, PregnancyStage } from '../../models/maternal.models';
                 <img src="https://images.unsplash.com/photo-1594824813500-2921516e537c?auto=format&fit=crop&w=200&q=80" alt="Nurse Sister Deepa" class="avatar" />
                 <div>
                   <strong>Sister Deepa, RN</strong>
-                  <span class="status">🟢 Active Now • NartureBelle Care Companion</span>
+                  <span class="status">🟢 Active Now • NartureBelle™ Care Companion</span>
                 </div>
               </div>
             </div>

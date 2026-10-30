@@ -196,7 +196,7 @@ import { RecaptchaVerifier, GoogleAuthProvider, AuthCredential } from 'firebase/
             @if (isSignUp) {
               Already have an account? <a [routerLink]="['/auth/login']" [queryParams]="returnUrl ? { returnUrl } : {}">Sign in</a>
             } @else {
-              New to NartureBelle? <a [routerLink]="['/auth/signup']" [queryParams]="returnUrl ? { returnUrl } : {}">Create an account</a>
+              New to NartureBelle™? <a [routerLink]="['/auth/signup']" [queryParams]="returnUrl ? { returnUrl } : {}">Create an account</a>
             }
           </p>
 

@@ -48,7 +48,7 @@ const CATEGORIES: RecordCategory[] = ['SCAN', 'LAB_REPORT', 'PRESCRIPTION', 'DIS
             </ul>
             <label class="consent-row">
               <input type="checkbox" [(ngModel)]="consentChecked" />
-              I agree to NartureBelle storing the documents I upload, as described above.
+              I agree to NartureBelle™ storing the documents I upload, as described above.
             </label>
             @if (storageDoc(); as doc) {
               <details class="consent-doc">

@@ -16,7 +16,7 @@ import { CareersService } from '../../services/careers.service';
       <div class="container narrow">
         <span class="kicker">We’re listening</span>
         <h1>Share an idea</h1>
-        <p class="lead">We’re early, and the best ideas come from the mothers and families we serve. Tell us what would make NartureBelle better, what’s missing, or what didn’t work for you.</p>
+        <p class="lead">We’re early, and the best ideas come from the mothers and families we serve. Tell us what would make NartureBelle™ better, what’s missing, or what didn’t work for you.</p>
 
         @if (sent()) {
           <div class="card done">
@@ -38,7 +38,7 @@ import { CareersService } from '../../services/careers.service';
             </div>
 
             <fieldset class="field">
-              <legend>How would you rate NartureBelle so far? <span class="opt">optional</span></legend>
+              <legend>How would you rate NartureBelle™ so far? <span class="opt">optional</span></legend>
               <div class="stars" role="radiogroup" aria-label="Rating">
                 @for (n of [1, 2, 3, 4, 5]; track n) {
                   <button type="button" role="radio" [attr.aria-checked]="rating === n" [attr.aria-label]="n + ' out of 5'"
