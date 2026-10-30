@@ -2,6 +2,7 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
+import { CommerceService } from '../../services/commerce.service';
 import { CareersService, EMPLOYMENT_TYPE_LABELS, Job, WORK_MODE_LABELS } from '../../services/careers.service';
 
 /** Public careers page: open roles. */
@@ -54,7 +55,7 @@ import { CareersService, EMPLOYMENT_TYPE_LABELS, Job, WORK_MODE_LABELS } from '.
             <strong>Not looking for a job, but have an idea?</strong>
             <p>We’re early and listening. Tell us what would make NartureBelle™ better.</p>
           </div>
-          <a routerLink="/feedback" class="btn btn-outline btn-sm">Share an idea</a>
+          <a [routerLink]="commerce.hasActivePlan() ? '/ideas' : '/plans'" class="btn btn-outline btn-sm">{{ commerce.hasActivePlan() ? 'Share an idea' : 'See care plans' }}</a>
         </div>
       </section>
     </div>
@@ -89,6 +90,7 @@ import { CareersService, EMPLOYMENT_TYPE_LABELS, Job, WORK_MODE_LABELS } from '.
 })
 export class CareersComponent implements OnInit {
   private careers = inject(CareersService);
+  commerce = inject(CommerceService);
 
   jobs = signal<Job[]>([]);
   loading = signal(true);

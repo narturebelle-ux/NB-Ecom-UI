@@ -773,6 +773,8 @@ Against API 70296dd (final contract). Not verified live, because it's waiting on
 
 *(Running list — mark resolved items with ✅ and a date rather than deleting them, so the history stays visible.)*
 
+- 🔴 **2026-10-30** — **API: enforce paid-only ideas on the server.** The UI now limits `/ideas` to users with an unexpired entitlement (§33), but that is not security. `POST /me/ideas` should refuse others. Owner to decide: can non-paying users vote from a shared `/ideas/:id` link, and should `GET /ideas` stay public?
+
 - 🟡 **2026-10-30** — **Next feature (not started): current plan, upgrade and invoices.** API and UI tasks and the open decisions are in §34.
 
 - 🔵 **2026-10-30** — **Cold-start 500s (unconfirmed).** The UI agent saw `/me` and `/me/journeys` answer 500 once while the container was booting. They were 401 a minute later, and the API agent couldn't reproduce it. The UI already retries (status 0/502/503/504 ×3, 500 ×1; commit 9a06d50). **If one is caught live, capture the headers and body:** an `x-vercel-error` header or text/plain means it's Vercel's proxy; `{"code":"INTERNAL_ERROR"}` means it's the app's startup path.
@@ -815,13 +817,19 @@ two feature branches at once and never stack them. Full rules are in this repo's
 Share an Idea (`/ideas`) and Refer & Invite (`/invite`) moved out of the top bar into the account dropdown, at the product owner's request. It now reads
 My Profile, Share an Idea, Refer & Invite, Privacy, Sign Out, and the phone menu has the same items. Refer & Invite is hidden for care professionals.
 Privacy opens `/profile#privacy` (Consent & Privacy). The router's anchor scrolling is on, with a 96px offset for the sticky header. No API changes.
-Visitors no longer have Idea pool in the top bar; `/ideas` is still public and linked from the footer as "Share an Idea".
+Visitors no longer have Idea pool in the top bar. `/ideas` is now for paying members only (see below).
 Also fixes the phone header, which the dark mode button had pushed off-screen: below 640px the tagline and account name hide, and below 380px the brand text hides.
 
 Also on this branch: **Plans leaves the nav once she has a plan.** The navbar loads `GET /entitlements` when a user signs in and hides Plans (desktop and phone)
 while any entitlement is unexpired. It stays visible with no plan, an expired plan, or a failed check. My Journey keeps showing the current plan, and the footer keeps its
 Care Plans link. `FirebaseAuthService.getIdToken()` now awaits `authStateReady()`, so requests right after a page reload carry the restored token rather than
 risking a 401 that signs the user out.
+
+Also on this branch: **Share an Idea is for paying members** (product owner, 2026-10-30). `paidMemberGuard` protects `/ideas` (and `/feedback`, which redirects to it): signed out goes to
+login, no unexpired entitlement goes to `/plans` with a message, a failed check goes home with a "try again" message, and admins always pass. "Paid" means at least one unexpired entitlement
+(`CommerceService.hasActivePlan`), so referral reward plans count. The menu, phone menu, footer and "All ideas" links show only to plan holders; the Careers card offers Care Plans instead.
+`/ideas/:id` stays public because it is the share link friends sign up and buy through.
+**This is only a UI gate.** The API must also reject `POST /me/ideas` (and decide on voting) for users without an active plan; see §9.
 
 ## 34. Next feature: current plan, upgrade and invoices (backlog, 2026-10-30)
 

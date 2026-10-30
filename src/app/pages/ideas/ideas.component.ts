@@ -1,7 +1,6 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { ApiService } from '../../services/api.service';
 import { IdeaCardComponent } from '../../components/idea-card/idea-card.component';
@@ -19,7 +18,7 @@ import {
 @Component({
   selector: 'app-ideas',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, MatIconModule, IdeaCardComponent],
+  imports: [CommonModule, FormsModule, MatIconModule, IdeaCardComponent],
   template: `
     <div class="ideas-page">
       <!-- ===== Hero ===== -->
@@ -62,15 +61,6 @@ import {
                 <p>Now share it. Every member who votes brings it closer to <strong>{{ p.voteGoal | number }}</strong>.</p>
                 <app-idea-card [idea]="p" [poolOpen]="true" />
                 <button class="btn btn-link btn-sm" (click)="justPosted.set(null)">Share another idea</button>
-              </div>
-            } @else if (!api.currentUser()) {
-              <div class="signin">
-                <h2>Share your idea</h2>
-                <p>Sign in to post an idea and vote. It only takes a minute.</p>
-                <div class="hero-cta">
-                  <a class="btn btn-primary" [routerLink]="['/auth/signup']" [queryParams]="{ returnUrl: '/ideas' }">Create an account</a>
-                  <a class="btn btn-outline" [routerLink]="['/auth/login']" [queryParams]="{ returnUrl: '/ideas' }">Sign in</a>
-                </div>
               </div>
             } @else {
               <h2>What would make it better?</h2>
@@ -191,7 +181,7 @@ import {
     .step span:last-child { font-size: 0.86rem; color: var(--text-secondary); line-height: 1.5; }
     .share-panel { background: #fff; border: 1px solid var(--border-light); border-radius: 24px; padding: 1.8rem; box-shadow: 0 12px 40px rgba(21, 48, 42, 0.07); margin-bottom: 2.5rem; }
     .share-panel h2 { display: flex; align-items: center; gap: 0.4rem; font-size: 1.5rem; color: var(--sage-900); margin-bottom: 0.3rem; }
-    .signin, .posted { text-align: center; }
+    .posted { text-align: center; }
     .posted h2 { justify-content: center; color: var(--blush-700); }
     .posted p { color: var(--text-secondary); margin-bottom: 1rem; }
     .cats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.6rem; margin: 0.8rem 0 1.2rem; }
@@ -234,7 +224,6 @@ import {
 })
 export class IdeasComponent implements OnInit {
   private ideas = inject(IdeasService);
-  private router = inject(Router);
   api = inject(ApiService);
 
   titleMax = IDEA_TITLE_MAX;
@@ -306,10 +295,6 @@ export class IdeasComponent implements OnInit {
   }
 
   toggleVote(idea: Idea) {
-    if (!this.api.currentUser()) {
-      this.router.navigate(['/auth/login'], { queryParams: { returnUrl: '/ideas' } });
-      return;
-    }
     this.busyId.set(idea.id);
     (idea.votedByMe ? this.ideas.unvote(idea.id) : this.ideas.vote(idea.id)).subscribe({
       next: updated => {

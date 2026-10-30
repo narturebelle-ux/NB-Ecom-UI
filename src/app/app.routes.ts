@@ -6,7 +6,7 @@ import { DoctorsLiveComponent } from './pages/doctors-live/doctors-live.componen
 import { LoginComponent } from './pages/login/login.component';
 import { VerifyEmailComponent } from './pages/verify-email/verify-email.component';
 import { featureGuard } from './guards/feature.guard';
-import { adminGuard, authGuard, providerGuard, reviewerGuard, verifiedGuard } from './guards/auth.guard';
+import { adminGuard, authGuard, paidMemberGuard, providerGuard, reviewerGuard, verifiedGuard } from './guards/auth.guard';
 import { onboardingGuard } from './guards/onboarding.guard';
 import { landingGuard } from './guards/landing.guard';
 
@@ -183,8 +183,8 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/health-rule-review/health-rule-review.component').then(m => m.HealthRuleReviewComponent)
   },
 
-  // Idea pool & Idea Impact (public; posting/voting need sign-in). /ideas/:id is the share target.
-  { path: 'ideas', title: 'Idea Pool | NartureBelle™', loadComponent: () => import('./pages/ideas/ideas.component').then(m => m.IdeasComponent) },
+  // Idea pool: paying members only. /ideas/:id stays public because it's the share link friends sign up and buy through.
+  { path: 'ideas', title: 'Idea Pool | NartureBelle™', canActivate: [paidMemberGuard], loadComponent: () => import('./pages/ideas/ideas.component').then(m => m.IdeasComponent) },
   { path: 'ideas/:id', title: 'An Idea for Moms | NartureBelle™', loadComponent: () => import('./pages/idea-detail/idea-detail.component').then(m => m.IdeaDetailComponent) },
   {
     path: 'admin/ideas',

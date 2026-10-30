@@ -145,9 +145,11 @@ import { FeatureDirective } from '../../directives/feature.directive';
                   <a routerLink="/profile" class="dropdown-item" (click)="isUserMenuOpen = false">
                     <mat-icon class="icon-sm">person</mat-icon> My Profile
                   </a>
-                  <a routerLink="/ideas" class="dropdown-item" (click)="isUserMenuOpen = false">
-                    <mat-icon class="icon-sm">lightbulb</mat-icon> Share an Idea
-                  </a>
+                  @if (hasActivePlan()) {
+                    <a routerLink="/ideas" class="dropdown-item" (click)="isUserMenuOpen = false">
+                      <mat-icon class="icon-sm">lightbulb</mat-icon> Share an Idea
+                    </a>
+                  }
                   @if (!isProfessional()) {
                     <a routerLink="/invite" class="dropdown-item" (click)="isUserMenuOpen = false">
                       <mat-icon class="icon-sm">card_giftcard</mat-icon> Refer &amp; Invite
@@ -219,9 +221,11 @@ import { FeatureDirective } from '../../directives/feature.directive';
             <a routerLink="/profile" (click)="isMobileOpen = false" class="mobile-nav-link profile-link">
               <mat-icon class="icon-sm">person</mat-icon> My Profile ({{ getDisplayName(user) }})
             </a>
-            <a routerLink="/ideas" (click)="isMobileOpen = false" class="mobile-nav-link">
-              <mat-icon class="icon-sm">lightbulb</mat-icon> Share an Idea
-            </a>
+            @if (hasActivePlan()) {
+              <a routerLink="/ideas" (click)="isMobileOpen = false" class="mobile-nav-link">
+                <mat-icon class="icon-sm">lightbulb</mat-icon> Share an Idea
+              </a>
+            }
             @if (!isProfessional()) {
               <a routerLink="/invite" (click)="isMobileOpen = false" class="mobile-nav-link">
                 <mat-icon class="icon-sm">card_giftcard</mat-icon> Refer &amp; Invite
@@ -608,8 +612,8 @@ export class NavbarComponent {
   onboarding = inject(OnboardingService);
   theme = inject(ThemeService);
   private commerce = inject(CommerceService);
-  /** Once she has a plan, it lives on My Journey instead of the nav. If the check fails, Plans stays visible. */
-  hasActivePlan = computed(() => this.commerce.entitlements().some(e => !this.commerce.isExpired(e)));
+  /** Once she has a plan, it lives on My Journey instead of the nav, and Share an Idea opens up. If the check fails, Plans stays visible. */
+  hasActivePlan = this.commerce.hasActivePlan;
   private planCheckedFor: number | null = null;
   isProfessional = computed(() => isProfessionalUser(this.api.currentUser()));
   /** Reviewers include MEDICAL_REVIEWER staff, who aren't professionals, so they get the link even outside the portal. */

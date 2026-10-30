@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { ApiService } from '../../services/api.service';
+import { CommerceService } from '../../services/commerce.service';
 import { IdeaCardComponent } from '../../components/idea-card/idea-card.component';
 import { Idea, IdeasMeta, IdeasService, ideaErrorMessage } from '../../services/ideas.service';
 
@@ -14,14 +15,14 @@ import { Idea, IdeasMeta, IdeasService, ideaErrorMessage } from '../../services/
   template: `
     <div class="idea-page">
       <div class="container narrow">
-        <a routerLink="/ideas" class="back"><mat-icon class="icon-sm">arrow_back</mat-icon> All ideas</a>
+        @if (commerce.hasActivePlan()) { <a routerLink="/ideas" class="back"><mat-icon class="icon-sm">arrow_back</mat-icon> All ideas</a> }
 
         @if (loading()) {
           <p class="hint">Loading…</p>
         } @else if (!idea()) {
           <div class="card empty">
             <p>{{ notFound() ? 'This idea isn’t in the pool any more.' : 'We couldn’t load this idea right now.' }}</p>
-            <a routerLink="/ideas" class="btn btn-outline btn-sm">See all ideas</a>
+            @if (commerce.hasActivePlan()) { <a routerLink="/ideas" class="btn btn-outline btn-sm">See all ideas</a> }
           </div>
         } @else {
           <span class="kicker"><mat-icon class="icon-sm">lightbulb</mat-icon> A mom’s idea for NartureBelle™</span>
@@ -72,6 +73,7 @@ export class IdeaDetailComponent implements OnInit {
   private router = inject(Router);
   private ideas = inject(IdeasService);
   api = inject(ApiService);
+  commerce = inject(CommerceService);
 
   idea = signal<Idea | null>(null);
   meta = signal<IdeasMeta | null>(null);

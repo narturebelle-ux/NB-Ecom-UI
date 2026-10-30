@@ -1,4 +1,4 @@
-import { Injectable, inject, signal } from '@angular/core';
+import { Injectable, computed, inject, signal } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable, catchError, map, tap, throwError } from 'rxjs';
 import { environment } from '../../environments/environment';
@@ -11,6 +11,8 @@ export class CommerceService {
   private readonly baseUrl = environment.apiUrl;
 
   readonly entitlements = signal<Entitlement[]>([]);
+  /** A paying member: at least one unexpired entitlement. Filled by loadEntitlements() (the navbar loads it on sign-in). */
+  readonly hasActivePlan = computed(() => this.entitlements().some(e => !this.isExpired(e)));
 
   getPlans(): Observable<Plan[]> {
     return this.http.get<Plan[]>(`${this.baseUrl}/plans`);
