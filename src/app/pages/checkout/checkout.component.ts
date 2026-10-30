@@ -1,4 +1,5 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
+import { DUE_DATE_LOCK_NOTE } from '../../models/maternal.models';
 import { MatIconModule } from '@angular/material/icon';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -55,6 +56,9 @@ type Stage = 'loading' | 'review' | 'creating' | 'pay' | 'paying' | 'failed' | '
             <div class="order-summary">
               <div class="summary-row"><span>Plan</span><strong>{{ plan()?.name }}</strong></div>
               <div class="summary-row"><span>Sessions</span><strong>{{ plan()?.totalSessions }}</strong></div>
+              @if (plan()?.months; as months) {
+                <div class="summary-row"><span>Covers</span><strong>{{ months }} {{ months === 1 ? 'month' : 'months' }}{{ months < 9 ? ' (until your due date)' : '' }}</strong></div>
+              }
               <div class="summary-row"><span>Billing</span><strong>{{ mode === 'INSTALLMENT' ? 'Installments' : 'Pay in full' }}</strong></div>
               @if (order(); as o) {
                 <div class="summary-row total">
@@ -81,6 +85,9 @@ type Stage = 'loading' | 'review' | 'creating' | 'pay' | 'paying' | 'failed' | '
             </div>
 
             @if (stage() === 'review' || stage() === 'creating') {
+              @if (plan()?.months && plan()!.months! < 9) {
+                <p class="lock-note"><mat-icon class="icon-sm">lock_clock</mat-icon> {{ dueDateLockNote }}</p>
+              }
               <button class="btn btn-primary full-w" [disabled]="stage() === 'creating'" (click)="confirmOrder()">
                 @if (stage() === 'creating') { Confirming… } @else { Confirm order <mat-icon class="icon-sm">arrow_forward</mat-icon> }
               </button>
@@ -113,6 +120,7 @@ type Stage = 'loading' | 'review' | 'creating' | 'pay' | 'paying' | 'failed' | '
     .step-line { width: 36px; height: 1px; background: var(--border-light); }
 
     .order-summary { background: var(--sage-50); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1.25rem; margin-bottom: 1.25rem; }
+    .lock-note { display: flex; gap: 0.45rem; align-items: flex-start; font-size: 0.82rem; color: #92610a; background: #fff8eb; border: 1px solid #fbd38d; border-radius: var(--radius-md); padding: 0.6rem 0.8rem; margin-bottom: 0.75rem; }
     .summary-row { display: flex; justify-content: space-between; align-items: center; gap: 1rem; font-size: 0.9rem; color: var(--text-secondary); padding: 0.4rem 0; }
     .summary-row strong { color: var(--sage-900); }
     .summary-row.total { border-top: 1px solid var(--border-light); margin-top: 0.4rem; padding-top: 0.75rem; font-size: 1.05rem; }
@@ -134,6 +142,7 @@ type Stage = 'loading' | 'review' | 'creating' | 'pay' | 'paying' | 'failed' | '
   `]
 })
 export class CheckoutComponent implements OnInit {
+  dueDateLockNote = DUE_DATE_LOCK_NOTE;
   private commerce = inject(CommerceService);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
@@ -156,8 +165,11 @@ export class CheckoutComponent implements OnInit {
     this.mode = params.get('mode') === 'INSTALLMENT' ? 'INSTALLMENT' : 'ONE_TIME';
     this.idempotencyKey = this.commerce.newIdempotencyKey();
 
-    this.commerce.getPlan(this.planId).subscribe({
-      next: (plan) => {
+    // Her quote price is what POST /orders will charge (prorated to her due date).
+    this.commerce.getQuote().subscribe({
+      next: (q) => {
+        const plan = q.plans.find(p => p.id === this.planId);
+        if (!plan) { this.fail("That plan couldn't be found or isn't available right now."); return; }
         this.plan.set(plan);
         this.stage.set('review');
       },

@@ -24,6 +24,22 @@ export interface Plan {
   inclusions: string[];
   exclusions: string[];
   allocations: PlanAllocation[];
+  /** Months this price covers (API 70296dd). 9 on the public list; prorated to the due date in a quote. */
+  months?: number;
+  /** Listed 9-month price / 9. */
+  monthlyPrice?: number;
+  /** The full 9-month one-time price, for showing what was prorated. */
+  fullOneTimePrice?: number;
+}
+
+/**
+ * GET /me/plans/quote — plans priced for the whole months left until her due date (1-9, rounded up),
+ * sessions shrunk in proportion. FULL_PLAN = no due date to go by (no journey/EDD, or postpartum).
+ */
+export interface PlanQuote {
+  months: number;
+  basis: 'DUE_DATE' | 'FULL_PLAN';
+  plans: Plan[];
 }
 
 export interface InstallmentScheduleItem {
@@ -39,6 +55,8 @@ export interface Order {
   status: OrderStatus;
   paymentMode: PaymentMode;
   price: number;
+  /** Months the order was priced for. */
+  months?: number;
   installmentSchedule: InstallmentScheduleItem[];
   refunds: unknown[];
   createdAt: string;

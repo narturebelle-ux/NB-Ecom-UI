@@ -11,13 +11,7 @@ import { ProviderService } from '../../services/provider.service';
 import { OnboardingService } from '../../services/onboarding.service';
 import { FeatureToggleService } from '../../services/feature-toggle.service';
 import { RevealDirective } from '../../directives/reveal.directive';
-import {
-  Journey,
-  JourneyStatus,
-  JOURNEY_STATUS_LABELS,
-  NextAction,
-  PROFESSIONAL_TYPE_LABELS
-} from '../../models/maternal.models';
+import { Journey, JourneyStatus, JOURNEY_STATUS_LABELS, NextAction, PROFESSIONAL_TYPE_LABELS, DUE_DATE_LOCK_NOTE, eddBounds, eddProblem } from '../../models/maternal.models';
 import { Entitlement, planDisplayName } from '../../models/commerce.models';
 import { Booking, providerInitials } from '../../models/provider.models';
 
@@ -83,7 +77,7 @@ interface QuickAction { icon: string; title: string; text: string; link: string;
             </div>
             <div class="form-group">
               <label class="form-label" for="edd">Expected delivery date (optional)</label>
-              <input id="edd" type="date" class="form-control" [(ngModel)]="formEdd" />
+              <input id="edd" type="date" class="form-control" [min]="edd.min" [max]="edd.max" [(ngModel)]="formEdd" />
               <span class="field-hint">Only relevant during pregnancy. Leave blank if not applicable.</span>
             </div>
             @if (formError()) { <div class="status-banner is-error">{{ formError() }}</div> }
@@ -455,6 +449,7 @@ export class JourneyComponent implements OnInit {
   formError = signal<string | null>(null);
   formStatus: JourneyStatus = 'PREGNANCY';
   formEdd = '';
+  edd = eddBounds();
 
   activeEntitlements = computed(() => this.commerce.entitlements().filter((e: Entitlement) => !this.commerce.isExpired(e)));
   sessionsLeft = computed(() => this.activeEntitlements().reduce((n, e) => n + e.remainingSessions, 0));
@@ -557,6 +552,9 @@ export class JourneyComponent implements OnInit {
     this.saving.set(true);
     this.formError.set(null);
     const edd = this.formEdd || null;
+    const pregnant = this.formStatus === 'PREGNANCY' || this.formStatus === 'PRE_DELIVERY';
+    const problem = pregnant ? eddProblem(edd) : null;
+    if (problem) { this.saving.set(false); this.formError.set(problem); return; }
     const active = this.activeJourney();
     const request = active
       ? this.api.updateJourney(active.id, { status: this.formStatus, expectedDeliveryDate: edd })
@@ -572,7 +570,8 @@ export class JourneyComponent implements OnInit {
       },
       error: (err) => {
         this.saving.set(false);
-        if (err?.status === 409) this.formError.set(err?.error?.message || 'An active journey already exists.');
+        if (err?.error?.code === 'DUE_DATE_LOCKED') this.formError.set(DUE_DATE_LOCK_NOTE);
+        else if (err?.status === 409) this.formError.set(err?.error?.message || 'An active journey already exists.');
         else if (err?.status === 400) this.formError.set(err?.error?.message || 'Please check the dates entered.');
         else if (err?.status !== 401 && err?.status !== 403) this.formError.set('Something went wrong. Please try again.');
       }
