@@ -108,7 +108,7 @@ export class ProviderSessionsComponent implements OnInit {
         this.loading.set(false);
         this.errorMsg.set(err?.status === 404
           ? 'The professional portal isn’t available on this server yet.'
-          : err?.status === 403 ? 'Your professional account isn’t verified yet. NartureBelle will let you know once it is.'
+          : err?.status === 403 ? 'Your professional account isn’t verified yet. NartureBelle™ will let you know once it is.'
           : 'We couldn’t load your sessions. Please try again.');
       }
     });

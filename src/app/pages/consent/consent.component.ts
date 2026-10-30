@@ -22,7 +22,7 @@ import { ConsentDocument } from '../../models/maternal.models';
         <mat-icon class="hero-icon">verified_user</mat-icon>
         <h1>Before we continue</h1>
         <p class="lead">
-          Please review and accept the following to keep using NartureBelle. These govern how your
+          Please review and accept the following to keep using NartureBelle™. These govern how your
           care information is used and shared with your care team — you can review or revoke them
           anytime from Profile &amp; Privacy.
         </p>

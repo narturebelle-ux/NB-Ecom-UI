@@ -27,7 +27,7 @@ import { FeatureDirective } from '../../directives/feature.directive';
       <div class="container header-container">
         <!-- Brand Logo -->
         <a routerLink="/" class="brand-logo">
-          <img src="favicon.svg" alt="NartureBelle logo" class="logo-mark">
+          <img src="favicon.svg" alt="NartureBelle™ logo" class="logo-mark">
           <div class="logo-text">
             <span class="brand-title">NartureBelle<span class="trademark">™</span></span>
             <span class="brand-sub">Nurturing You, Nurturing Life</span>

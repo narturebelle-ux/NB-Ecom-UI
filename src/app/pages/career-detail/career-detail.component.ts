@@ -97,7 +97,7 @@ import {
                     </div>
                   </div>
                   <div class="field">
-                    <label for="cover">Why NartureBelle? <span class="opt">optional</span></label>
+                    <label for="cover">Why NartureBelle™? <span class="opt">optional</span></label>
                     <textarea id="cover" name="coverNote" class="form-control" rows="4" maxlength="3000" [(ngModel)]="form.coverNote"></textarea>
                   </div>
                   <!-- Honeypot: hidden from people; bots fill it in and the API discards the submission. -->
@@ -105,7 +105,7 @@ import {
 
                   <label class="consent">
                     <input type="checkbox" name="privacyConsent" [(ngModel)]="form.privacyConsent" />
-                    I agree that NartureBelle may store my application and résumé and contact me about this and future roles.
+                    I agree that NartureBelle™ may store my application and résumé and contact me about this and future roles.
                   </label>
 
                   @if (formError()) { <p class="error-msg">{{ formError() }}</p> }

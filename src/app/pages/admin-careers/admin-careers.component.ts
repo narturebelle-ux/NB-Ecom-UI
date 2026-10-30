@@ -184,7 +184,7 @@ export class AdminCareersComponent implements OnInit {
       next: jobs => { this.jobs.set(jobs); this.loading.set(false); },
       error: err => {
         this.loading.set(false);
-        this.errorMsg.set(err?.status === 403 ? 'Only NartureBelle admins can manage roles.'
+        this.errorMsg.set(err?.status === 403 ? 'Only NartureBelle™ admins can manage roles.'
           : err?.status === 404 ? 'Careers isn’t available on this server yet.' : 'We couldn’t load roles.');
       }
     });
