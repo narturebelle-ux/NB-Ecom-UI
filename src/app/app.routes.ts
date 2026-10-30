@@ -152,6 +152,14 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/joy-circle/joy-circle.component').then(m => m.JoyCircleComponent)
   },
 
+  // Referral links: her invite link and progress toward the free Premium plan (5 friends who buy a plan).
+  {
+    path: 'invite',
+    title: 'Invite Friends | NartureBelle™',
+    canActivate: [authGuard],
+    loadComponent: () => import('./pages/invite/invite.component').then(m => m.InviteComponent)
+  },
+
   // Professional portal: sessions, in-session product recommendations (Essential / Optional).
   {
     path: 'provider/sessions/:id',
