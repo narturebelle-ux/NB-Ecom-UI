@@ -69,6 +69,8 @@ import { DoctorSession } from '../../models/maternal.models';
               </div>
             </div>
           </div>
+        } @empty {
+          <p class="sub">No sessions are scheduled right now.</p>
         }
       </div>
     </main>

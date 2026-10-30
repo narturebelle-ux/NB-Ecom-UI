@@ -29,15 +29,26 @@ the user sees an error. The UI no longer substitutes seed data or fakes success,
 |---|---|---|---|
 | 6.1 Child + vaccines | Shipped (2a4601a) | Built against it, not yet verified with a signed-in user | `childTracker` off |
 | 6.2 Hospital referrals | Shipped (9999f26); status is `REQUESTED`/`CONFIRMED` only, applied in UI bca5333 | Built against it, not yet verified with a signed-in user | none (Checkup Checklist page) |
-| 6.3 Joy Circle | Running; `GET /joy-circle/events` returns seeded events matching the contract | Built against it | `joyCircle` off |
-| 6.4 Product recommendations | Not shipped yet (404) | Built against your planned contract | `productRecommendations` off |
-| 6.5 Export + deletion request | Not shipped yet (404) | Built against your planned contract | none (Profile page) |
+| 6.3 Joy Circle | Committed (848ac87). The 8080 jar has the public events list | Built against it | `joyCircle` off |
+| 6.4 Product recommendations | Committed (848ac87), **not running yet**: the 8080 jar is old and needs a rebuild + restart | Built against the contract | `productRecommendations` off |
+| 6.5 Export + deletion request | Committed (848ac87), **not running yet** (same rebuild needed). No consent required | Built against the contract, including `DELETION_NOT_CANCELLABLE` / `DELETION_REQUEST_NOT_FOUND` handling (UI 2026-10-30) | none (Profile page) |
+
+**Prod profile no longer seeds sample data (API, 2026-10-30).** On a fresh prod DB, products, hospitals, checklists,
+doctor sessions, onboarding call slots and Joy Circle events all start empty. Every one of those screens has an empty state:
+- the checklist, hospitals and doctor-session lists say nothing is published yet
+- onboarding falls back to "Ask for a call"
+- Joy Circle and recommendations say there's nothing yet
+
+Content has to come from admin tooling (you're adding admin CRUD next).
 
 **What the UI needs from you, in priority order:**
-1. **Ship 6.4 and 6.5** with the shapes you sent on 2026-10-29 (§23 lists the exact calls). Say if anything changes.
-2. **Add a records-storage consent type** (e.g. `RECORDS_STORAGE` in `/consent-documents/current`, accepted by `POST /me/consents`),
-   so the Records agreement before the first upload is saved server-side, not just on the device.
-3. **`GET /nurse-companion/packages` returns 500.** Low priority: that page is hidden behind `legacyLeadForms`.
+1. **Rebuild and restart the API on 8080 from `firebase-setup`** (848ac87 + 0cd5f32). Until then 6.4, 6.5 and the
+   nurse-packages fix aren't live and the UI can't verify them.
+2. **Expose `Content-Disposition` in CORS** (`Access-Control-Expose-Headers: Content-Disposition`), so the browser can read
+   the export's filename (`narturebelle-export-<date>.json`). Without it the UI builds the same name itself, so this is low priority.
+3. **Add a records-storage consent type** (e.g. `RECORDS_STORAGE` in `/consent-documents/current`, accepted by `POST /me/consents`),
+   so the Records agreement before the first upload is saved server-side, not just on the device. (You've said it's next after admin CRUD.)
+4. ~~`GET /nurse-companion/packages` returns 500~~. Fixed in 0cd5f32 (live after the rebuild).
 4. When an item ships, note it in `UI_INTEGRATION_GUIDE.md` (or message the UI session). The UI then verifies it with a
    signed-in test user. **Feature flags are the product owner's call:** don't flip `childTracker`/`joyCircle`/`productRecommendations` on your own.
 
@@ -567,6 +578,7 @@ onboarding documents (DRAFT, pending legal review), the vaccine schedule (PENDIN
 - ✅ **2026-10-29** — `careBooking` and `recordsVault` flags turned on (V14); `GET /features` confirmed. `callbackRequestedAt` added to the onboarding status and read by the UI.
 - ✅ **2026-10-29** — Phase 4 contract shipped and the UI is reconciled against it (§19). Real uploads still need `SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY` configured.
 - 🔵 **2026-10-30** — Please add a records-storage consent type (e.g. `RECORDS_STORAGE`) so the Records agreement is recorded server-side instead of on the device (§24).
-- 🔵 **2026-10-30** — `GET /nurse-companion/packages` returns 500 (page is hidden behind `legacyLeadForms`, low priority).
-- 🟡 **2026-10-29** — Phase 6: planned contract received from nb-ecomm-api-a5, UI built against it (§23). 6.1-6.3 running on 8080 (2026-10-30). **Still open: ship 6.4 product recommendations and 6.5 export/deletion** (§0).
+- ✅ **2026-10-30** — `GET /nurse-companion/packages` 500 fixed in API 0cd5f32 (live after the 8080 rebuild).
+- 🔵 **2026-10-30** — Expose `Content-Disposition` in CORS so the export filename reaches the browser (§0).
+- 🟡 **2026-10-29** — Phase 6: planned contract received from nb-ecomm-api-a5, UI built against it (§23). 6.1-6.3 running on 8080 (2026-10-30). 6.4 and 6.5 committed in 848ac87. **Still open: rebuild/restart 8080 so they go live, then UI verification** (§0).
 - ✅ **2026-10-30** — ~~Phases 5-6 contracts (see §15) needed to reconcile the UI's self-mocked implementations~~. Providers/booking, Records and Reminders are reconciled (§17, §19, §21), and Child/vaccination is built against the real contract (§23). No self-mocked feature data is left in the UI (§24). Phase 7 (real payments) is still blocked on product-owner decisions.

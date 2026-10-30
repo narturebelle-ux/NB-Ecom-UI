@@ -624,12 +624,12 @@ export class MyProfileComponent implements OnInit, OnDestroy {
   exportData() {
     this.exporting.set(true);
     this.accountData.exportData().subscribe({
-      next: blob => {
+      next: ({ blob, filename }) => {
         this.exporting.set(false);
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'narturebelle-my-data.json';
+        a.download = filename;
         a.click();
         URL.revokeObjectURL(url);
       },
@@ -688,10 +688,15 @@ export class MyProfileComponent implements OnInit, OnDestroy {
         this.refreshDeletion();
         this.api.showToast('Your deletion request is cancelled.');
       },
-      error: () => {
+      error: (err) => {
         this.deletionBusy.set(false);
         this.refreshDeletion();
-        this.api.showToast('Couldn’t cancel it. It may already be in progress.');
+        const code = err?.error?.code;
+        this.api.showToast(
+          code === 'DELETION_NOT_CANCELLABLE' ? 'Our team has already started processing it, so it can’t be cancelled now.'
+          : code === 'DELETION_REQUEST_NOT_FOUND' ? 'There’s no open deletion request to cancel.'
+          : 'Couldn’t cancel it. Please try again.'
+        );
       }
     });
   }

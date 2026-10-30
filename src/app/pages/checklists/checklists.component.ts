@@ -78,6 +78,8 @@ import { ChecklistTask, HospitalPartner, PregnancyStage } from '../../models/mat
                   </div>
                 }
               </div>
+            } @empty {
+              @if (!loadError) { <p class="empty-note">No checklist items have been published yet.</p> }
             }
           </div>
         </div>
@@ -135,6 +137,8 @@ import { ChecklistTask, HospitalPartner, PregnancyStage } from '../../models/mat
                   </div>
                 </div>
               </div>
+            } @empty {
+              <p class="empty-note">No partner hospitals match yet. Try another city, or check back soon.</p>
             }
           </div>
         </div>
@@ -377,6 +381,7 @@ import { ChecklistTask, HospitalPartner, PregnancyStage } from '../../models/mat
       color: var(--sage-900);
       margin-bottom: 1rem;
     }
+    .empty-note { color: var(--text-muted); font-size: 0.88rem; padding: 1rem 0; }
     .load-error { color: #a0281c; font-size: 0.85rem; margin: 0.5rem 0; }
     .hospitals-list {
       display: flex;
