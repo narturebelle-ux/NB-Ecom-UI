@@ -77,9 +77,9 @@ import { CHILD_SEX_LABELS, Child, ChildSex, VaccinationItem, VaccinationSchedule
   styles: [`
     .child-page { padding: 3rem 0 5rem; max-width: 760px; margin: 0 auto; }
     h1 { font-size: 1.85rem; color: var(--sage-900); margin-bottom: 1rem; text-align: center; }
-    .draft-notice { font-size: 0.8rem; color: #92610a; background: #fff8eb; border: 1px solid #fbd38d; border-radius: var(--radius-md); padding: 0.7rem 1rem; margin-bottom: 1.5rem; }
+    .draft-notice { font-size: 0.8rem; color: var(--warn-text); background: var(--warn-bg); border: 1px solid var(--warn-border); border-radius: var(--radius-md); padding: 0.7rem 1rem; margin-bottom: 1.5rem; }
 
-    .card { border-radius: var(--radius-xl); background: #fff; border: 1px solid var(--border-light); padding: 1.5rem; margin-bottom: 1.25rem; }
+    .card { border-radius: var(--radius-xl); background: var(--bg-surface); border: 1px solid var(--border-light); padding: 1.5rem; margin-bottom: 1.25rem; }
     .error-card { text-align: center; color: var(--text-secondary); }
     .add-child h2 { font-size: 1.05rem; color: var(--primary-deep); margin-bottom: 1rem; }
     .form-row { display: flex; gap: 0.75rem; flex-wrap: wrap; }
@@ -93,8 +93,8 @@ import { CHILD_SEX_LABELS, Child, ChildSex, VaccinationItem, VaccinationSchedule
     .vax-name { flex: 1; min-width: 10rem; color: var(--sage-900); font-weight: 600; }
     .vax-age { font-size: 0.75rem; color: var(--text-muted); }
     .badge { font-size: 0.68rem; font-weight: 800; padding: 0.15rem 0.5rem; border-radius: var(--radius-full); }
-    .badge.overdue { color: #a0281c; background: #fdecea; }
-    .badge.due { color: #92610a; background: #fff8eb; }
+    .badge.overdue { color: var(--danger-text); background: var(--danger-bg); }
+    .badge.due { color: var(--warn-text); background: var(--warn-bg); }
     .badge.upcoming { color: var(--text-muted); background: var(--sage-50); }
 
     .btn { padding: 0.6rem 1.1rem; border-radius: 8px; font-weight: 700; font-size: 0.88rem; cursor: pointer; border: none; }

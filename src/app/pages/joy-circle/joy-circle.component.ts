@@ -125,17 +125,17 @@ import { JoyCircleEvent, JoyCircleRsvp } from '../../models/joy-circle.models';
     .notice { display: flex; gap: 0.6rem; align-items: flex-start; font-size: 0.84rem; color: var(--text-secondary); background: var(--sage-50); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 0.8rem 1rem; margin-bottom: 1.5rem; }
     .notice mat-icon { color: var(--trust-700); flex-shrink: 0; }
 
-    .card { border-radius: var(--radius-xl); background: #fff; border: 1px solid var(--border-light); }
+    .card { border-radius: var(--radius-xl); background: var(--bg-surface); border: 1px solid var(--border-light); }
     .mine { margin-bottom: 1.75rem; }
     .mine h2 { font-size: 1.1rem; color: var(--sage-900); margin-bottom: 0.6rem; }
     .mine-row { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; padding: 0.9rem 1.1rem; margin-bottom: 0.5rem; }
     .mine-row strong { display: block; color: var(--sage-900); }
     .mine-actions { display: flex; gap: 0.4rem; align-items: center; }
-    .badge.cancelled { display: inline-block; margin-top: 0.25rem; font-size: 0.7rem; font-weight: 800; color: #a0281c; background: #fdecea; padding: 0.15rem 0.5rem; border-radius: var(--radius-full); }
+    .badge.cancelled { display: inline-block; margin-top: 0.25rem; font-size: 0.7rem; font-weight: 800; color: var(--danger-text); background: var(--danger-bg); padding: 0.15rem 0.5rem; border-radius: var(--radius-full); }
 
     .chips { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 1.25rem; }
-    .chip { border: 1.5px solid var(--border-light); background: #fff; border-radius: var(--radius-full); padding: 0.4rem 0.85rem; font-size: 0.82rem; font-weight: 600; color: var(--text-secondary); cursor: pointer; }
-    .chip.on { background: var(--sage-700); border-color: var(--sage-700); color: #fff; }
+    .chip { border: 1.5px solid var(--border-light); background: var(--bg-surface); border-radius: var(--radius-full); padding: 0.4rem 0.85rem; font-size: 0.82rem; font-weight: 600; color: var(--text-secondary); cursor: pointer; }
+    .chip.on { background: var(--solid-sage-700); border-color: var(--sage-700); color: #fff; }
 
     .events { display: flex; flex-direction: column; gap: 1rem; }
     .event { display: flex; gap: 1.1rem; padding: 1.25rem; }

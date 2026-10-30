@@ -197,7 +197,7 @@ const CATEGORIES: RecordCategory[] = ['SCAN', 'LAB_REPORT', 'PRESCRIPTION', 'DIS
     .consent-points li { display: flex; gap: 0.6rem; align-items: flex-start; font-size: 0.9rem; color: var(--text-secondary); }
     .consent-points mat-icon { color: var(--trust-700); margin-top: 0.15rem; }
     .consent-doc { margin: 0.75rem 0; font-size: 0.85rem; }
-    .error-msg { color: #a0281c; font-size: 0.85rem; margin: 0.5rem 0; }
+    .error-msg { color: var(--danger-text); font-size: 0.85rem; margin: 0.5rem 0; }
     .consent-doc summary { cursor: pointer; color: var(--trust-700); font-weight: 600; }
     .consent-doc-body { white-space: pre-line; color: var(--text-secondary); margin-top: 0.5rem; }
     .consent-row { display: flex; gap: 0.6rem; justify-content: center; font-size: 0.88rem; color: var(--text-secondary); margin-bottom: 1.25rem; align-items: center; }
@@ -207,7 +207,7 @@ const CATEGORIES: RecordCategory[] = ['SCAN', 'LAB_REPORT', 'PRESCRIPTION', 'DIS
     .file-pick span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .file-pick:hover { border-color: var(--sage-500); }
     .category-select { width: auto; }
-    .error { display: flex; align-items: center; gap: 0.35rem; margin-top: 0.85rem; font-size: 0.85rem; color: #a0281c; }
+    .error { display: flex; align-items: center; gap: 0.35rem; margin-top: 0.85rem; font-size: 0.85rem; color: var(--danger-text); }
 
     .empty { text-align: center; padding: 2.5rem 1rem; color: var(--text-secondary); }
     .record-list { display: flex; flex-direction: column; gap: 0.85rem; }
@@ -217,16 +217,16 @@ const CATEGORIES: RecordCategory[] = ['SCAN', 'LAB_REPORT', 'PRESCRIPTION', 'DIS
     .record-meta { flex: 1; min-width: 0; }
     .record-meta strong { display: block; color: var(--sage-900); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .hint { font-size: 0.78rem; color: var(--text-muted); }
-    .scan-badge { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: #92610a; background: #fff8eb; border: 1px solid #fbd38d; padding: 0.15rem 0.5rem; border-radius: var(--radius-full); white-space: nowrap; }
+    .scan-badge { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--warn-text); background: var(--warn-bg); border: 1px solid var(--warn-border); padding: 0.15rem 0.5rem; border-radius: var(--radius-full); white-space: nowrap; }
     .chev { color: var(--text-muted); transition: transform var(--transition-smooth); }
     .record-card.open .chev { transform: rotate(180deg); }
     .record-body { border-top: 1px solid var(--border-light); padding: 1.1rem 1.25rem 1.25rem; animation: fadeUp 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
     .action-row { display: flex; gap: 1.25rem; align-items: center; flex-wrap: wrap; margin-bottom: 1rem; }
     .btn-link { font-size: 0.84rem; font-weight: 600; color: var(--sage-800); }
-    .btn-link.danger { color: #a0281c; }
+    .btn-link.danger { color: var(--danger-text); }
     .inline-select { display: inline-flex; align-items: center; gap: 0.25rem; color: var(--sage-800); font-size: 0.84rem; }
     .inline-select select { border: none; background: transparent; font-weight: 600; color: var(--sage-800); cursor: pointer; }
-    .confirm-box { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; padding: 0.75rem 1rem; border-radius: var(--radius-md); background: #fdecea; border: 1px solid #f5b7b1; color: #a0281c; font-size: 0.85rem; margin-bottom: 1rem; }
+    .confirm-box { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; padding: 0.75rem 1rem; border-radius: var(--radius-md); background: var(--danger-bg); border: 1px solid var(--danger-border); color: var(--danger-text); font-size: 0.85rem; margin-bottom: 1rem; }
 
     .share-section h3 { display: flex; align-items: center; gap: 0.35rem; font-family: var(--font-sans); font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-secondary); margin-bottom: 0.6rem; }
     .share-row { display: flex; justify-content: space-between; align-items: center; padding: 0.45rem 0; border-bottom: 1px solid var(--border-subtle); font-size: 0.86rem; color: var(--sage-900); }

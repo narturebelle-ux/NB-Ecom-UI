@@ -142,7 +142,7 @@ type Panel = { bookingId: number; kind: 'cancel' | 'reschedule' | 'noshow' | 'fe
     .status-badge { display: inline-block; font-size: 0.68rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.03em; padding: 0.2rem 0.6rem; border-radius: var(--radius-full); margin-bottom: 0.5rem; background: var(--sage-100); color: var(--sage-900); }
     .status-booked, .status-in_progress { background: var(--trust-100); color: var(--trust-900); }
     .status-completed { background: var(--sage-100); color: var(--sage-900); }
-    .status-cancelled, .status-no_show_provider, .status-no_show_user { background: #fdecea; color: #a0281c; }
+    .status-cancelled, .status-no_show_provider, .status-no_show_user { background: var(--danger-bg); color: var(--danger-text); }
     .status-rescheduled { background: var(--gold-100); color: var(--gold-700); }
     .booking-main h3 { font-size: 1.1rem; color: var(--sage-900); margin-bottom: 0.15rem; }
     .type-tag { font-size: 0.72rem; font-weight: 700; color: var(--blush-700); text-transform: uppercase; letter-spacing: 0.03em; }
@@ -153,13 +153,13 @@ type Panel = { bookingId: number; kind: 'cancel' | 'reschedule' | 'noshow' | 'fe
     .booking-actions { display: flex; gap: 1.1rem; flex-wrap: wrap; }
     .btn-link { font-size: 0.82rem; font-weight: 600; color: var(--sage-800); }
     .btn-link:hover { text-decoration: underline; }
-    .btn-link.danger { color: #a0281c; }
+    .btn-link.danger { color: var(--danger-text); }
 
     .panel { border-top: 1px solid var(--border-light); padding-top: 1rem; display: flex; flex-direction: column; gap: 0.75rem; animation: fadeUp 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
     .panel-title { font-weight: 700; color: var(--sage-900); font-size: 0.92rem; }
     .panel-actions { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; }
     .slot-row { display: flex; gap: 0.5rem; flex-wrap: wrap; }
-    .slot-btn { padding: 0.45rem 0.75rem; border-radius: var(--radius-sm); border: 1.5px solid var(--border-light); background: #fff; font-size: 0.8rem; cursor: pointer; }
+    .slot-btn { padding: 0.45rem 0.75rem; border-radius: var(--radius-sm); border: 1.5px solid var(--border-light); background: var(--bg-surface); font-size: 0.8rem; cursor: pointer; }
     .slot-btn.selected { border-color: var(--sage-700); background: var(--sage-50); font-weight: 700; }
     .danger-btn { background: #a0281c; }
     .danger-btn:hover { background: #7f1f16; }
@@ -172,7 +172,7 @@ type Panel = { bookingId: number; kind: 'cancel' | 'reschedule' | 'noshow' | 'fe
     .field-hint { display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.8rem; color: var(--text-muted); }
     .state-box { text-align: center; padding: 3rem 1rem; color: var(--text-secondary); }
     .state-box p { margin-bottom: 1.25rem; }
-    .state-box.error { display: flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 1rem; background: #fdecea; color: #a0281c; border-radius: var(--radius-md); }
+    .state-box.error { display: flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 1rem; background: var(--danger-bg); color: var(--danger-text); border-radius: var(--radius-md); }
   `]
 })
 export class BookingsComponent implements OnInit {

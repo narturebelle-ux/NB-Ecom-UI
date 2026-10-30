@@ -120,7 +120,7 @@ type Stage = 'loading' | 'review' | 'creating' | 'pay' | 'paying' | 'failed' | '
     .step-line { width: 36px; height: 1px; background: var(--border-light); }
 
     .order-summary { background: var(--sage-50); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1.25rem; margin-bottom: 1.25rem; }
-    .lock-note { display: flex; gap: 0.45rem; align-items: flex-start; font-size: 0.82rem; color: #92610a; background: #fff8eb; border: 1px solid #fbd38d; border-radius: var(--radius-md); padding: 0.6rem 0.8rem; margin-bottom: 0.75rem; }
+    .lock-note { display: flex; gap: 0.45rem; align-items: flex-start; font-size: 0.82rem; color: var(--warn-text); background: var(--warn-bg); border: 1px solid var(--warn-border); border-radius: var(--radius-md); padding: 0.6rem 0.8rem; margin-bottom: 0.75rem; }
     .summary-row { display: flex; justify-content: space-between; align-items: center; gap: 1rem; font-size: 0.9rem; color: var(--text-secondary); padding: 0.4rem 0; }
     .summary-row strong { color: var(--sage-900); }
     .summary-row.total { border-top: 1px solid var(--border-light); margin-top: 0.4rem; padding-top: 0.75rem; font-size: 1.05rem; }
@@ -130,7 +130,7 @@ type Stage = 'loading' | 'review' | 'creating' | 'pay' | 'paying' | 'failed' | '
     .schedule-row { display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text-secondary); padding: 0.2rem 0; }
     .field-hint { display: block; margin-top: 0.4rem; font-size: 0.75rem; color: var(--text-muted); }
 
-    .sim-notice { font-size: 0.78rem; color: #92610a; background: #fff8eb; border: 1px solid #fbd38d; border-radius: var(--radius-md); padding: 0.65rem 0.9rem; margin-bottom: 1.25rem; }
+    .sim-notice { font-size: 0.78rem; color: var(--warn-text); background: var(--warn-bg); border: 1px solid var(--warn-border); border-radius: var(--radius-md); padding: 0.65rem 0.9rem; margin-bottom: 1.25rem; }
 
     .stack { display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1.25rem; }
     .btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }

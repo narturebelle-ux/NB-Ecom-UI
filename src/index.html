@@ -4,6 +4,15 @@
   <meta charset="utf-8">
   <title>NartureBelle™ | Professional-Led Care, Pregnancy to Postpartum</title>
   <base href="/">
+  <!-- Apply the saved or device theme before first paint, so dark mode doesn't flash white. Same logic as ThemeService. -->
+  <script>
+    (function () {
+      var t = null;
+      try { t = localStorage.getItem('nb_theme'); } catch (e) {}
+      if (t !== 'dark' && t !== 'light') t = window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', t);
+    })();
+  </script>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="NartureBelle connects expecting and new mothers with verified doctors, nurses and specialists through every stage — pregnancy, delivery, postpartum and early childcare — with records kept secure and private throughout.">
   <link rel="icon" type="image/png" href="favicon-96x96.png" sizes="96x96">

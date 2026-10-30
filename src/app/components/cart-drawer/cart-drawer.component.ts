@@ -91,7 +91,7 @@ import { ApiService } from '../../services/api.service';
       width: 100%;
       max-width: 440px;
       height: 100%;
-      background: #fff;
+      background: var(--bg-surface);
       display: flex;
       flex-direction: column;
       box-shadow: var(--shadow-xl);
@@ -150,7 +150,7 @@ import { ApiService } from '../../services/api.service';
     }
     .progress-fill {
       height: 100%;
-      background: var(--sage-700);
+      background: var(--solid-sage-700);
       transition: width var(--transition-smooth);
     }
 

@@ -111,7 +111,7 @@ import { DoctorSession } from '../../models/maternal.models';
   styles: [`
     .live-header {
       padding: 3.5rem 0 2.5rem 0;
-      background: linear-gradient(135deg, #fdf3ef 0%, #faf7f2 100%);
+      background: linear-gradient(135deg, var(--blush-50) 0%, var(--bg-alt) 100%);
       border-bottom: 1px solid var(--border-light);
     }
     .text-center { text-align: center; }
@@ -119,8 +119,8 @@ import { DoctorSession } from '../../models/maternal.models';
       display: inline-flex;
       align-items: center;
       gap: 0.5rem;
-      background: #fde8e8;
-      color: #9b1c1c;
+      background: var(--danger-bg);
+      color: var(--danger-text);
       padding: 0.35rem 0.85rem;
       border-radius: var(--radius-full);
       font-size: 0.78rem;
@@ -186,7 +186,7 @@ import { DoctorSession } from '../../models/maternal.models';
       align-items: center;
     }
     .stage-tag {
-      background: var(--sage-900);
+      background: var(--solid-sage-900);
       color: #fff;
       font-size: 0.7rem;
       font-weight: 800;
@@ -283,7 +283,7 @@ import { DoctorSession } from '../../models/maternal.models';
       padding: 1rem;
     }
     .modal-dialog {
-      background: #fff;
+      background: var(--bg-surface);
       width: 100%;
       max-width: 500px;
       padding: 2.25rem;

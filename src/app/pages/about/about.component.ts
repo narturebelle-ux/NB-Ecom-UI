@@ -110,22 +110,22 @@ interface Person {
     .story { padding-top: 2rem; }
     .story p { color: var(--text-secondary); line-height: 1.75; margin-bottom: 1rem; }
     .pillars { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 1rem; margin-top: 1.75rem; }
-    .pillar { display: flex; flex-direction: column; gap: 0.35rem; padding: 1.1rem; border-radius: var(--radius-lg, 14px); background: #fff; border: 1px solid var(--border-light); }
+    .pillar { display: flex; flex-direction: column; gap: 0.35rem; padding: 1.1rem; border-radius: var(--radius-lg, 14px); background: var(--bg-surface); border: 1px solid var(--border-light); }
     .pillar mat-icon { color: var(--sage-700); }
     .pillar strong { color: var(--sage-900); }
     .pillar span { font-size: 0.86rem; color: var(--text-secondary); line-height: 1.5; }
-    .quote-band { margin: 3rem 0; padding: 3rem 0; background: var(--sage-900); }
+    .quote-band { margin: 3rem 0; padding: 3rem 0; background: var(--solid-sage-900); }
     blockquote { margin: 0; text-align: center; }
     blockquote p { font-family: var(--font-serif); font-size: clamp(1.25rem, 2.6vw, 1.7rem); line-height: 1.5; color: #fff; font-style: italic; }
     blockquote footer { margin-top: 1rem; font-size: 0.9rem; color: rgba(255, 255, 255, 0.75); font-weight: 600; }
-    .card { border-radius: var(--radius-lg, 14px); background: #fff; border: 1px solid var(--border-light); }
+    .card { border-radius: var(--radius-lg, 14px); background: var(--bg-surface); border: 1px solid var(--border-light); }
     .founder { display: flex; gap: 1.25rem; align-items: center; padding: 1.4rem 1.5rem; margin-bottom: 2rem; }
     .founder h3 { font-size: 1.3rem; color: var(--sage-900); }
     .sub-h { font-size: 1.15rem; margin-top: 1.5rem; }
     .people { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 0.9rem; }
     .person { display: flex; gap: 0.9rem; align-items: center; padding: 1rem 1.1rem; }
     .person h3 { font-size: 1rem; color: var(--sage-900); }
-    .avatar { width: 48px; height: 48px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: var(--sage-700); color: #fff; font-weight: 800; letter-spacing: 0.03em; }
+    .avatar { width: 48px; height: 48px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: var(--solid-sage-700); color: #fff; font-weight: 800; letter-spacing: 0.03em; }
     .avatar.lg { width: 72px; height: 72px; font-size: 1.4rem; }
     .role { display: block; font-size: 0.82rem; font-weight: 700; color: var(--blush-700); margin-top: 0.15rem; }
     .cta { text-align: center; margin-top: 3rem; }

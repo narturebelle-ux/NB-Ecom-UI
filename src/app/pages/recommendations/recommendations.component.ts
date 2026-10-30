@@ -126,10 +126,10 @@ import { BUDGET_OPTIONS, Budget, ProductRecommendation, RECO_STAGE_LABELS } from
     .filter-group { display: flex; flex-direction: column; gap: 0.5rem; }
     .filter-label { font-size: 0.78rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; }
     .chips { display: flex; flex-wrap: wrap; gap: 0.4rem; }
-    .chip { border: 1.5px solid var(--border-light); background: #fff; border-radius: var(--radius-full); padding: 0.4rem 0.85rem; font-size: 0.82rem; font-weight: 600; color: var(--text-secondary); cursor: pointer; }
-    .chip.on { background: var(--sage-700); border-color: var(--sage-700); color: #fff; }
+    .chip { border: 1.5px solid var(--border-light); background: var(--bg-surface); border-radius: var(--radius-full); padding: 0.4rem 0.85rem; font-size: 0.82rem; font-weight: 600; color: var(--text-secondary); cursor: pointer; }
+    .chip.on { background: var(--solid-sage-700); border-color: var(--sage-700); color: #fff; }
 
-    .card { border-radius: var(--radius-xl); background: #fff; border: 1px solid var(--border-light); }
+    .card { border-radius: var(--radius-xl); background: var(--bg-surface); border: 1px solid var(--border-light); }
     .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.25rem; }
     .span-all { grid-column: 1 / -1; }
     .reco { overflow: hidden; display: flex; flex-direction: column; }

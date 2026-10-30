@@ -126,18 +126,18 @@ import {
     h2 { font-size: 1.15rem; color: var(--sage-900); margin: 0.5rem 0 0.75rem; }
     .meta { display: flex; flex-wrap: wrap; gap: 0.3rem 1rem; font-size: 0.84rem; color: var(--text-muted); margin: 0.5rem 0 1.25rem; }
     .meta span { display: inline-flex; align-items: center; gap: 0.25rem; }
-    .card { border-radius: var(--radius-lg, 14px); background: #fff; border: 1px solid var(--border-light); padding: 1.3rem 1.4rem; margin-bottom: 1.25rem; }
+    .card { border-radius: var(--radius-lg, 14px); background: var(--bg-surface); border: 1px solid var(--border-light); padding: 1.3rem 1.4rem; margin-bottom: 1.25rem; }
     .description { white-space: pre-line; color: var(--text-secondary); line-height: 1.7; }
     ul { padding-left: 1.2rem; color: var(--text-secondary); line-height: 1.7; }
     .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 0.9rem 1rem; }
     .field { display: flex; flex-direction: column; gap: 0.3rem; margin-bottom: 0.9rem; }
     label { font-size: 0.84rem; font-weight: 600; color: var(--sage-900); }
-    .req { color: #a0281c; }
+    .req { color: var(--danger-text); }
     .opt { font-weight: 400; color: var(--text-muted); font-size: 0.78rem; }
     .hint { font-size: 0.76rem; color: var(--text-muted); }
     .hp { position: absolute; left: -10000px; width: 1px; height: 1px; opacity: 0; }
     .consent { display: flex; gap: 0.5rem; align-items: flex-start; font-weight: 400; font-size: 0.84rem; color: var(--text-secondary); margin: 0.4rem 0 1rem; }
-    .error-msg { color: #a0281c; font-size: 0.85rem; margin-bottom: 0.75rem; }
+    .error-msg { color: var(--danger-text); font-size: 0.85rem; margin-bottom: 0.75rem; }
     .done { text-align: center; }
     .done mat-icon { color: var(--sage-700); font-size: 2.2rem; width: 2.2rem; height: 2.2rem; }
     .done p { color: var(--text-secondary); margin-bottom: 1rem; }

@@ -131,7 +131,7 @@ interface Pick { priority: RecommendationPriority; note: string; }
     .session-page { padding: 2rem 0 5rem; }
     .narrow { max-width: 820px; }
     .back { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.85rem; color: var(--trust-700); text-decoration: none; margin-bottom: 1rem; }
-    .card { border-radius: var(--radius-lg, 14px); background: #fff; border: 1px solid var(--border-light); padding: 1.15rem 1.25rem; margin-bottom: 1rem; }
+    .card { border-radius: var(--radius-lg, 14px); background: var(--bg-surface); border: 1px solid var(--border-light); padding: 1.15rem 1.25rem; margin-bottom: 1rem; }
     .head { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; }
     .kicker { font-size: 0.74rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--trust-700); }
     h1 { font-size: 1.5rem; color: var(--sage-900); margin: 0.3rem 0; }
@@ -148,10 +148,10 @@ interface Pick { priority: RecommendationPriority; note: string; }
     .why { font-size: 0.76rem; color: var(--sage-700); }
     .pick-opts { display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap; margin: 0.5rem 0 0 calc(52px + 0.75rem + 1.25rem); }
     .seg { display: inline-flex; border: 1.5px solid var(--border-light); border-radius: var(--radius-full); overflow: hidden; }
-    .seg button { border: none; background: #fff; padding: 0.3rem 0.8rem; font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); cursor: pointer; }
-    .seg button.on { background: var(--sage-700); color: #fff; }
+    .seg button { border: none; background: var(--bg-surface); padding: 0.3rem 0.8rem; font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); cursor: pointer; }
+    .seg button.on { background: var(--solid-sage-700); color: #fff; }
     .note { flex: 1; min-width: 12rem; padding: 0.4rem 0.6rem; font-size: 0.82rem; }
-    .notice { font-size: 0.84rem; color: #92610a; background: #fff8eb; border: 1px solid #fbd38d; border-radius: var(--radius-md); padding: 0.55rem 0.8rem; }
+    .notice { font-size: 0.84rem; color: var(--warn-text); background: var(--warn-bg); border: 1px solid var(--warn-border); border-radius: var(--radius-md); padding: 0.55rem 0.8rem; }
     .avoided { margin-top: 0.75rem; font-size: 0.82rem; color: var(--text-secondary); }
     .avoided summary { cursor: pointer; font-weight: 600; color: var(--trust-700); }
     .save-row { display: flex; justify-content: space-between; align-items: center; margin-top: 0.75rem; gap: 0.75rem; }

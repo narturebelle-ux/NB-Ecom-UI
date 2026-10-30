@@ -228,7 +228,7 @@ import { CHANNEL_LABELS, ChannelPreference, DEFAULT_CHANNEL_PREFERENCES, Notific
   styles: [`
     .profile-page {
       min-height: 100vh;
-      background: var(--bg-main, #f9f6f2);
+      background: var(--bg-subtle);
       padding: 2rem 1rem 4rem;
     }
     .profile-container {
@@ -245,7 +245,7 @@ import { CHANNEL_LABELS, ChannelPreference, DEFAULT_CHANNEL_PREFERENCES, Notific
       width: 72px;
       height: 72px;
       border-radius: 50%;
-      background: linear-gradient(135deg, #f3e8e2, #e8f0ec);
+      background: linear-gradient(135deg, var(--blush-100), var(--sage-100));
       display: flex;
       align-items: center;
       justify-content: center;
@@ -256,12 +256,12 @@ import { CHANNEL_LABELS, ChannelPreference, DEFAULT_CHANNEL_PREFERENCES, Notific
     .profile-title h1 {
       font-size: 1.75rem;
       font-weight: 700;
-      color: #1b3327;
+      color: var(--text-primary);
       margin: 0 0 0.25rem;
     }
     .profile-subtitle {
       font-size: 0.9rem;
-      color: #6b7a6e;
+      color: var(--text-muted);
       margin: 0;
     }
 
@@ -274,22 +274,22 @@ import { CHANNEL_LABELS, ChannelPreference, DEFAULT_CHANNEL_PREFERENCES, Notific
       margin-bottom: 1.5rem;
       font-size: 0.9rem;
       font-weight: 600;
-      background: #e8f5ec;
-      color: #1b6b3a;
-      border: 1px solid #b2dfca;
+      background: var(--success-bg);
+      color: var(--success-text);
+      border: 1px solid var(--success-border);
     }
     .status-banner.is-error {
-      background: #fdecea;
-      color: #a0281c;
-      border-color: #f5b7b1;
+      background: var(--danger-bg);
+      color: var(--danger-text);
+      border-color: var(--danger-border);
     }
 
     .profile-form {
-      background: #fff;
+      background: var(--bg-surface);
       border-radius: 16px;
       padding: 2rem;
       box-shadow: 0 4px 24px rgba(27,51,39,0.06);
-      border: 1px solid #e8ede9;
+      border: 1px solid var(--border-light);
       margin-bottom: 1.25rem;
     }
     .form-row {
@@ -311,15 +311,15 @@ import { CHANNEL_LABELS, ChannelPreference, DEFAULT_CHANNEL_PREFERENCES, Notific
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.05em;
-      color: #4a6355;
+      color: var(--text-secondary);
     }
     .form-control {
       padding: 0.7rem 1rem;
-      border: 1.5px solid #d5e0d8;
+      border: 1.5px solid var(--border-light);
       border-radius: 10px;
       font-size: 0.95rem;
-      color: #1b3327;
-      background: #fff;
+      color: var(--text-primary);
+      background: var(--bg-surface);
       transition: border-color 0.2s;
       width: 100%;
       box-sizing: border-box;
@@ -330,18 +330,18 @@ import { CHANNEL_LABELS, ChannelPreference, DEFAULT_CHANNEL_PREFERENCES, Notific
       box-shadow: 0 0 0 3px rgba(74,99,85,0.12);
     }
     .readonly-field {
-      background: #f6f8f6;
-      color: #8a9e90;
+      background: var(--bg-subtle);
+      color: var(--text-muted);
       cursor: not-allowed;
     }
     .form-control:disabled {
-      background: #f6f8f6;
-      color: #8a9e90;
+      background: var(--bg-subtle);
+      color: var(--text-muted);
       cursor: not-allowed;
     }
     .field-hint {
       font-size: 0.77rem;
-      color: #8a9e90;
+      color: var(--text-muted);
     }
     .auth-status {
       display: inline-flex;
@@ -349,21 +349,21 @@ import { CHANNEL_LABELS, ChannelPreference, DEFAULT_CHANNEL_PREFERENCES, Notific
       flex-wrap: wrap;
       gap: 0.3rem;
       font-weight: 600;
-      color: #4a6355;
+      color: var(--text-secondary);
     }
     .phone-input-row {
       display: flex;
       align-items: center;
     }
     .phone-prefix {
-      background: #f0f5f1;
-      border: 1.5px solid #d5e0d8;
+      background: var(--bg-subtle);
+      border: 1.5px solid var(--border-light);
       border-right: none;
       padding: 0.7rem 0.85rem;
       border-radius: 10px 0 0 10px;
       font-size: 0.9rem;
       font-weight: 700;
-      color: #4a6355;
+      color: var(--text-secondary);
       white-space: nowrap;
     }
     .phone-input-row .form-control {
@@ -377,9 +377,9 @@ import { CHANNEL_LABELS, ChannelPreference, DEFAULT_CHANNEL_PREFERENCES, Notific
       display: inline-block;
       font-size: 0.8rem;
       font-weight: 600;
-      color: #1b6b3a;
-      background: #e8f5ec;
-      border: 1px solid #b2dfca;
+      color: var(--success-text);
+      background: var(--success-bg);
+      border: 1px solid var(--success-border);
       padding: 0.3rem 0.75rem;
       border-radius: var(--radius-full, 999px);
     }
@@ -411,14 +411,14 @@ import { CHANNEL_LABELS, ChannelPreference, DEFAULT_CHANNEL_PREFERENCES, Notific
     .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
     .btn-outline {
       background: transparent;
-      border: 1.5px solid #d5e0d8;
-      color: #4a6355;
+      border: 1.5px solid var(--border-light);
+      color: var(--text-secondary);
     }
-    .btn-outline:hover { background: #f0f5f1; }
+    .btn-outline:hover { background: var(--bg-subtle); }
     .btn-link {
       background: none;
       border: none;
-      color: #4a6355;
+      color: var(--text-secondary);
       font-size: 0.85rem;
       font-weight: 600;
       text-decoration: underline;
@@ -428,7 +428,7 @@ import { CHANNEL_LABELS, ChannelPreference, DEFAULT_CHANNEL_PREFERENCES, Notific
 
     .member-since {
       font-size: 0.8rem;
-      color: #8a9e90;
+      color: var(--text-muted);
       text-align: center;
       margin: 0;
     }
@@ -437,27 +437,27 @@ import { CHANNEL_LABELS, ChannelPreference, DEFAULT_CHANNEL_PREFERENCES, Notific
       display: flex;
       align-items: center;
       gap: 0.6rem;
-      background: #f0f5f1;
-      border: 1px solid #d5e0d8;
+      background: var(--bg-subtle);
+      border: 1px solid var(--border-light);
       border-radius: 10px;
       padding: 0.75rem 1rem;
       font-size: 0.85rem;
-      color: #4a6355;
+      color: var(--text-secondary);
       margin-bottom: 1.25rem;
     }
-    .journey-pointer a { color: #2e4f3e; font-weight: 700; text-decoration: underline; }
+    .journey-pointer a { color: var(--sage-800); font-weight: 700; text-decoration: underline; }
 
     .consent-center {
-      background: #fff;
+      background: var(--bg-surface);
       border-radius: 16px;
       padding: 1.5rem 2rem;
       box-shadow: 0 4px 24px rgba(27,51,39,0.06);
-      border: 1px solid #e8ede9;
+      border: 1px solid var(--border-light);
       margin-bottom: 1.25rem;
     }
     .section-title {
       font-size: 1.1rem;
-      color: #1b3327;
+      color: var(--text-primary);
       margin: 0 0 1rem;
     }
     .consent-row {
@@ -469,22 +469,22 @@ import { CHANNEL_LABELS, ChannelPreference, DEFAULT_CHANNEL_PREFERENCES, Notific
     }
     .consent-row:first-of-type { border-top: none; }
     .consent-info { display: flex; flex-direction: column; gap: 0.2rem; }
-    .consent-info strong { font-size: 0.92rem; color: #1b3327; }
+    .consent-info strong { font-size: 0.92rem; color: var(--text-primary); }
 
     .prefs-note { margin-bottom: 0.85rem; }
-    .pref-row { display: flex; align-items: center; gap: 0.6rem; font-size: 0.88rem; color: #4a6355; padding: 0.4rem 0; cursor: pointer; }
+    .pref-row { display: flex; align-items: center; gap: 0.6rem; font-size: 0.88rem; color: var(--text-secondary); padding: 0.4rem 0; cursor: pointer; }
     .data-actions { display: flex; gap: 1.25rem; flex-wrap: wrap; }
     .data-subtitle { font-size: 0.95rem; color: var(--sage-900); margin: 1.25rem 0 0.4rem; }
     .del-input { max-width: 9rem; padding: 0.35rem 0.6rem; }
-    .delete-confirm { margin-top: 0.75rem; padding: 0.85rem 1rem; background: #fdecea; border: 1px solid #f5b7b1; border-radius: 10px; font-size: 0.85rem; color: #a0281c; display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
-    .btn-link.danger { color: #a0281c; }
+    .delete-confirm { margin-top: 0.75rem; padding: 0.85rem 1rem; background: var(--danger-bg); border: 1px solid var(--danger-border); border-radius: 10px; font-size: 0.85rem; color: var(--danger-text); display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+    .btn-link.danger { color: var(--danger-text); }
 
     .edit-toggle-row {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      background: #fff;
-      border: 1px solid #e8ede9;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-light);
       border-radius: 12px;
       padding: 0.85rem 1.25rem;
       margin-bottom: 1.25rem;
@@ -492,7 +492,7 @@ import { CHANNEL_LABELS, ChannelPreference, DEFAULT_CHANNEL_PREFERENCES, Notific
     .edit-toggle-label {
       font-size: 0.9rem;
       font-weight: 600;
-      color: #1b3327;
+      color: var(--text-primary);
     }
     .switch {
       position: relative;
@@ -510,7 +510,7 @@ import { CHANNEL_LABELS, ChannelPreference, DEFAULT_CHANNEL_PREFERENCES, Notific
       position: absolute;
       cursor: pointer;
       inset: 0;
-      background: #d5e0d8;
+      background: var(--sage-200);
       border-radius: 999px;
       transition: background 0.2s;
     }
@@ -521,7 +521,7 @@ import { CHANNEL_LABELS, ChannelPreference, DEFAULT_CHANNEL_PREFERENCES, Notific
       width: 18px;
       left: 3px;
       bottom: 3px;
-      background: #fff;
+      background: var(--bg-surface);
       border-radius: 50%;
       transition: transform 0.2s;
       box-shadow: 0 1px 3px rgba(0,0,0,0.2);

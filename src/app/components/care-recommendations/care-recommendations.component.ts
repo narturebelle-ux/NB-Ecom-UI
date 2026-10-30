@@ -43,7 +43,7 @@ import { PRIORITY_LABELS, SessionProductRecommendation } from '../../models/sess
     }
   `,
   styles: [`
-    .care-recos { border-radius: var(--radius-xl); background: #fff; border: 1px solid var(--border-light); padding: 1.25rem 1.35rem; margin-bottom: 1.5rem; }
+    .care-recos { border-radius: var(--radius-xl); background: var(--bg-surface); border: 1px solid var(--border-light); padding: 1.25rem 1.35rem; margin-bottom: 1.5rem; }
     h2 { display: flex; align-items: center; gap: 0.4rem; font-size: 1.1rem; color: var(--sage-900); }
     .sub { font-size: 0.8rem; color: var(--text-muted); margin: 0.25rem 0 0.9rem; }
     .reco-list { display: flex; flex-direction: column; gap: 0.75rem; }
@@ -53,7 +53,7 @@ import { PRIORITY_LABELS, SessionProductRecommendation } from '../../models/sess
     .reco-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.2rem; }
     .tags { display: flex; gap: 0.4rem; flex-wrap: wrap; }
     .priority { font-size: 0.68rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; padding: 0.12rem 0.5rem; border-radius: var(--radius-full); background: var(--sage-50); color: var(--text-secondary); }
-    .priority.essential { background: var(--sage-700); color: #fff; }
+    .priority.essential { background: var(--solid-sage-700); color: #fff; }
     .category { font-size: 0.7rem; font-weight: 700; color: var(--trust-700); text-transform: uppercase; letter-spacing: 0.05em; }
     strong { color: var(--sage-900); font-size: 0.92rem; }
     .by { font-size: 0.78rem; color: var(--text-muted); }

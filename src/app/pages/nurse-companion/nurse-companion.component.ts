@@ -188,8 +188,8 @@ import { NursePackage, PregnancyStage } from '../../models/maternal.models';
   styles: [`
     .nurse-header {
       padding: 4.5rem 0 3.5rem 0;
-      background: radial-gradient(circle at 10% 20%, rgba(251, 230, 221, 0.7) 0%, transparent 60%),
-                  radial-gradient(circle at 90% 80%, rgba(226, 237, 230, 0.7) 0%, transparent 60%);
+      background: radial-gradient(circle at 10% 20%, var(--glow-blush) 0%, transparent 60%),
+                  radial-gradient(circle at 90% 80%, var(--glow-sage) 0%, transparent 60%);
       border-bottom: 1px solid var(--border-light);
     }
     .header-grid {
@@ -220,7 +220,7 @@ import { NursePackage, PregnancyStage } from '../../models/maternal.models';
       display: flex;
       align-items: center;
       gap: 1rem;
-      background: #fff;
+      background: var(--bg-surface);
       padding: 0.85rem 1.25rem;
       border-radius: var(--radius-md);
       border: 1px solid var(--border-light);
@@ -241,14 +241,14 @@ import { NursePackage, PregnancyStage } from '../../models/maternal.models';
 
     /* WhatsApp Phone Simulation */
     .phone-frame {
-      background: #f7f3ee;
+      background: var(--bg-alt);
       border-radius: 36px;
       overflow: hidden;
       border: 6px solid #2d3748;
       box-shadow: var(--shadow-xl);
     }
     .chat-header {
-      background: var(--sage-800);
+      background: var(--solid-sage-800);
       color: #fff;
       padding: 1rem 1.25rem;
     }
@@ -262,7 +262,7 @@ import { NursePackage, PregnancyStage } from '../../models/maternal.models';
       height: 44px;
       border-radius: 50%;
       object-fit: cover;
-      border: 2px solid #fff;
+      border: 2px solid var(--bg-surface);
     }
     .nurse-profile strong {
       display: block;
@@ -289,15 +289,15 @@ import { NursePackage, PregnancyStage } from '../../models/maternal.models';
       position: relative;
     }
     .msg.incoming {
-      background: #fff;
+      background: var(--bg-surface);
       color: var(--text-primary);
       align-self: flex-start;
       border-bottom-left-radius: 2px;
       box-shadow: 0 1px 3px rgba(0,0,0,0.06);
     }
     .msg.outgoing {
-      background: #d9fdd3;
-      color: #0c381e;
+      background: var(--success-bg);
+      color: var(--success-text);
       align-self: flex-end;
       border-bottom-right-radius: 2px;
       box-shadow: 0 1px 3px rgba(0,0,0,0.06);
@@ -310,7 +310,7 @@ import { NursePackage, PregnancyStage } from '../../models/maternal.models';
       margin-top: 0.35rem;
     }
     .chat-footer {
-      background: #eae5de;
+      background: var(--bg-alt);
       padding: 0.6rem 1rem;
       text-align: center;
       font-size: 0.72rem;
@@ -416,7 +416,7 @@ import { NursePackage, PregnancyStage } from '../../models/maternal.models';
       padding: 1rem;
     }
     .modal-dialog {
-      background: #fff;
+      background: var(--bg-surface);
       width: 100%;
       max-width: 520px;
       padding: 2.25rem;
