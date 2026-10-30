@@ -6,6 +6,7 @@ import { FirebaseAuthService } from '../../services/firebase-auth.service';
 import { NotificationService } from '../../services/notification.service';
 import { OnboardingService } from '../../services/onboarding.service';
 import { ThemeService } from '../../services/theme.service';
+import { CommerceService } from '../../services/commerce.service';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { FeatureDirective } from '../../directives/feature.directive';
@@ -59,15 +60,13 @@ import { FeatureDirective } from '../../directives/feature.directive';
         @if (api.currentUser() && !isProfessional() && onboarding.onboarded()) {
         <nav class="nav-links">
           <a routerLink="/journey" routerLinkActive="active" class="nav-link">My Journey</a>
-          <a routerLink="/invite" routerLinkActive="active" class="nav-link invite-nav"><mat-icon class="icon-sm">card_giftcard</mat-icon> Invite</a>
           <a *appFeature="'careBooking'" routerLink="/care" routerLinkActive="active" class="nav-link">Care</a>
           <a *appFeature="'recordsVault'" routerLink="/records" routerLinkActive="active" class="nav-link">Records</a>
           <a *appFeature="'childTracker'" routerLink="/child" routerLinkActive="active" class="nav-link">Child</a>
           <a *appFeature="'joyCircle'" routerLink="/joy-circle" routerLinkActive="active" class="nav-link">Joy Circle</a>
           <a *appFeature="'productRecommendations'" routerLink="/recommendations" routerLinkActive="active" class="nav-link">For you</a>
           <a *appFeature="'aiAssistant'" routerLink="/ai" routerLinkActive="active" class="nav-link">AI</a>
-          <a routerLink="/plans" routerLinkActive="active" class="nav-link">Plans</a>
-          <a routerLink="/ideas" routerLinkActive="active" class="nav-link">Ideas</a>
+          @if (!hasActivePlan()) { <a routerLink="/plans" routerLinkActive="active" class="nav-link">Plans</a> }
 
 
           <a routerLink="/checklists" routerLinkActive="active" class="nav-link highlight-link">
@@ -144,7 +143,20 @@ import { FeatureDirective } from '../../directives/feature.directive';
                     <hr class="dropdown-divider">
                   }
                   <a routerLink="/profile" class="dropdown-item" (click)="isUserMenuOpen = false">
-                    <mat-icon class="icon-sm">shield_person</mat-icon> Profile &amp; Privacy
+                    <mat-icon class="icon-sm">person</mat-icon> My Profile
+                  </a>
+                  @if (canShareIdeas()) {
+                    <a routerLink="/ideas" class="dropdown-item" (click)="isUserMenuOpen = false">
+                      <mat-icon class="icon-sm">lightbulb</mat-icon> Share an Idea
+                    </a>
+                  }
+                  @if (!isProfessional()) {
+                    <a routerLink="/invite" class="dropdown-item" (click)="isUserMenuOpen = false">
+                      <mat-icon class="icon-sm">card_giftcard</mat-icon> Refer &amp; Invite
+                    </a>
+                  }
+                  <a routerLink="/profile" fragment="privacy" class="dropdown-item" (click)="isUserMenuOpen = false">
+                    <mat-icon class="icon-sm">shield_person</mat-icon> Privacy
                   </a>
                   <hr class="dropdown-divider">
                   <button class="dropdown-item sign-out-item" (click)="signOut()">
@@ -154,7 +166,6 @@ import { FeatureDirective } from '../../directives/feature.directive';
               }
             </div>
           } @else {
-            <a routerLink="/ideas" class="btn btn-ghost-nav btn-sm about-link">Idea pool</a>
             <a routerLink="/about" class="btn btn-ghost-nav btn-sm about-link">About us</a>
             <a routerLink="/auth/login" class="btn btn-ghost-nav btn-sm login-btn">Sign in</a>
             <a routerLink="/auth/signup" class="btn btn-primary btn-sm get-started-btn">Get started</a>
@@ -183,7 +194,6 @@ import { FeatureDirective } from '../../directives/feature.directive';
 
           @if (api.currentUser()) {
             <a routerLink="/journey" (click)="isMobileOpen = false" class="mobile-nav-link"><mat-icon class="icon-sm">eco</mat-icon> My Journey</a>
-            <a routerLink="/invite" (click)="isMobileOpen = false" class="mobile-nav-link"><mat-icon class="icon-sm">card_giftcard</mat-icon> Invite friends · get Premium free</a>
             <a *appFeature="'careBooking'" routerLink="/care" (click)="isMobileOpen = false" class="mobile-nav-link">Care</a>
             <a *appFeature="'recordsVault'" routerLink="/records" (click)="isMobileOpen = false" class="mobile-nav-link">Records</a>
             <a *appFeature="'childTracker'" routerLink="/child" (click)="isMobileOpen = false" class="mobile-nav-link">Child</a>
@@ -191,7 +201,9 @@ import { FeatureDirective } from '../../directives/feature.directive';
             <a *appFeature="'productRecommendations'" routerLink="/recommendations" (click)="isMobileOpen = false" class="mobile-nav-link">For you</a>
             <a *appFeature="'aiAssistant'" routerLink="/ai" (click)="isMobileOpen = false" class="mobile-nav-link">AI</a>
           }
-          <a routerLink="/plans" (click)="isMobileOpen = false" class="mobile-nav-link"><mat-icon class="icon-sm">workspace_premium</mat-icon> Care Plans</a>
+          @if (!hasActivePlan()) {
+            <a routerLink="/plans" (click)="isMobileOpen = false" class="mobile-nav-link"><mat-icon class="icon-sm">workspace_premium</mat-icon> Care Plans</a>
+          }
 
           <hr class="mobile-divider">
           <a routerLink="/checklists" (click)="isMobileOpen = false" class="mobile-nav-link">
@@ -207,7 +219,20 @@ import { FeatureDirective } from '../../directives/feature.directive';
           <hr class="mobile-divider">
           @if (api.currentUser(); as user) {
             <a routerLink="/profile" (click)="isMobileOpen = false" class="mobile-nav-link profile-link">
-              <mat-icon class="icon-sm">shield_person</mat-icon> Profile &amp; Privacy ({{ getDisplayName(user) }})
+              <mat-icon class="icon-sm">person</mat-icon> My Profile ({{ getDisplayName(user) }})
+            </a>
+            @if (canShareIdeas()) {
+              <a routerLink="/ideas" (click)="isMobileOpen = false" class="mobile-nav-link">
+                <mat-icon class="icon-sm">lightbulb</mat-icon> Share an Idea
+              </a>
+            }
+            @if (!isProfessional()) {
+              <a routerLink="/invite" (click)="isMobileOpen = false" class="mobile-nav-link">
+                <mat-icon class="icon-sm">card_giftcard</mat-icon> Refer &amp; Invite
+              </a>
+            }
+            <a routerLink="/profile" fragment="privacy" (click)="isMobileOpen = false" class="mobile-nav-link">
+              <mat-icon class="icon-sm">shield_person</mat-icon> Privacy
             </a>
             <button (click)="signOut()" class="btn btn-outline btn-sm mobile-action-btn">
               <mat-icon class="icon-sm">logout</mat-icon> Sign Out
@@ -354,7 +379,7 @@ import { FeatureDirective } from '../../directives/feature.directive';
     .login-btn, .get-started-btn { white-space: nowrap; flex-shrink: 0; }
     .btn-ghost-nav { background: transparent; color: var(--sage-800); font-weight: 700; }
     .btn-ghost-nav:hover { background: var(--sage-50); color: var(--sage-900); }
-    @media (max-width: 420px) { .login-btn { display: none; } }
+    @media (max-width: 480px) { .login-btn { display: none; } }
     .cart-btn {
       position: relative;
       background: var(--bg-surface);
@@ -567,6 +592,17 @@ import { FeatureDirective } from '../../directives/feature.directive';
       .about-link { display: none; }
       .mobile-toggle { display: block; }
     }
+    /* Phones: keep the menu button on screen. The name and tagline give way; the menu has the same details. */
+    @media (max-width: 640px) {
+      .brand-sub, .user-name, .chevron { display: none; }
+      .brand-title { font-size: 1.1rem; }
+      .header-actions { gap: 0.35rem; }
+      .cart-btn { width: 36px; height: 36px; }
+      .user-pill { padding: 0.35rem; }
+    }
+    @media (max-width: 380px) {
+      .logo-text { display: none; }
+    }
   `]
 })
 export class NavbarComponent {
@@ -575,6 +611,11 @@ export class NavbarComponent {
   notifications = inject(NotificationService);
   onboarding = inject(OnboardingService);
   theme = inject(ThemeService);
+  private commerce = inject(CommerceService);
+  /** Once she has a plan, it lives on My Journey instead of the nav, and Share an Idea opens after her first session. If the check fails, Plans stays visible. */
+  hasActivePlan = this.commerce.hasActivePlan;
+  canShareIdeas = this.commerce.canShareIdeas;
+  private planCheckedFor: number | null = null;
   isProfessional = computed(() => isProfessionalUser(this.api.currentUser()));
   /** Reviewers include MEDICAL_REVIEWER staff, who aren't professionals, so they get the link even outside the portal. */
   isReviewer = computed(() => isReviewerUser(this.api.currentUser()));
@@ -589,6 +630,15 @@ export class NavbarComponent {
     // Reminders are generated server-side every 15 min; load them once the app is unlocked.
     effect(() => {
       if (this.api.currentUser() && this.onboarding.onboarded()) untracked(() => this.notifications.refresh());
+    });
+    effect(() => {
+      const id = this.api.currentUser()?.id ?? null;
+      if (id === this.planCheckedFor) return;
+      this.planCheckedFor = id;
+      untracked(() => {
+        this.commerce.entitlements.set([]);
+        if (id) this.commerce.loadEntitlements().subscribe({ error: () => {} });
+      });
     });
   }
 

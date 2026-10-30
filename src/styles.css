@@ -146,18 +146,18 @@
 
 /* ====================================================================
    Dark theme: set by ThemeService (and the inline script in index.html,
-   so the first paint is already correct). Light text on deep green-black,
-   same sage/slate/terracotta identity. Permanently dark bands (footer,
+   so the first paint is already correct). Gold headings and accents with warm cream body text on deep
+   green-black, for readability. Permanently dark bands (footer,
    trust section) use the --solid-* tokens and don't change.
    ==================================================================== */
 :root[data-theme='dark'] {
   color-scheme: dark;
 
-  --sage-900: #e6f1ec;
-  --sage-800: #d4e6dd;
-  --sage-700: #a9d4c3;
-  --sage-600: #8cc4ae;
-  --sage-500: #6fb098;
+  --sage-900: #f2d999;
+  --sage-800: #eccb80;
+  --sage-700: #e3bd6f;
+  --sage-600: #d9b060;
+  --sage-500: #c9a24f;
   --sage-200: #2e4a41;
   --sage-100: #223830;
   --sage-50:  #1a2b25;
@@ -177,8 +177,8 @@
   --blush-100: #3f2721;
   --blush-50:  #2e1e19;
 
-  --gold-700: #e0bd7c;
-  --gold-500: #d4a657;
+  --gold-700: #e8c67e;
+  --gold-500: #d9b060;
   --gold-100: #352c1a;
 
   --bg-cream: #101a17;
@@ -190,14 +190,14 @@
   --bg-glass-deep: rgba(0, 0, 0, 0.55);
   --bg-subtle: #20302a;
 
-  --text-primary: #e8efeb;
-  --text-secondary: #b3c2ba;
-  --text-muted: #8c9d95;
+  --text-primary: #f5eedd;
+  --text-secondary: #dcd3bd;
+  --text-muted: #b5ab95;
 
-  --border-light: rgba(200, 230, 215, 0.16);
-  --border-subtle: rgba(200, 230, 215, 0.09);
+  --border-light: rgba(227, 189, 111, 0.2);
+  --border-subtle: rgba(227, 189, 111, 0.11);
   --border-glass: rgba(255, 255, 255, 0.08);
-  --border-active: #a9d4c3;
+  --border-active: #e3bd6f;
 
   --tier-mandatory-text: #8fe0b4;
   --tier-mandatory-bg: #17352a;
