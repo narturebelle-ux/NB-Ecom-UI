@@ -106,9 +106,9 @@ import { PROFESSIONAL_TYPE_LABELS } from '../../models/maternal.models';
       max-width: 720px;
       margin: 0 auto 1.75rem;
       font-size: 0.8rem;
-      color: #92610a;
-      background: #fff8eb;
-      border: 1px solid #fbd38d;
+      color: var(--warn-text);
+      background: var(--warn-bg);
+      border: 1px solid var(--warn-border);
       border-radius: var(--radius-md);
       padding: 0.7rem 1rem;
       text-align: center;
@@ -132,7 +132,7 @@ import { PROFESSIONAL_TYPE_LABELS } from '../../models/maternal.models';
       transition: background-color var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
     }
     .billing-toggle button.active {
-      background: var(--sage-900);
+      background: var(--solid-sage-900);
       color: #fff;
       border-color: var(--sage-900);
     }
@@ -164,7 +164,7 @@ import { PROFESSIONAL_TYPE_LABELS } from '../../models/maternal.models';
       position: absolute;
       top: -12px;
       left: 2rem;
-      background: var(--blush-700);
+      background: var(--solid-blush-700);
       color: #fff;
       font-size: 0.68rem;
       font-weight: 800;
@@ -217,12 +217,12 @@ import { PROFESSIONAL_TYPE_LABELS } from '../../models/maternal.models';
       margin: 0 auto;
       padding: 1rem 1.25rem;
       border-radius: var(--radius-md);
-      background: #fdecea;
-      color: #a0281c;
-      border: 1px solid #f5b7b1;
+      background: var(--danger-bg);
+      color: var(--danger-text);
+      border: 1px solid var(--danger-border);
       font-size: 0.9rem;
     }
-    .btn-link { color: #a0281c; font-weight: 700; text-decoration: underline; }
+    .btn-link { color: var(--danger-text); font-weight: 700; text-decoration: underline; }
 
     @media (max-width: 992px) {
       .plans-grid { grid-template-columns: 1fr; }

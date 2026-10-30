@@ -182,7 +182,7 @@ import { ChecklistTask, HospitalPartner, PregnancyStage } from '../../models/mat
   styles: [`
     .checklist-header {
       padding: 3.5rem 0 2.5rem 0;
-      background: linear-gradient(135deg, #f0f6f2 0%, #faf7f2 100%);
+      background: linear-gradient(135deg, var(--sage-50) 0%, var(--bg-alt) 100%);
       border-bottom: 1px solid var(--border-light);
     }
     .text-center {
@@ -202,7 +202,7 @@ import { ChecklistTask, HospitalPartner, PregnancyStage } from '../../models/mat
 
     .stage-tabs {
       display: inline-flex;
-      background: #fff;
+      background: var(--bg-surface);
       padding: 0.35rem;
       border-radius: var(--radius-full);
       border: 1px solid var(--border-light);
@@ -220,7 +220,7 @@ import { ChecklistTask, HospitalPartner, PregnancyStage } from '../../models/mat
       transition: all var(--transition-fast);
     }
     .tab-btn.active {
-      background: var(--sage-700);
+      background: var(--solid-sage-700);
       color: #fff;
       box-shadow: 0 2px 8px rgba(46,79,62,0.25);
     }
@@ -260,7 +260,7 @@ import { ChecklistTask, HospitalPartner, PregnancyStage } from '../../models/mat
     .task-card {
       padding: 1.75rem;
       border-radius: var(--radius-lg);
-      background: #fff;
+      background: var(--bg-surface);
     }
     .task-card.mandatory-test {
       border-left: 4px solid var(--tier-mandatory-text);
@@ -347,7 +347,7 @@ import { ChecklistTask, HospitalPartner, PregnancyStage } from '../../models/mat
     }
     .code-pill {
       font-size: 0.78rem;
-      background: #fff;
+      background: var(--bg-surface);
       padding: 0.25rem 0.5rem;
       border-radius: var(--radius-sm);
       border: 1px dashed var(--sage-700);
@@ -357,7 +357,7 @@ import { ChecklistTask, HospitalPartner, PregnancyStage } from '../../models/mat
     .hospital-filter-card {
       padding: 1.75rem;
       border-radius: var(--radius-lg);
-      background: #fff;
+      background: var(--bg-surface);
     }
     .hospital-filter-card h3 {
       font-size: 1.25rem;
@@ -382,7 +382,7 @@ import { ChecklistTask, HospitalPartner, PregnancyStage } from '../../models/mat
       margin-bottom: 1rem;
     }
     .empty-note { color: var(--text-muted); font-size: 0.88rem; padding: 1rem 0; }
-    .load-error { color: #a0281c; font-size: 0.85rem; margin: 0.5rem 0; }
+    .load-error { color: var(--danger-text); font-size: 0.85rem; margin: 0.5rem 0; }
     .hospitals-list {
       display: flex;
       flex-direction: column;
@@ -463,7 +463,7 @@ import { ChecklistTask, HospitalPartner, PregnancyStage } from '../../models/mat
       padding: 1rem;
     }
     .modal-dialog {
-      background: #fff;
+      background: var(--bg-surface);
       width: 100%;
       max-width: 500px;
       padding: 2.25rem;

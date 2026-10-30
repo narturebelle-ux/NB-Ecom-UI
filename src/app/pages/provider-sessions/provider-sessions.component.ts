@@ -66,7 +66,7 @@ import { ProviderBooking, ProviderSelf } from '../../models/session-recommendati
     .portal-header h1 { font-size: clamp(1.7rem, 3.2vw, 2.2rem); color: var(--sage-900); margin: 0.4rem 0; }
     .portal-header p { color: var(--text-secondary); }
     h2 { font-size: 1.05rem; color: var(--sage-900); margin: 1.5rem 0 0.6rem; }
-    .card { border-radius: var(--radius-lg, 14px); background: #fff; border: 1px solid var(--border-light); }
+    .card { border-radius: var(--radius-lg, 14px); background: var(--bg-surface); border: 1px solid var(--border-light); }
     .session { display: flex; align-items: center; gap: 1rem; padding: 0.85rem 1rem; margin-bottom: 0.5rem; text-decoration: none; color: inherit; }
     .session:hover { border-color: var(--sage-700); }
     .when { display: flex; flex-direction: column; min-width: 6.5rem; }

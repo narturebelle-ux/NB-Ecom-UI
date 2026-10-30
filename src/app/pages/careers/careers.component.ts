@@ -67,7 +67,7 @@ import { CareersService, EMPLOYMENT_TYPE_LABELS, Job, WORK_MODE_LABELS } from '.
     .hero h1 { font-size: clamp(2rem, 4.5vw, 2.8rem); color: var(--sage-900); margin: 0.6rem 0; }
     .lead { font-size: 1.05rem; color: var(--text-secondary); max-width: 620px; margin: 0 auto; line-height: 1.6; }
     h2 { font-size: 1.4rem; color: var(--sage-900); margin: 1.5rem 0 0.9rem; }
-    .card { border-radius: var(--radius-lg, 14px); background: #fff; border: 1px solid var(--border-light); }
+    .card { border-radius: var(--radius-lg, 14px); background: var(--bg-surface); border: 1px solid var(--border-light); }
     .job { display: flex; gap: 1rem; align-items: center; padding: 1.15rem 1.3rem; margin-bottom: 0.8rem; text-decoration: none; color: inherit; }
     .job:hover { border-color: var(--sage-700); }
     .job-main { flex: 1; min-width: 0; }

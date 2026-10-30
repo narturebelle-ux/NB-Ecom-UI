@@ -106,6 +106,128 @@
   --mat-sys-on-surface: var(--text-primary);
   --mat-sys-on-surface-variant: var(--text-secondary);
   --mat-sys-outline: var(--border-light);
+
+  /* --- Status colours and soft page glows: theme-aware --- */
+  --danger-text: #a0281c;
+  --danger-bg: #fdecea;
+  --danger-border: #f5b7b1;
+  --warn-text: #92610a;
+  --warn-bg: #fff8eb;
+  --warn-border: #fbd38d;
+  --success-text: #1b6b3a;
+  --success-bg: #e8f5ec;
+  --success-border: #b2dfca;
+  --bg-subtle: #f3f6f4;
+  --glow-sage: rgba(199, 227, 214, 0.35);
+  --glow-blush: rgba(250, 234, 225, 0.4);
+
+  /* --- Solid brand fills: identical in both themes. The numbered tokens above are mostly used
+     as text and flip in dark mode; anything used as a fill behind white text uses these. --- */
+  --solid-sage-900: #15302a;
+  --solid-sage-800: #1d4038;
+  --solid-sage-700: #275448;
+  --solid-sage-600: #356b5b;
+  --solid-sage-500: #4a8572;
+  --solid-sage-200: #c7e3d6;
+  --solid-trust-900: #27394a;
+  --solid-trust-800: #314a60;
+  --solid-trust-700: #3c5a76;
+  --solid-trust-600: #4c6e8d;
+  --solid-trust-500: #5c82a3;
+  --solid-blush-900: #65312a;
+  --solid-blush-800: #873f34;
+  --solid-blush-700: #b35a48;
+  --solid-blush-600: #c1705c;
+  --solid-blush-500: #cf8972;
+  --solid-blush-200: #f2d4c6;
+
+  color-scheme: light;
+}
+
+/* ====================================================================
+   Dark theme: set by ThemeService (and the inline script in index.html,
+   so the first paint is already correct). Light text on deep green-black,
+   same sage/slate/terracotta identity. Permanently dark bands (footer,
+   trust section) use the --solid-* tokens and don't change.
+   ==================================================================== */
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  --sage-900: #e6f1ec;
+  --sage-800: #d4e6dd;
+  --sage-700: #a9d4c3;
+  --sage-600: #8cc4ae;
+  --sage-500: #6fb098;
+  --sage-200: #2e4a41;
+  --sage-100: #223830;
+  --sage-50:  #1a2b25;
+
+  --trust-900: #dbe6f0;
+  --trust-700: #a9c4dc;
+  --trust-500: #86a9c7;
+  --trust-200: #2e4152;
+  --trust-100: #243442;
+  --trust-50:  #1c2933;
+
+  --blush-900: #f6d9cd;
+  --blush-800: #f0c2b0;
+  --blush-700: #e8a58f;
+  --blush-500: #d99078;
+  --blush-200: #553229;
+  --blush-100: #3f2721;
+  --blush-50:  #2e1e19;
+
+  --gold-700: #e0bd7c;
+  --gold-500: #d4a657;
+  --gold-100: #352c1a;
+
+  --bg-cream: #101a17;
+  --bg-surface: #18241f;
+  --bg-surface-elevated: #1f2d28;
+  --bg-alt: #15211d;
+  --bg-glass: rgba(24, 36, 31, 0.72);
+  --bg-glass-strong: rgba(24, 36, 31, 0.92);
+  --bg-glass-deep: rgba(0, 0, 0, 0.55);
+  --bg-subtle: #20302a;
+
+  --text-primary: #e8efeb;
+  --text-secondary: #b3c2ba;
+  --text-muted: #8c9d95;
+
+  --border-light: rgba(200, 230, 215, 0.16);
+  --border-subtle: rgba(200, 230, 215, 0.09);
+  --border-glass: rgba(255, 255, 255, 0.08);
+  --border-active: #a9d4c3;
+
+  --tier-mandatory-text: #8fe0b4;
+  --tier-mandatory-bg: #17352a;
+  --tier-mandatory-border: #2a5b45;
+  --tier-optional-text: #eccb7f;
+  --tier-optional-bg: #352c1a;
+  --tier-optional-border: #5c4b25;
+  --tier-skip-text: #f2a3a3;
+  --tier-skip-bg: #3a1f1f;
+  --tier-skip-border: #663434;
+
+  --danger-text: #f2a79e;
+  --danger-bg: #3a1f1c;
+  --danger-border: #6b3530;
+  --warn-text: #ecc77d;
+  --warn-bg: #352c1a;
+  --warn-border: #5c4b25;
+  --success-text: #8fe0b4;
+  --success-bg: #17352a;
+  --success-border: #2a5b45;
+  --glow-sage: rgba(74, 133, 114, 0.12);
+  --glow-blush: rgba(207, 137, 114, 0.08);
+
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-sm: 0 3px 10px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.25);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.35), 0 2px 6px rgba(0, 0, 0, 0.25);
+  --shadow-lg: 0 18px 42px rgba(0, 0, 0, 0.42), 0 4px 12px rgba(0, 0, 0, 0.28);
+  --shadow-xl: 0 28px 64px rgba(0, 0, 0, 0.5), 0 8px 20px rgba(0, 0, 0, 0.3);
+
+  --mat-sys-on-primary: #10201a;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -133,8 +255,8 @@ body {
   font-family: var(--font-sans);
   background-color: var(--bg-cream);
   background-image:
-    radial-gradient(circle at 85% 8%, rgba(199, 227, 214, 0.35) 0%, transparent 55%),
-    radial-gradient(circle at 6% 92%, rgba(250, 234, 225, 0.4) 0%, transparent 55%);
+    radial-gradient(circle at 85% 8%, var(--glow-sage) 0%, transparent 55%),
+    radial-gradient(circle at 6% 92%, var(--glow-blush) 0%, transparent 55%);
   background-attachment: fixed;
   color: var(--text-primary);
   line-height: 1.6;
@@ -207,13 +329,13 @@ button {
 }
 
 .btn-primary {
-  background-color: var(--sage-700);
+  background-color: var(--solid-sage-700);
   color: var(--text-inverse);
   box-shadow: var(--shadow-sm);
 }
 
 .btn-primary:hover {
-  background-color: var(--sage-900);
+  background-color: var(--solid-sage-900);
   transform: translateY(-2px);
   box-shadow: var(--shadow-md);
   color: var(--text-inverse);
@@ -237,19 +359,19 @@ button {
 }
 
 .btn-outline:hover {
-  background-color: var(--sage-700);
+  background-color: var(--solid-sage-700);
   color: var(--text-inverse);
   transform: translateY(-2px);
 }
 
 .btn-trust {
-  background-color: var(--trust-700);
+  background-color: var(--solid-trust-700);
   color: #fff;
   box-shadow: var(--shadow-sm);
 }
 
 .btn-trust:hover {
-  background-color: var(--trust-900);
+  background-color: var(--solid-trust-900);
   transform: translateY(-2px);
   box-shadow: var(--shadow-md);
 }
@@ -351,7 +473,7 @@ button {
 .card:hover {
   transform: translateY(-4px);
   box-shadow: var(--shadow-lg);
-  border-color: rgba(39, 84, 72, 0.2);
+  border-color: var(--border-light);
 }
 
 /* Section Header Utility */
@@ -574,9 +696,9 @@ button.btn-link, a.btn-link {
   font-weight: 800;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #92610a;
-  background: #fff8eb;
-  border: 1px solid #fbd38d;
+  color: var(--warn-text);
+  background: var(--warn-bg);
+  border: 1px solid var(--warn-border);
   border-radius: 999px;
   padding: 0.15rem 0.55rem;
 }
@@ -586,9 +708,9 @@ button.btn-link, a.btn-link {
   gap: 0.5rem;
   flex-wrap: wrap;
   font-size: 0.82rem;
-  color: #92610a;
-  background: #fff8eb;
-  border: 1px solid #fbd38d;
+  color: var(--warn-text);
+  background: var(--warn-bg);
+  border: 1px solid var(--warn-border);
   border-radius: 10px;
   padding: 0.65rem 0.85rem;
   margin: 0.75rem 1rem;

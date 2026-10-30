@@ -1,10 +1,16 @@
 import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { catchError, from, switchMap, throwError } from 'rxjs';
+import { catchError, finalize, from, retry, switchMap, throwError, timer } from 'rxjs';
 import { FirebaseAuthService } from '../services/firebase-auth.service';
 import { ApiService } from '../services/api.service';
 import { environment } from '../../environments/environment';
+
+/** Cold-start handling: network failure (0) or gateway errors while the API container boots. */
+const WAKE_RETRY_STATUSES = [0, 502, 503, 504];
+const WAKE_RETRY_DELAYS_MS = [2000, 5000, 10000];
+const WAKE_NOTICE_INTERVAL_MS = 5 * 60 * 1000;
+let lastWakeNotice = 0;
 
 /**
  * Per the AUTH CONTRACT: attaches "Authorization: Bearer <Firebase ID token>" to every
@@ -25,12 +31,33 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
     return next(req);
   }
 
+  // The API scales to zero when idle (Vercel container) and takes ~20–40s to boot. While it boots, Vercel's
+  // error response has no CORS headers, so the browser reports status 0. Retry reads and the sign-in
+  // registration (both safe to repeat) a few times instead of failing, and tell the user once that it's waking up.
+  const canRetry = req.method === 'GET' || req.method === 'HEAD' || req.url.endsWith('/auth/firebase');
+
   return from(firebaseAuth.getIdToken()).pipe(
     switchMap(token => {
       const authedReq = token
         ? req.clone({ setHeaders: { Authorization: `Bearer ${token}` } })
         : req;
-      return next(authedReq);
+      const slow = setTimeout(() => {
+        if (Date.now() - lastWakeNotice > WAKE_NOTICE_INTERVAL_MS) {
+          lastWakeNotice = Date.now();
+          api.showToast('Waking up our server. This can take up to 30 seconds the first time.');
+        }
+      }, 6000);
+      return next(authedReq).pipe(
+        retry({
+          count: canRetry ? WAKE_RETRY_DELAYS_MS.length : 0,
+          delay: (err: HttpErrorResponse, attempt: number) =>
+            WAKE_RETRY_STATUSES.includes(err?.status) ? timer(WAKE_RETRY_DELAYS_MS[attempt - 1])
+            // A container that is still starting can briefly answer 500; retry that once only, so real bugs still surface fast.
+            : err?.status === 500 && attempt === 1 ? timer(3000)
+            : throwError(() => err)
+        }),
+        finalize(() => clearTimeout(slow))
+      );
     }),
     catchError((err: HttpErrorResponse) => {
       if (err.status === 401) {

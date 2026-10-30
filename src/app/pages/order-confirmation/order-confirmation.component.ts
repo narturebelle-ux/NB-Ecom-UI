@@ -78,7 +78,7 @@ import { PROFESSIONAL_TYPE_LABELS } from '../../models/maternal.models';
     .granted-row strong { color: var(--trust-900); }
     .field-hint { display: block; margin-top: 0.4rem; font-size: 0.75rem; color: var(--text-muted); }
 
-    .sim-notice { font-size: 0.78rem; color: #92610a; background: #fff8eb; border: 1px solid #fbd38d; border-radius: var(--radius-md); padding: 0.65rem 0.9rem; margin-bottom: 1.5rem; text-align: left; }
+    .sim-notice { font-size: 0.78rem; color: var(--warn-text); background: var(--warn-bg); border: 1px solid var(--warn-border); border-radius: var(--radius-md); padding: 0.65rem 0.9rem; margin-bottom: 1.5rem; text-align: left; }
 
     .actions { display: flex; flex-direction: column; gap: 0.75rem; }
     .error-msg { color: var(--text-secondary); margin-bottom: 1rem; }

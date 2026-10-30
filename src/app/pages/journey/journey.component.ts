@@ -290,10 +290,10 @@ interface QuickAction { icon: string; title: string; text: string; link: string;
       position: relative; overflow: hidden; display: flex; justify-content: space-between; align-items: center; gap: 2rem;
       padding: 2.25rem 2.5rem; border-radius: var(--radius-xl); color: #fff; margin-bottom: 1.25rem;
       background: radial-gradient(circle at 85% 20%, rgba(255,255,255,0.14), transparent 45%),
-                  linear-gradient(135deg, var(--sage-700), var(--sage-900));
+                  linear-gradient(135deg, var(--solid-sage-700), var(--solid-sage-900));
       box-shadow: var(--shadow-lg);
     }
-    .hero-card::after { content: ''; position: absolute; right: -80px; bottom: -120px; width: 320px; height: 320px; border-radius: 50%; background: rgba(250, 234, 225, 0.08); }
+    .hero-card::after { content: ''; position: absolute; right: -80px; bottom: -120px; width: 320px; height: 320px; border-radius: 50%; background: var(--glow-blush); }
     .hero-main { flex: 1; min-width: 0; position: relative; z-index: 1; }
     .badges { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
     .badge-pill { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; padding: 0.3rem 0.75rem; border-radius: var(--radius-full); }
@@ -309,10 +309,10 @@ interface QuickAction { icon: string; title: string; text: string; link: string;
     .track li::before { content: ''; position: absolute; top: 10px; left: -50%; width: 100%; height: 2px; background: rgba(255,255,255,0.22); }
     .track li:first-child::before { display: none; }
     .track li.done::before, .track li.current::before { background: var(--blush-200); }
-    .node { position: relative; z-index: 1; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; background: var(--sage-800); border: 2px solid rgba(255,255,255,0.35); }
+    .node { position: relative; z-index: 1; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; background: var(--solid-sage-800); border: 2px solid rgba(255,255,255,0.35); }
     .node mat-icon { font-size: 14px; width: 14px; height: 14px; color: var(--sage-900); }
     .track li.done .node { background: var(--blush-200); border-color: var(--blush-200); }
-    .track li.current .node { background: #fff; border-color: #fff; box-shadow: 0 0 0 5px rgba(255,255,255,0.18); }
+    .track li.current .node { background: var(--bg-surface); border-color: #fff; box-shadow: 0 0 0 5px rgba(255,255,255,0.18); }
     .lbl { font-size: 0.72rem; color: rgba(255,255,255,0.7); }
     .track li.current .lbl { color: #fff; font-weight: 700; }
 
@@ -362,7 +362,7 @@ interface QuickAction { icon: string; title: string; text: string; link: string;
     .empty.column { flex-direction: column; align-items: flex-start; }
 
     .sessions { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.6rem; }
-    .sessions li { display: flex; align-items: center; gap: 0.9rem; padding: 0.75rem; border-radius: var(--radius-md); background: #fff; border: 1px solid var(--border-light); }
+    .sessions li { display: flex; align-items: center; gap: 0.9rem; padding: 0.75rem; border-radius: var(--radius-md); background: var(--bg-surface); border: 1px solid var(--border-light); }
     .date-chip { width: 50px; text-align: center; border-radius: 12px; background: var(--blush-50); color: var(--blush-800); padding: 0.35rem 0; }
     .date-chip span { display: block; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; }
     .date-chip strong { font-size: 1.2rem; }
@@ -383,7 +383,7 @@ interface QuickAction { icon: string; title: string; text: string; link: string;
     .timeline p { font-size: 0.84rem; color: var(--text-secondary); margin: 0.2rem 0 0.35rem; line-height: 1.5; }
     .optional-badge { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted); background: var(--sage-50); padding: 0.12rem 0.5rem; border-radius: var(--radius-full); }
     .professional-tag { font-size: 0.7rem; font-weight: 700; color: var(--blush-700); text-transform: uppercase; letter-spacing: 0.03em; }
-    .clinical-disclaimer { display: flex; gap: 0.4rem; align-items: flex-start; font-size: 0.76rem; color: #92610a; background: #fff8eb; border: 1px solid #fbd38d; border-radius: var(--radius-md); padding: 0.55rem 0.8rem; margin: 0; }
+    .clinical-disclaimer { display: flex; gap: 0.4rem; align-items: flex-start; font-size: 0.76rem; color: var(--warn-text); background: var(--warn-bg); border: 1px solid var(--warn-border); border-radius: var(--radius-md); padding: 0.55rem 0.8rem; margin: 0; }
 
     .plan-sum { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: 0.9rem 1rem; border-radius: var(--radius-md); background: linear-gradient(135deg, var(--sage-50), var(--blush-50)); margin-bottom: 1.1rem; }
     .plan-sum div { display: flex; flex-direction: column; }
@@ -395,14 +395,14 @@ interface QuickAction { icon: string; title: string; text: string; link: string;
     .wallet-head { display: flex; justify-content: space-between; font-size: 0.84rem; color: var(--sage-900); margin-bottom: 0.3rem; }
     .wallet-head small { color: var(--text-muted); font-weight: 600; }
     .wallet-bar { height: 7px; border-radius: var(--radius-full); background: var(--sage-50); overflow: hidden; }
-    .wallet-bar-fill { height: 100%; background: linear-gradient(90deg, var(--sage-500), var(--sage-700)); border-radius: var(--radius-full); transition: width 0.6s ease; }
+    .wallet-bar-fill { height: 100%; background: linear-gradient(90deg, var(--solid-sage-500), var(--solid-sage-700)); border-radius: var(--radius-full); transition: width 0.6s ease; }
 
     .call-card { display: flex; gap: 0.9rem; align-items: flex-start; }
     .call-icon { width: 44px; height: 44px; font-size: 24px; flex-shrink: 0; border-radius: 50%; display: grid; place-items: center; background: var(--blush-100); color: var(--blush-800); }
     .call-card strong { color: var(--sage-900); }
     .call-card p { margin: 0.2rem 0 0; font-size: 0.85rem; color: var(--text-secondary); }
 
-    .trust-card { background: linear-gradient(160deg, var(--trust-50), #fff); border: 1px solid var(--trust-100); }
+    .trust-card { background: linear-gradient(160deg, var(--trust-50), var(--bg-surface)); border: 1px solid var(--trust-100); }
     .trust-card h3 { margin-bottom: 0.85rem; color: var(--trust-900); }
     .trust-card h3 mat-icon { color: var(--trust-700); }
     .trust-card ul { list-style: none; padding: 0; margin: 0 0 1rem; display: flex; flex-direction: column; gap: 0.6rem; }
@@ -422,7 +422,7 @@ interface QuickAction { icon: string; title: string; text: string; link: string;
     .form-actions { display: flex; gap: 0.75rem; flex-wrap: wrap; }
 
     .status-banner { padding: 0.75rem 1rem; border-radius: 10px; margin-bottom: 1.25rem; font-size: 0.85rem; font-weight: 600; }
-    .status-banner.is-error { background: #fdecea; color: #a0281c; border: 1px solid #f5b7b1; }
+    .status-banner.is-error { background: var(--danger-bg); color: var(--danger-text); border: 1px solid var(--danger-border); }
   `]
 })
 export class JourneyComponent implements OnInit {

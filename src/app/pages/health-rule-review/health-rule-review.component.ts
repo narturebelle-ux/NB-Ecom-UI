@@ -78,13 +78,13 @@ import { RISK_FACTOR_LABELS, RiskFactor } from '../../models/onboarding.models';
     h1 { font-size: clamp(1.7rem, 3.2vw, 2.2rem); color: var(--sage-900); margin: 0.4rem 0; }
     header p { color: var(--text-secondary); font-size: 0.9rem; }
     .tabs { display: flex; gap: 0.4rem; margin-bottom: 1rem; flex-wrap: wrap; }
-    .tab { border: 1.5px solid var(--border-light); background: #fff; border-radius: var(--radius-full); padding: 0.4rem 0.9rem; font-weight: 600; font-size: 0.84rem; color: var(--text-secondary); cursor: pointer; }
-    .tab.on { background: var(--sage-700); border-color: var(--sage-700); color: #fff; }
-    .card { border-radius: var(--radius-lg, 14px); background: #fff; border: 1px solid var(--border-light); }
+    .tab { border: 1.5px solid var(--border-light); background: var(--bg-surface); border-radius: var(--radius-full); padding: 0.4rem 0.9rem; font-weight: 600; font-size: 0.84rem; color: var(--text-secondary); cursor: pointer; }
+    .tab.on { background: var(--solid-sage-700); border-color: var(--sage-700); color: #fff; }
+    .card { border-radius: var(--radius-lg, 14px); background: var(--bg-surface); border: 1px solid var(--border-light); }
     .rule { padding: 1rem 1.15rem; margin-bottom: 0.75rem; display: flex; flex-direction: column; gap: 0.35rem; }
     .rule-head { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
     .rule-head strong { color: var(--sage-900); }
-    .effect { font-size: 0.7rem; font-weight: 800; text-transform: uppercase; padding: 0.15rem 0.55rem; border-radius: var(--radius-full); background: var(--sage-700); color: #fff; }
+    .effect { font-size: 0.7rem; font-weight: 800; text-transform: uppercase; padding: 0.15rem 0.55rem; border-radius: var(--radius-full); background: var(--solid-sage-700); color: #fff; }
     .effect.avoid { background: #a0281c; }
     .reason { font-size: 0.86rem; color: var(--text-secondary); }
     .label { font-weight: 700; color: var(--sage-900); }
@@ -92,7 +92,7 @@ import { RISK_FACTOR_LABELS, RiskFactor } from '../../models/onboarding.models';
     .actions { display: flex; justify-content: flex-end; gap: 0.5rem; align-items: center; }
     .reject-box { display: flex; flex-direction: column; gap: 0.4rem; margin-top: 0.4rem; }
     .reject-box label { font-size: 0.82rem; font-weight: 600; color: var(--sage-900); }
-    .danger { color: #a0281c; border-color: #a0281c; }
+    .danger { color: var(--danger-text); border-color: #a0281c; }
     .empty { padding: 1.5rem; text-align: center; color: var(--text-secondary); }
   `]
 })

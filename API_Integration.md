@@ -7,6 +7,11 @@ The UI-side counterpart to `NB-Ecomm-API/UI_INTEGRATION_GUIDE.md`. That file tel
 **If you only read one section, read this one.** The sections below are a dated history; where an older section
 disagrees with this one, this one wins.
 
+**🔴 PRODUCTION BLOCKER (2026-10-30): the API is not deployed anywhere, so sign-in fails on www.narturebelle.com.**
+The UI is live on Vercel. There is no public API, and the live build's `API_URL` points at the website itself. Full details and
+the deployment plan are in §29. **Update 2026-10-30:** the API is being deployed on **Vercel's Container runtime (beta)** in project `nb-ecom-api`, at `api.narturebelle.com` (API 7b7fbad).
+The user is configuring it now. Waiting for the API agent to send the base URL once `/health/db` answers over https.
+
 **UI stage: Phase 6 integration (2026-10-30).** All phases 0–6 are built in the UI against your real endpoints.
 Phase 7 is blocked on product-owner decisions. The roadmap's "Where we are now" table has the per-phase status.
 
@@ -650,8 +655,13 @@ Against API 70296dd (final contract). Not verified live, because it's waiting on
 
 ## 28. Careers, job applications and "Share an idea" (2026-10-30)
 
+> **Mailboxes (product-owner decision, 2026-10-30):** `hello@narturebelle.com` receives careers applications and "Share an idea"
+> (the API sends there by default since 9864c5f). `support-care@narturebelle.com` is for support and care, and is the only contact shown
+> elsewhere on the site (footer). `admin@narturebelle.com` doesn't exist, and `admin-info-team@` is internal and must never appear in the UI.
+> The UI copy was updated to match.
+
 **Product-owner decisions:**
-- Applications are delivered **through the API**: stored, then emailed with the résumé to `admin@narturebelle.com`.
+- Applications are delivered **through the API**: stored, then emailed with the résumé to `hello@narturebelle.com`.
 - Roles are posted and closed from an **admin screen**.
 - A **feedback / ideas form** goes to the same inbox.
 
@@ -674,9 +684,58 @@ Against API 70296dd (final contract). Not verified live, because it's waiting on
   - view applicants, and open a résumé through a short-lived URL (`GET /admin/careers/applications/{id}/resume-url`)
 - Links: Careers and "Share an idea" in the footer. A "Careers admin" navbar link for admins.
 
+## 29. Production deployment: live-site findings and the plan (2026-10-30)
+
+**Live UI:** `https://www.narturebelle.com`, on Vercel project `nb-ecom-ui` (team NartureRangers), deployed from GitHub `main`.
+`narturebelle.com` and `http://` 308-redirect to `https://www.narturebelle.com`. Deep links (`/auth/login`, `/care`, `/plans`, `/about`,
+`/careers`, `/journey`) return 200 thanks to the SPA rewrite in `vercel.json`.
+
+**Findings (checked from outside, 2026-10-30):**
+
+| Check | Result |
+|---|---|
+| Firebase authorized domains | ✅ `narturebelle.com` and `www.narturebelle.com` added by the user (project `narturebelle-5ae7a`) |
+| Live build's `API_URL` | ❌ `http://www.narturebelle.com/api/v1`, the **website itself**. Vercel serves `index.html` (200 `text/html`) for `GET /api/v1/*` and returns 405 for `POST /api/v1/auth/firebase`. It's also `http://` on an `https://` page, so the browser blocks it as mixed content. |
+| A public API | ❌ None. `api.narturebelle.com` doesn't resolve, NB-Ecomm-API has never been deployed, and nothing has been deployed since 2366d6c. |
+| What users see | Firebase sign-in succeeds, then `POST /auth/firebase` never reaches an API, so sign-in fails. Every data page (plans, care, careers, journey…) shows its "couldn't load" state. Static pages (landing, About) work. |
+| Vercel project `nb-ecom-api` | Originally returned 404 on every path. A standard Vercel project can't run Spring Boot. **Superseded:** the user and the API agent are switching this project to Vercel's **Container** framework preset (beta), which runs the API's Dockerfile. **Keep this project.** (The UI agent's earlier "delete it" advice is withdrawn.) |
+
+**Vercel deployments:**
+- Production is **PR #6 (`b7e73c8`)**, which is Ready. It contains everything up to Careers, but with the broken `API_URL`.
+- **PR #8 (`82a93af`, `main`) fails on purpose.** UI commit `d9a15c7` added a guard to `scripts/generate-env.js`: when `VERCEL` is set, a production
+  build fails if `API_URL` isn't `https://`, is `localhost`, or is the website's own domain (unless `vercel.json` proxies `/api/`). So a broken
+  `API_URL` can no longer be published, and Vercel keeps the last good deployment live. Local `ng serve -c production` is unaffected.
+- Several **Preview** builds fail in about 6s, most likely because the 7 env vars were saved for Production only. This doesn't affect the live site.
+
+**Plan (revised 2026-10-30: Vercel Container runtime instead of Cloud Run, at the user's request):**
+1. **API agent + user:**
+   - Deploy NB-Ecomm-API (`firebase-setup` merged to `main`, root Dockerfile, API 7b7fbad) on **Vercel project `nb-ecom-api`** with framework preset **Container** (beta).
+   - The image listens on `PORT=80`, Vercel's default. Rate limits read `X-Real-IP`. Firebase Admin uses `FIREBASE_SERVICE_ACCOUNT_BASE64` (set on the `nb-ecom-api` project, never on `nb-ecom-ui`).
+   - Use the custom domain **`api.narturebelle.com`**, added to the `nb-ecom-api` project.
+   - **Cold starts:** Vercel scales the container to zero after about 5 idle minutes, so the first request can take about 20–40s. The UI calls `GET /features` on every page load, which also wakes the API, so it's usually warm by the time someone signs in.
+   - **Request bodies are capped at 4.5 MB by Vercel**, so the résumé limit is now **4 MB** on both sides (UI updated 2026-10-30). Records uploads aren't affected: they go straight to Supabase storage through a signed URL.
+   - **Prod config:**
+     - the prod DB, confirmed by the user
+     - all secrets as env vars on the **`nb-ecom-api`** Vercel project (marked Sensitive), **never on `nb-ecom-ui`**, whose variables are built into public JavaScript
+     - the prod profile, with migrations V1–V28 on boot
+     - a health check at `/health/db`
+   - CORS already allows `https://www.narturebelle.com` and `https://narturebelle.com`.
+   - API-side prep: CRLF-safe `gradlew` in the Dockerfile and a container-sized JVM heap.
+   - Env vars the API reads (set on Vercel project **`nb-ecom-api`**): `SPRING_PROFILES_ACTIVE`, `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `PORT`, `FIREBASE_SERVICE_ACCOUNT_BASE64`.
+     For email and records it also reads `RESEND_API_KEY`, `EMAIL_FROM`, `CAREERS_ADMIN_EMAIL`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` and `SUPABASE_STORAGE_BUCKET`.
+     Optional ones: `RECORDS_*`, `SCHEDULING_ENABLED`, `MOCK_PAYMENT_WEBHOOK_SECRET`.
+2. **API agent → UI agent:** send the public base URL once `/health/db` answers over https.
+3. **User (guided by the UI agent):** in Vercel `nb-ecom-ui`, set `API_URL=https://api.narturebelle.com/api/v1` (or the given URL) for **Production and Preview**,
+   and tick the other six vars for Preview too. Then **Redeploy** the PR #8 deployment. The guard will then pass.
+4. **UI agent:** verify the live site end to end: API calls reach the API with no CORS errors, and Firebase → `/auth/firebase` → `/me` sign-in works.
+
 ## 9. Open requests to the API agent
 
 *(Running list — mark resolved items with ✅ and a date rather than deleting them, so the history stays visible.)*
+
+- 🔵 **2026-10-30** — **Cold-start 500s (unconfirmed).** The UI agent saw `/me` and `/me/journeys` answer 500 once while the container was booting. They were 401 a minute later, and the API agent couldn't reproduce it. The UI already retries (status 0/502/503/504 ×3, 500 ×1; commit 9a06d50). **If one is caught live, capture the headers and body:** an `x-vercel-error` header or text/plain means it's Vercel's proxy; `{"code":"INTERNAL_ERROR"}` means it's the app's startup path.
+
+- 🔴 **2026-10-30** — **Deploy the API to production (blocker for the live site):** now on **Vercel Container runtime**, project `nb-ecom-api`, at `api.narturebelle.com` (API 7b7fbad), with the prod DB and secrets on that project. Send the UI agent the public URL once `/health/db` answers over https (§29). Résumé limit lowered to 4 MB on both sides.
 
 - ✅ **2026-10-28** — `firstName`/`lastName` auto-populated on first signup (Google display name / email-derived guess). Confirmed working, see §3.
 - ✅ **2026-10-28** — Phase 0/1 contract: `/me`, Consent (1.1), Journey (1.2), Dashboard (1.3) are all live and the UI is built against them and verified end-to-end against a live run, see §10-12. Nothing open from Phase 1.
@@ -690,7 +749,7 @@ Against API 70296dd (final contract). Not verified live, because it's waiting on
 - 🟡 **2026-10-30** — ✅ committed in API 0fe423d (prod included, rows labelled as sample); live after the :8080 restart. **Sample data in every list (product-owner request).** Seed providers (every professional type, a few cities/languages, VIRTUAL + PHYSICAL offerings, open slots), call slots with coordinators, Joy Circle events, BABY_CARE products, and any other list that can be empty, including under `prod`. Mark sample rows as sample in the data.
 - 🟡 **2026-10-30** — Parts A–C committed (API 688c3a4 matching, 294b906 coordinators, 839a38c health profile + `HEALTH_DATA`), and the UI is built against them (§25). Live after the :8080 restart, then UI verification. **Part D ✅ shipped (88879af); UI review screen built (§26).** Go-ahead given 2026-10-30 with these product-owner decisions: rules are approved once (not per mother); approvers are MEDICAL_REVIEWER staff or verified (VERIFIED/ACTIVE) GYNECOLOGIST, NUTRITIONIST or REGISTERED_NURSE providers. The UI will add a review screen for approvers once the review endpoints are defined.
 - ✅ **2026-10-30** — Professional portal shipped (API 30c56a9) and the UI is reconciled (§26). `HEALTH_DATA` v2 with care-team wording is live (V26). ~~Please send final shapes for `GET /provider/me`, `GET /provider/bookings`, `GET /provider/bookings/{id}/product-suggestions`, `GET`/`PUT /provider/bookings/{id}/product-recommendations` and `GET /me/care-recommendations`, plus a new `HEALTH_DATA` consent version whose text covers care-team access~~.
-- ✅ **2026-10-30** — Careers + feedback shipped (API 2366d6c), UI reconciled (§28). Live after the :8080 restart (V28). Email stays log-only until the user sets up Resend. ~~**Careers + feedback (product owner):** jobs, applications with résumé upload, feedback; stored and emailed to admin@narturebelle.com via an email provider (account + SPF/DKIM DNS needed from the user). Please send final shapes (§28).~~
+- ✅ **2026-10-30** — Careers + feedback shipped (API 2366d6c), UI reconciled (§28). Live after the :8080 restart (V28). Email stays log-only until the user sets up Resend. ~~**Careers + feedback (product owner):** jobs, applications with résumé upload, feedback; stored and emailed to hello@narturebelle.com via an email provider (account + SPF/DKIM DNS needed from the user). Please send final shapes (§28).~~
 - 🟡 **2026-10-30** — The `/providers` enum-filter 500 is believed to be a stale-jar artefact (the jar was rebuilt under the running PID). It should clear on restart, and bad values are now 400 (f213f95). Re-check after the restart.
 - 🔴 **2026-10-30** — **Bug:** `GET /providers?professionalType=…` and `?modality=…` return 500 `INTERNAL_ERROR` on :8080. The unfiltered list, `city` and `language` return 200. The Care page's type chips and "Virtual only" checkbox hit this and show "We couldn't load care professionals right now". Needs the API log (the catch-all handler logs the stack trace).
 - ✅ **2026-10-30** — `RECORDS_STORAGE` consent type added (API 43c0d60) and the UI now grants and reads it (§0).
