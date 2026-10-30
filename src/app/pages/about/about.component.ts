@@ -147,7 +147,7 @@ export class AboutComponent {
   executiveBoard: Person[] = [
     { name: 'Kumbam RajaRajeshReddy', role: 'Executive Board Member' },
     { name: 'Balnagar JayaLaxmi', role: 'Executive Board Member' },
-    { name: 'Veerlapati Manoj', role: 'Executive Board Member' },
+    { name: 'Veerlapati Manoj Kumar', role: 'Executive Board Member' },
     { name: 'BusiReddy Subba Reddy', role: 'Executive Board Member' }
   ];
 
