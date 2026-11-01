@@ -51,6 +51,7 @@ if (target === 'production' && KNOWN_PLACEHOLDER_KEYS.includes(process.env.FIREB
 // On a hosted build (Vercel sets VERCEL=1), API_URL must be a public HTTPS API. A localhost or http:// URL,
 // or the website's own domain (Vercel only serves the UI there), deploys a site where every sign-in fails
 // right after Firebase. Local `ng serve -c production` against localhost is unaffected.
+// Only develop (pre-production) and main (production) deploy, so each must build against its own API.
 if (target === 'production' && process.env.VERCEL) {
   const apiUrl = process.env.API_URL;
   let problem = null;
@@ -60,8 +61,15 @@ if (target === 'production' && process.env.VERCEL) {
   const proxiesApi = fs.existsSync(vercelJson) && /"source"\s*:\s*"\/api\//.test(fs.readFileSync(vercelJson, 'utf8'));
   if (!problem && !apiUrl.startsWith('https://')) problem = 'must start with https://';
   else if (!problem && ['localhost', '127.0.0.1'].includes(host)) problem = 'points at localhost, which is each visitor\'s own computer';
-  else if (!problem && !proxiesApi && /(^|\.)narturebelle\.com$/.test(host) && !host.startsWith('api.')) {
+  else if (!problem && !proxiesApi && /(^|\.)narturebelle\.com$/.test(host) && !/^(staging-)?api\./.test(host)) {
     problem = 'points at the website itself; Vercel only hosts the UI, so there is no API there';
+  }
+  const branch = process.env.VERCEL_GIT_COMMIT_REF;
+  if (!problem && branch === 'develop' && ['api.narturebelle.com', 'nb-ecom-api.vercel.app'].includes(host)) {
+    problem = 'is the production API, but develop is pre-production; set the pre-production API_URL for develop';
+  }
+  if (!problem && branch === 'main' && host.startsWith('staging')) {
+    problem = 'is the pre-production API, but main is production; set the production API_URL for main';
   }
   if (problem) {
     console.error(
