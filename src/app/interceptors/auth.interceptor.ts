@@ -19,7 +19,7 @@ let lastWakeNotice = 0;
  * Per the AUTH CONTRACT: attaches "Authorization: Bearer <Firebase ID token>" to every
  * request to our own APIs (getIdToken() refreshes the token automatically when it's
  * close to expiry — no manual refresh logic needed here). Only touches calls to
- * environment.apiUrl and environment.providersApiUrl; third-party requests (fonts, Firebase's own endpoints) pass through untouched.
+ * environment.apiUrl, mailsApiUrl and paymentsApiUrl; third-party requests (fonts, Firebase's own endpoints) pass through untouched.
  *
  * Handles the contract's three auth error codes centrally, then re-throws so each
  * caller's own error handling still runs —
@@ -31,7 +31,8 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const router = inject(Router);
 
   const isMainApi = req.url.startsWith(environment.apiUrl);
-  if (!isMainApi && !req.url.startsWith(environment.providersApiUrl)) {
+  const isOtherApi = [environment.mailsApiUrl, environment.paymentsApiUrl].some(url => !!url && req.url.startsWith(url));
+  if (!isMainApi && !isOtherApi) {
     return next(req);
   }
 
@@ -46,7 +47,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
         ? req.clone({ setHeaders: { Authorization: `Bearer ${token}` } })
         : req;
       const slow = setTimeout(() => {
-        if (Date.now() - lastWakeNotice > WAKE_NOTICE_INTERVAL_MS) {
+        if (isMainApi && Date.now() - lastWakeNotice > WAKE_NOTICE_INTERVAL_MS) {
           lastWakeNotice = Date.now();
           api.showToast('Waking up our server. This can take up to 30 seconds the first time.');
         }
@@ -64,7 +65,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
       );
     }),
     catchError((err: HttpErrorResponse) => {
-      // Only the main API decides someone is signed out: a problem on the onboarding service mustn't end everyone's session.
+      // Only the Care API decides someone is signed out: a fault on another API, including its 503, mustn't end a session.
       if (err.status === 401 && isMainApi) {
         firebaseAuth.logout().finally(() => {
           api.logout();

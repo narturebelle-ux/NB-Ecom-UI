@@ -73,6 +73,19 @@ export const providerAreaGuard: CanActivateFn = (_route, state) => {
   return router.createUrlTree(['/provider/join']);
 };
 
+/** Connection-check pages exist only where the API's address is configured, so hosted sites don't expose them. */
+export const apiCheckGuard: CanActivateFn = route => route.data['url'] ? true : inject(Router).createUrlTree(['/']);
+
+/** The mother's My Profile. Professionals and applicants have their own screens. */
+export const motherProfileGuard: CanActivateFn = (_route, state) => {
+  const router = inject(Router);
+  const user = inject(ApiService).currentUser();
+  if (!user) return router.createUrlTree(['/auth/login'], { queryParams: { returnUrl: state.url } });
+  if (isProfessionalUser(user)) return router.createUrlTree(['/provider/profile']);
+  if (inject(ProviderApplicationService).isApplicant()) return router.createUrlTree(['/provider/apply']);
+  return true;
+};
+
 /** Reviewing professional applications: Operations and Medical Reviewers only (customer-approved). */
 export const applicationReviewGuard: CanActivateFn = (_route, state) => {
   const api = inject(ApiService);

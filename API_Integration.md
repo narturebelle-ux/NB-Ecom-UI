@@ -881,11 +881,34 @@ unpaid votes kept apart so paid requests take priority; `GET /ideas` stays publi
 
 ## Care professional onboarding (2026-11-01, branch feature/provider-onboarding)
 
-Customer-approved flow, built against **NB-Ecom-Providers-API** (contract in that repo's `UI_INTEGRATION_GUIDE.md`). Sessions still come from NB-Ecom-API's `/provider/bookings`.
+Customer-approved flow. All of it is served by the main API (NB-Ecom-API); see §35.
 
-- **New setting:** `PROVIDERS_API_URL` in `.env.staging`, `.env.production` and Vercel. `generate-env.js` fails the build without it. Local builds use `http://localhost:8086/api/v1`.
 - **Screens:** `/provider/join`, `/provider/apply` (adaptive form from the API), `/provider/setup`, `/provider` (dashboard, replaces the old sessions list), `/provider/availability`, `/provider/earnings`, `/provider/profile`, `/admin/provider-applications[/:id]`.
 - **Routing:** sign-in never waits on this API. A known applicant (remembered per account in localStorage as `nb_provider_applicants`) goes to their application; anyone else goes straight on while a background check runs, and an applicant on a new device is moved when it answers. Applicants skip the mother's consent and onboarding. An account that has applied stays in the professional area, even if rejected or withdrawn, as the approved document says: a member needs a separate account.
-- **Interceptor:** also attaches the token for `providersApiUrl`. Only the main API's 401 signs someone out, so a problem on the onboarding service can't end every session.
 - **Public profile:** `/care/:id` shows registration number, council and confirmed experience from `GET /public/providers/{id}/credentials`, and leaves them out if the call fails or the professional predates self-service.
 - **Roles:** the review screens need `OPERATIONS_ADMIN` or `MEDICAL_REVIEWER`; no other admin role can open them.
+
+## 35. Provider requests and the startup check (product owner, 2026-11-01)
+
+**All provider requests go to the main API (`apiUrl`).** The owner removed the separate Providers API from the design, and its code is being merged into the main API (`NB-Ecomm-API/PROVIDERS_MERGE_BRIEF.md`). The UI has no `providersApiUrl` or `PROVIDERS_API_URL` any more.
+
+**Release order: the API first.** All 60 provider requests the UI makes exist on `feature/provider-onboarding-merge`, but 43 aren't on the API's `develop` yet. If this UI ships first, onboarding, setup, the provider dashboard's panels and the staff review screens fail because those endpoints don't exist on the live API.
+
+**The interceptor now applies to every provider request:** a 401 from any of them signs the user out.
+
+**Provider area (owner, 2026-11-01).** Visitors see "Join as a professional" in the header above 900px wide and in the footer. Professionals and applicants can't open the mother's `/profile`: professionals go to `/provider/profile`, applicants to `/provider/apply`. The dashboard `/provider` shows upcoming sessions, earnings (labelled earned, because `paidOutTotal` stays 0) and the answers to their profession's questions, leaving out sensitive answers and files. Professionals with no application see their profile fields instead. Feedback comes from `GET /provider-workspace/feedback`: the average, the count and the latest five comments, with no mother's identity. Fuller version: TASKS.md F21-S1.
+
+**Public pages (owner, 2026-11-01).** Signed-out visitors can open only: home, `/about`, `/careers` and `/careers/:id`, `/plans`, `/provider/join`, `/auth/login`, `/auth/signup` and the shared idea link `/ideas/:id`. `/care` and `/checklists` now need sign-in. These are page guards only: the data stays protected by the API. The owner confirmed `/plans` and `/ideas/:id` stay public. `GET /providers`, `/providers/{id}` and `/providers/{id}/slots` are to become sign-in only at the API (requested, not built).
+
+**The UI calls three APIs (owner, 2026-11-01).**
+
+| API | Setting | Local | Requests |
+|---|---|---|---|
+| Care (`NB-Ecomm-API`) | `apiUrl` | 8080 | Everything else, including providers and `GET /entitlements` |
+| Notifications (`NB-Ecom-Mails-API`) | `mailsApiUrl` | 8082 | `/me/reminders`, `/me/notification-preferences` |
+| Payments (`NB-Ecom-Payments-API`) | `paymentsApiUrl` | 8083 | `/plans`, `/me/plans/quote`, `/orders`, `/payments` |
+
+Paths, JSON and the Firebase token are unchanged. Hosted builds without `MAILS_API_URL` or `PAYMENTS_API_URL` keep those requests on `API_URL`. Only the Care API's 401 signs someone out. The startup check covers the Care API only. Moves still to be confirmed by the API sessions before release: Care must stop serving, or agree on, the moved endpoints, and a payment must still create the entitlement on Care.
+
+**The UI starts only when the API is up.** Before starting, `src/app/startup/backend-check.ts` calls `GET /health/db`. If it fails, the visitor sees the downtime page ("Something beautiful is on the way"), the console says what failed, and the check repeats every 10 seconds until the app can start. The health check must stay public and allow the website's origin.
+

@@ -1,5 +1,5 @@
 /**
- * Care professional onboarding, against NB-Ecom-Providers-API (its UI_INTEGRATION_GUIDE.md).
+ * Care professional onboarding, against NB-Ecom-API (its UI_INTEGRATION_GUIDE.md).
  * The application form is defined by the API, so these types describe what it sends rather than the questions.
  */
 
@@ -173,6 +173,13 @@ export interface Earnings {
   completedSessions: number;
   feeIsDraft: boolean;
   items: { bookingId: number; amount: number; status: string; createdAt: string }[];
+}
+
+export interface ProviderFeedback {
+  count: number;
+  averageRating: number | null;
+  /** Latest 50, newest first. No booking or mother's identity. */
+  items: { rating: number; comment: string | null; date: string }[];
 }
 
 export interface ProductActivity { productName: string; priority: string; note: string | null; createdAt: string; }

@@ -14,7 +14,10 @@ import {
   PROFESSION_LABELS,
   ProductActivity,
   ProfessionRole,
-  ProviderApplication
+  ProviderApplication,
+  ProviderFeedback,
+  ProviderProfile,
+  FormSection
 } from '../../models/provider-application.models';
 import { PROVIDER_PAGE_STYLES } from '../provider-shared/provider-page.styles';
 
@@ -22,7 +25,7 @@ const LICENCE_WARNING_DAYS = 60;
 
 /**
  * The professional's home, laid out like the mother's My Journey: greeting, hero, quick tiles, then panels.
- * Sessions come from NB-Ecom-API; the rest comes from NB-Ecom-Providers-API. Professionals an admin added
+ * Everything comes from NB-Ecom-API. Professionals an admin added
  * before self-service have no application, so those panels just stay out of the way.
  */
 @Component({
@@ -136,11 +139,44 @@ const LICENCE_WARNING_DAYS = 60;
               @if (earnings(); as e) {
                 <section class="panel glass">
                   <div class="panel-head">
-                    <h3><mat-icon>payments</mat-icon> Earnings</h3>
+                    <h3><mat-icon>payments</mat-icon> Earnings from past sessions</h3>
                     <a class="btn-link" routerLink="/provider/earnings">See all</a>
                   </div>
                   <p class="big">₹{{ e.totalEarned | number:'1.0-0' }}</p>
                   <p class="muted">{{ e.completedSessions }} completed {{ e.completedSessions === 1 ? 'session' : 'sessions' }} at ₹{{ e.feePerSession | number:'1.0-0' }} each</p>
+                  @if (!e.paidOutTotal) { <p class="muted">Earned so far. Bank payments haven’t started, so nothing has been paid out yet.</p> }
+                </section>
+              }
+
+              <section class="panel glass">
+                <div class="panel-head"><h3><mat-icon>rate_review</mat-icon> Feedback</h3></div>
+                @if (feedback(); as f) {
+                  @if (f.averageRating !== null) {
+                    <p class="big">{{ f.averageRating | number:'1.1-1' }} <span class="out-of">out of 5</span></p>
+                    <p class="muted">From {{ f.count }} {{ f.count === 1 ? 'review' : 'reviews' }}</p>
+                  }
+                  @for (item of f.items.slice(0, 5); track $index) {
+                    <div class="row-item feedback-item">
+                      <span class="row-main">
+                        <strong>{{ item.rating }} out of 5</strong>
+                        @if (item.comment) { <span>{{ item.comment }}</span> }
+                        <small>{{ item.date | date:'d MMM y' }}</small>
+                      </span>
+                    </div>
+                  } @empty {
+                    <p class="muted">No feedback yet.</p>
+                  }
+                } @else {
+                  <p class="muted">We couldn’t load your feedback just now.</p>
+                }
+              </section>
+
+              @if (details().length) {
+                <section class="panel glass">
+                  <div class="panel-head"><h3><mat-icon>badge</mat-icon> Your professional details</h3></div>
+                  @for (d of details(); track d.label) {
+                    <div class="row-item"><span class="row-main"><strong>{{ d.label }}</strong><span>{{ d.value }}</span></span></div>
+                  }
                 </section>
               }
 
@@ -214,6 +250,8 @@ const LICENCE_WARNING_DAYS = 60;
     .when strong { color: var(--sage-900); font-size: 0.88rem; }
     .when span { font-size: 0.8rem; color: var(--text-muted); }
     .big { font-family: var(--font-serif); font-size: 2.2rem; color: var(--sage-900); margin: 0 0 0.2rem; }
+    .out-of { font-size: 0.95rem; color: var(--text-muted); }
+    .feedback-item small { font-size: 0.76rem; color: var(--text-muted); }
   `]
 })
 export class ProviderDashboardComponent implements OnInit {
@@ -231,6 +269,42 @@ export class ProviderDashboardComponent implements OnInit {
   bookings = signal<ProviderBooking[]>([]);
   earnings = signal<Earnings | null>(null);
   activity = signal<ProductActivity[]>([]);
+  profile = signal<ProviderProfile | null>(null);
+  feedback = signal<ProviderFeedback | null>(null);
+  formSections = signal<FormSection[]>([]);
+
+  /** The answers to this profession's own questions. Professionals with no application get their profile instead. */
+  details = computed(() => {
+    const answers = this.application()?.answers;
+    const rows: { label: string; value: string }[] = [];
+    const questions = this.formSections().flatMap(section => section.questions);
+    const shown = (q: FormSection['questions'][number]): boolean => {
+      if (!q.showWhenKey) return true;
+      const parent = questions.find(p => p.key === q.showWhenKey);
+      const answer = answers?.[q.showWhenKey];
+      const given = Array.isArray(answer) ? answer.map(String) : [String(answer)];
+      return !!parent && shown(parent) && given.some(v => q.showWhenValues.includes(v));
+    };
+    for (const q of questions) {
+      const answer = answers?.[q.key];
+      if (q.sensitive || q.type === 'FILE' || answer === undefined || answer === null || answer === '' || !shown(q)) continue;
+      const label = (v: unknown) => q.options.find(o => o.value === String(v))?.label ?? String(v);
+      rows.push({ label: q.label, value: Array.isArray(answer) ? answer.map(label).join(', ') : label(answer) });
+    }
+    if (rows.length) return rows;
+    const p = this.profile();
+    if (!p) return rows;
+    const fromProfile: [string, string | number | null][] = [
+      ['Council', p.council],
+      ['Registration number', p.registrationNumber],
+      ['Licence valid until', p.licenceExpiresOn],
+      ['Confirmed experience (years)', p.confirmedExperienceYears],
+      ['Stages cleared', p.clearedStages.join(', ')],
+      ['City', p.city],
+      ['Languages', p.languages.join(', ')]
+    ];
+    return fromProfile.filter(([, value]) => value !== null && value !== '').map(([label, value]) => ({ label, value: String(value) }));
+  });
 
   upcoming = computed(() => this.bookings()
     .filter(b => b.status === 'BOOKED' || b.status === 'IN_PROGRESS')
@@ -285,7 +359,12 @@ export class ProviderDashboardComponent implements OnInit {
         this.loading.set(false);
       }
     });
-    this.applications.current().pipe(catchError(() => of(null))).subscribe(application => this.application.set(application));
+    this.applications.current().pipe(catchError(() => of(null))).subscribe(application => {
+      this.application.set(application);
+      if (application) this.applications.form(application.profession).pipe(catchError(() => of([] as FormSection[]))).subscribe(sections => this.formSections.set(sections));
+    });
+    this.applications.profile().pipe(catchError(() => of(null))).subscribe(profile => this.profile.set(profile));
+    this.applications.feedback().pipe(catchError(() => of(null))).subscribe(feedback => this.feedback.set(feedback));
     this.applications.earnings().pipe(catchError(() => of(null))).subscribe(earnings => this.earnings.set(earnings));
     this.applications.productActivity().pipe(catchError(() => of([] as ProductActivity[]))).subscribe(activity => this.activity.set(activity));
   }

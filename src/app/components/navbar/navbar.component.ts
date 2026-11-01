@@ -142,13 +142,13 @@ import { FeatureDirective } from '../../directives/feature.directive';
               </button>
               @if (isUserMenuOpen) {
                 <div class="user-dropdown">
-                  @if (needsName(user)) {
+                  @if (needsName(user) && !isProfessional()) {
                     <a routerLink="/profile" class="dropdown-item" (click)="isUserMenuOpen = false">
                       <mat-icon class="icon-sm">edit</mat-icon> Add your name
                     </a>
                     <hr class="dropdown-divider">
                   }
-                  <a routerLink="/profile" class="dropdown-item" (click)="isUserMenuOpen = false">
+                  <a [routerLink]="profileLink()" class="dropdown-item" (click)="isUserMenuOpen = false">
                     <mat-icon class="icon-sm">person</mat-icon> My Profile
                   </a>
                   @if (canShareIdeas()) {
@@ -161,9 +161,11 @@ import { FeatureDirective } from '../../directives/feature.directive';
                       <mat-icon class="icon-sm">card_giftcard</mat-icon> Refer &amp; Invite
                     </a>
                   }
-                  <a routerLink="/profile" fragment="privacy" class="dropdown-item" (click)="isUserMenuOpen = false">
-                    <mat-icon class="icon-sm">shield_person</mat-icon> Privacy
-                  </a>
+                  @if (!isProfessional()) {
+                    <a routerLink="/profile" fragment="privacy" class="dropdown-item" (click)="isUserMenuOpen = false">
+                      <mat-icon class="icon-sm">shield_person</mat-icon> Privacy
+                    </a>
+                  }
                   <hr class="dropdown-divider">
                   <button class="dropdown-item sign-out-item" (click)="signOut()">
                     <mat-icon class="icon-sm">logout</mat-icon> Sign Out
@@ -172,7 +174,7 @@ import { FeatureDirective } from '../../directives/feature.directive';
               }
             </div>
           } @else {
-            <a routerLink="/about" class="btn btn-ghost-nav btn-sm about-link">About us</a>
+            <a routerLink="/provider/join" class="btn btn-ghost-nav btn-sm join-link">Join as a professional</a>
             <a routerLink="/auth/login" class="btn btn-ghost-nav btn-sm login-btn">Sign in</a>
             <a routerLink="/auth/signup" class="btn btn-primary btn-sm get-started-btn">Get started</a>
           }
@@ -224,7 +226,7 @@ import { FeatureDirective } from '../../directives/feature.directive';
           }
           <hr class="mobile-divider">
           @if (api.currentUser(); as user) {
-            <a routerLink="/profile" (click)="isMobileOpen = false" class="mobile-nav-link profile-link">
+            <a [routerLink]="profileLink()" (click)="isMobileOpen = false" class="mobile-nav-link profile-link">
               <mat-icon class="icon-sm">person</mat-icon> My Profile ({{ getDisplayName(user) }})
             </a>
             @if (canShareIdeas()) {
@@ -237,9 +239,11 @@ import { FeatureDirective } from '../../directives/feature.directive';
                 <mat-icon class="icon-sm">card_giftcard</mat-icon> Refer &amp; Invite
               </a>
             }
-            <a routerLink="/profile" fragment="privacy" (click)="isMobileOpen = false" class="mobile-nav-link">
-              <mat-icon class="icon-sm">shield_person</mat-icon> Privacy
-            </a>
+            @if (!isProfessional()) {
+              <a routerLink="/profile" fragment="privacy" (click)="isMobileOpen = false" class="mobile-nav-link">
+                <mat-icon class="icon-sm">shield_person</mat-icon> Privacy
+              </a>
+            }
             <button (click)="signOut()" class="btn btn-outline btn-sm mobile-action-btn">
               <mat-icon class="icon-sm">logout</mat-icon> Sign Out
             </button>
@@ -382,7 +386,8 @@ import { FeatureDirective } from '../../directives/feature.directive';
       align-items: center;
       gap: 0.75rem;
     }
-    .login-btn, .get-started-btn { white-space: nowrap; flex-shrink: 0; }
+    .login-btn, .get-started-btn, .join-link { white-space: nowrap; flex-shrink: 0; }
+    @media (max-width: 900px) { .join-link { display: none; } }
     .btn-ghost-nav { background: transparent; color: var(--sage-800); font-weight: 700; }
     .btn-ghost-nav:hover { background: var(--sage-50); color: var(--sage-900); }
     @media (max-width: 480px) { .login-btn { display: none; } }
@@ -595,7 +600,6 @@ import { FeatureDirective } from '../../directives/feature.directive';
 
     @media (max-width: 1024px) {
       .nav-links { display: none; }
-      .about-link { display: none; }
       .mobile-toggle { display: block; }
     }
     /* Phones: keep the menu button on screen. The name and tagline give way; the menu has the same details. */
@@ -625,6 +629,8 @@ export class NavbarComponent {
   applications = inject(ProviderApplicationService);
   /** Applicants count here too, so they never see the mother's onboarding and journey links. */
   isProfessional = computed(() => isProfessionalUser(this.api.currentUser()) || this.applications.isApplicant());
+  profileLink = computed(() => isProfessionalUser(this.api.currentUser()) ? '/provider/profile'
+    : this.applications.isApplicant() ? '/provider/apply' : '/profile');
   isApplicationReviewer = computed(() => isApplicationReviewer(this.api.currentUser()));
   /** Reviewers include MEDICAL_REVIEWER staff, who aren't professionals, so they get the link even outside the portal. */
   isReviewer = computed(() => isReviewerUser(this.api.currentUser()));

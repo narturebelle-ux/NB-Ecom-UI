@@ -19,6 +19,7 @@ import {
   Earnings,
   FormSection,
   ProductActivity,
+  ProviderFeedback,
   ProfessionRole,
   ProviderApplication,
   ProviderProfile,
@@ -37,12 +38,12 @@ const APPLICANT_KEY = 'nb_provider_applicants';
 /** Long enough for the API to wake from idle. Nothing waits on these calls, so they can take their time. */
 const BACKGROUND_TIMEOUT_MS = 45000;
 
-/** Care professional onboarding, dashboard data and staff review, against NB-Ecom-Providers-API. */
+/** Care professional onboarding, dashboard data and staff review, against NB-Ecom-API. */
 @Injectable({ providedIn: 'root' })
 export class ProviderApplicationService {
   private http = inject(HttpClient);
   private api = inject(ApiService);
-  private readonly baseUrl = environment.providersApiUrl;
+  private readonly baseUrl = environment.apiUrl;
 
   /** Accounts on this device known to have an application, so routing works on reload without a network call. */
   private applicantIds = signal<number[]>(this.readApplicants());
@@ -202,6 +203,10 @@ export class ProviderApplicationService {
 
   earnings(): Observable<Earnings> {
     return this.http.get<Earnings>(`${this.baseUrl}/provider-workspace/earnings`, { context: new HttpContext().set(SILENT_FORBIDDEN, true) });
+  }
+
+  feedback(): Observable<ProviderFeedback> {
+    return this.http.get<ProviderFeedback>(`${this.baseUrl}/provider-workspace/feedback`);
   }
 
   productActivity(): Observable<ProductActivity[]> {

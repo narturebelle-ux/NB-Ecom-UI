@@ -1,7 +1,9 @@
-import { Component, inject } from '@angular/core';
+import { Component, computed, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { FeatureDirective } from '../../directives/feature.directive';
+import { isProfessionalUser } from '../../models/maternal.models';
+import { ApiService } from '../../services/api.service';
 import { CommerceService } from '../../services/commerce.service';
 
 @Component({
@@ -10,55 +12,67 @@ import { CommerceService } from '../../services/commerce.service';
   imports: [RouterLink, MatIconModule, FeatureDirective],
   template: `
     <footer class="main-footer">
+      <div class="container footer-intro">
+        <div class="footer-brand">
+          <img src="favicon.svg" alt="" class="brand-leaf">
+          <span class="brand-name">NartureBelle™</span>
+        </div>
+        <p class="brand-mission">
+          Care coordination for mothers and young families — from pregnancy through early childhood, with verified professionals and records you control.
+        </p>
+        <div class="trust-pill">
+          <mat-icon class="icon-sm">verified_user</mat-icon> Credential-verified professionals
+        </div>
+      </div>
+
       <div class="container footer-grid">
-        <!-- Col 1: Brand Story -->
-        <div class="footer-col brand-col">
-          <div class="footer-brand">
-            <img src="favicon.svg" alt="" class="brand-leaf">
-            <span class="brand-name">NartureBelle™</span>
+        @if (!isProfessional()) {
+          <div class="footer-col">
+            <h4 class="col-title">For Mothers</h4>
+            <ul class="footer-links">
+              <li><a routerLink="/journey">My Journey</a></li>
+              <li><a routerLink="/plans">Care Plans</a></li>
+              <li><a routerLink="/care">Find a Professional</a></li>
+              <li><a routerLink="/checklists">Checkup & Scan Checklist</a></li>
+              <li><a routerLink="/checklists">Maternity Hospitals & Scan Labs</a></li>
+              <li *appFeature="'recordsVault'"><a routerLink="/records">Records Vault</a></li>
+              <li *appFeature="'childTracker'"><a routerLink="/child">Child & Vaccinations</a></li>
+              <li *appFeature="'productRecommendations'"><a routerLink="/recommendations">Recommended for you</a></li>
+              <li *appFeature="'joyCircle'"><a routerLink="/joy-circle">Joy Circle events</a></li>
+              <li *appFeature="'legacyLeadForms'"><a routerLink="/services/nurse-companion">Dedicated Care Nurse ("Maa Sakhi")</a></li>
+              <li *appFeature="'legacyLeadForms'"><a routerLink="/doctors-live">Live OB-GYN Webinars & Q&As</a></li>
+              @if (commerce.canShareIdeas()) { <li><a routerLink="/ideas">Share an Idea</a></li> }
+              <li><a routerLink="/invite">Refer &amp; Invite</a></li>
+              <li><a routerLink="/profile">Profile & Privacy</a></li>
+            </ul>
           </div>
-          <p class="brand-mission">
-            Care coordination for mothers and young families — from pregnancy through early childhood, with verified professionals and records you control.
-          </p>
-          <div class="trust-pill">
-            <mat-icon class="icon-sm">verified_user</mat-icon> Credential-verified professionals
-          </div>
+        }
+
+        <div class="footer-col">
+          <h4 class="col-title">For Professionals</h4>
+          <ul class="footer-links">
+            @if (isProfessional()) {
+              <li><a routerLink="/provider">Dashboard</a></li>
+              <li><a routerLink="/provider/availability">Availability and services</a></li>
+              <li><a routerLink="/provider/earnings">Earnings</a></li>
+              <li><a routerLink="/provider/profile">Profile and documents</a></li>
+            } @else {
+              <li><a routerLink="/provider/join">Join as a professional</a></li>
+              <li><a routerLink="/provider/join" fragment="how">Our process</a></li>
+            }
+          </ul>
         </div>
 
-        <!-- Col 2: Pregnancy Stages -->
         <div class="footer-col">
-          <h4 class="col-title">Your Journey</h4>
+          <h4 class="col-title">General</h4>
           <ul class="footer-links">
-            <li *appFeature="'productRecommendations'"><a routerLink="/recommendations">Recommended for you</a></li>
-            <li *appFeature="'joyCircle'"><a routerLink="/joy-circle">Joy Circle events</a></li>
             <li><a routerLink="/about">About us</a></li>
             <li><a routerLink="/careers">Careers</a></li>
-            <li><a routerLink="/provider/join">Join as a professional</a></li>
-            @if (commerce.canShareIdeas()) { <li><a routerLink="/ideas">Share an Idea</a></li> }
-            <li><a routerLink="/journey">My Journey</a></li>
-            <li><a routerLink="/plans">Care Plans</a></li>
-            <li><a routerLink="/invite">Refer &amp; Invite</a></li>
-            <li><a routerLink="/care">Find a Professional</a></li>
-            <li><a routerLink="/checklists">Checkup & Scan Checklist</a></li>
           </ul>
         </div>
 
-        <!-- Col 3: Dedicated Healthcare Services -->
         <div class="footer-col">
-          <h4 class="col-title">Care & Privacy</h4>
-          <ul class="footer-links">
-            <li *appFeature="'legacyLeadForms'"><a routerLink="/services/nurse-companion">Dedicated Care Nurse ("Maa Sakhi")</a></li>
-            <li *appFeature="'legacyLeadForms'"><a routerLink="/doctors-live">Live OB-GYN Webinars & Q&As</a></li>
-            <li><a routerLink="/checklists">Maternity Hospitals & Scan Labs</a></li>
-            <li *appFeature="'recordsVault'"><a routerLink="/records">Records Vault</a></li>
-            <li *appFeature="'childTracker'"><a routerLink="/child">Child & Vaccinations</a></li>
-            <li><a routerLink="/profile">Profile & Privacy</a></li>
-          </ul>
-        </div>
-
-        <!-- Col 4: Clinical Helpline & Contact -->
-        <div class="footer-col">
-          <h4 class="col-title">Support</h4>
+          <h4 class="col-title">Support & Care</h4>
           <p class="support-text">Questions about your plan, a booking or your privacy? Our care team is here to help.</p>
           <div class="contact-card">
             <div class="contact-item">
@@ -105,14 +119,19 @@ import { CommerceService } from '../../services/commerce.service';
       border-top: 1px solid rgba(255, 255, 255, 0.08);
     }
 
+    .footer-intro {
+      padding-top: 3.5rem;
+      padding-bottom: 2.5rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
     .footer-grid {
       display: grid;
-      grid-template-columns: 1.4fr 1fr 1fr 1.2fr;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
       gap: 2.5rem;
-      padding-top: 4rem;
+      padding-top: 2.5rem;
       padding-bottom: 3rem;
     }
-    .brand-col .footer-brand {
+    .footer-brand {
       display: flex;
       align-items: center;
       gap: 0.5rem;
@@ -133,6 +152,7 @@ import { CommerceService } from '../../services/commerce.service';
       font-size: 0.9rem;
       line-height: 1.6;
       color: #cfe0d5;
+      max-width: 640px;
       margin-bottom: 1.25rem;
     }
     .trust-pill {
@@ -247,19 +267,11 @@ import { CommerceService } from '../../services/commerce.service';
       color: #fff;
     }
 
-    @media (max-width: 992px) {
-      .footer-grid {
-        grid-template-columns: 1fr 1fr;
-      }
-    }
-    @media (max-width: 600px) {
-      .footer-grid {
-        grid-template-columns: 1fr;
-      }
-    }
   `]
 })
 export class FooterComponent {
   commerce = inject(CommerceService);
+  private api = inject(ApiService);
+  isProfessional = computed(() => isProfessionalUser(this.api.currentUser()));
   currentYear = new Date().getFullYear();
 }
