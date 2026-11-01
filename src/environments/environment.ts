@@ -5,6 +5,7 @@
 export const environment = {
   production: false,
   apiUrl: 'http://localhost:8080/api/v1',
+  providersApiUrl: 'http://localhost:8086/api/v1',
   firebase: {
     // Replace with your Firebase Web configuration from Firebase Console:
     // Firebase Console -> Project Settings -> General -> Your apps -> Web app

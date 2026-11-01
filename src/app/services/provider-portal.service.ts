@@ -1,7 +1,8 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpContext } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
+import { SILENT_FORBIDDEN } from '../interceptors/auth.interceptor';
 import { Booking } from '../models/provider.models';
 import {
   ProductSuggestions,
@@ -21,11 +22,11 @@ export class ProviderPortalService {
   private readonly baseUrl = environment.apiUrl;
 
   me(): Observable<ProviderSelf> {
-    return this.http.get<ProviderSelf>(`${this.baseUrl}/provider/me`);
+    return this.http.get<ProviderSelf>(`${this.baseUrl}/provider/me`, { context: new HttpContext().set(SILENT_FORBIDDEN, true) });
   }
 
   getBookings(): Observable<ProviderBooking[]> {
-    return this.http.get<ProviderBooking[]>(`${this.baseUrl}/provider/bookings`);
+    return this.http.get<ProviderBooking[]>(`${this.baseUrl}/provider/bookings`, { context: new HttpContext().set(SILENT_FORBIDDEN, true) });
   }
 
   getSuggestions(bookingId: number): Observable<ProductSuggestions> {

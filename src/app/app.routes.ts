@@ -6,7 +6,7 @@ import { DoctorsLiveComponent } from './pages/doctors-live/doctors-live.componen
 import { LoginComponent } from './pages/login/login.component';
 import { VerifyEmailComponent } from './pages/verify-email/verify-email.component';
 import { featureGuard } from './guards/feature.guard';
-import { adminGuard, authGuard, paidMemberGuard, providerGuard, reviewerGuard, verifiedGuard } from './guards/auth.guard';
+import { adminGuard, applicationReviewGuard, authGuard, paidMemberGuard, providerAreaGuard, providerGuard, reviewerGuard, verifiedGuard } from './guards/auth.guard';
 import { onboardingGuard } from './guards/onboarding.guard';
 import { landingGuard } from './guards/landing.guard';
 
@@ -162,6 +162,55 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/invite/invite.component').then(m => m.InviteComponent)
   },
 
+  // Care professional onboarding (NB-Ecom-Providers-API): anyone can apply; only approved, live professionals take sessions.
+  {
+    path: 'provider/join',
+    title: 'Join as a Professional | NartureBelle™',
+    loadComponent: () => import('./pages/provider-join/provider-join.component').then(m => m.ProviderJoinComponent)
+  },
+  {
+    path: 'provider/apply',
+    title: 'Your Application | NartureBelle™',
+    canActivate: [verifiedGuard],
+    loadComponent: () => import('./pages/provider-apply/provider-apply.component').then(m => m.ProviderApplyComponent)
+  },
+  {
+    path: 'provider/setup',
+    title: 'Finish Your Setup | NartureBelle™',
+    canActivate: [providerAreaGuard],
+    loadComponent: () => import('./pages/provider-setup/provider-setup.component').then(m => m.ProviderSetupComponent)
+  },
+  {
+    path: 'provider/availability',
+    title: 'Services and Availability | NartureBelle™',
+    canActivate: [providerAreaGuard],
+    loadComponent: () => import('./pages/provider-availability/provider-availability.component').then(m => m.ProviderAvailabilityComponent)
+  },
+  {
+    path: 'provider/earnings',
+    title: 'Earnings | NartureBelle™',
+    canActivate: [providerGuard],
+    loadComponent: () => import('./pages/provider-earnings/provider-earnings.component').then(m => m.ProviderEarningsComponent)
+  },
+  {
+    path: 'provider/profile',
+    title: 'Profile and Documents | NartureBelle™',
+    canActivate: [providerGuard],
+    loadComponent: () => import('./pages/provider-account/provider-account.component').then(m => m.ProviderAccountComponent)
+  },
+  {
+    path: 'admin/provider-applications',
+    title: 'Professional Applications | NartureBelle™',
+    canActivate: [applicationReviewGuard],
+    loadComponent: () => import('./pages/admin-provider-applications/admin-provider-applications.component').then(m => m.AdminProviderApplicationsComponent)
+  },
+  {
+    path: 'admin/provider-applications/:id',
+    title: 'Professional Application | NartureBelle™',
+    canActivate: [applicationReviewGuard],
+    loadComponent: () => import('./pages/admin-provider-application/admin-provider-application.component').then(m => m.AdminProviderApplicationComponent)
+  },
+
   // Professional portal: sessions, in-session product recommendations (Essential / Optional).
   {
     path: 'provider/sessions/:id',
@@ -171,9 +220,9 @@ export const routes: Routes = [
   },
   {
     path: 'provider',
-    title: 'Your Sessions | NartureBelle™',
+    title: 'Your Dashboard | NartureBelle™',
     canActivate: [providerGuard],
-    loadComponent: () => import('./pages/provider-sessions/provider-sessions.component').then(m => m.ProviderSessionsComponent)
+    loadComponent: () => import('./pages/provider-dashboard/provider-dashboard.component').then(m => m.ProviderDashboardComponent)
   },
   // Clinical review of product health rules (Part D).
   {

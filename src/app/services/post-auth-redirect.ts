@@ -1,5 +1,6 @@
 import { Router } from '@angular/router';
 import { ApiService } from './api.service';
+import { ProviderApplicationService } from './provider-application.service';
 import { isProfessionalUser } from '../models/maternal.models';
 
 /**
@@ -11,17 +12,34 @@ import { isProfessionalUser } from '../models/maternal.models';
  *
  * Re-fetches GET /me rather than trusting the cached user object, since `pendingConsents` is
  * only ever returned by /me, never by /auth/firebase.
+ *
+ * Care professionals who are applying skip the mother's consent step: the application has its own terms.
  */
-export function goToPostAuthDestination(api: ApiService, router: Router, returnUrl?: string | null) {
+export function goToPostAuthDestination(api: ApiService, router: Router, applications: ProviderApplicationService, returnUrl?: string | null) {
   api.getMe().subscribe({
     next: (me) => {
       api.setUser(me);
-      if (me.pendingConsents && me.pendingConsents.length > 0) {
-        router.navigate(['/auth/consent'], { queryParams: returnUrl ? { returnUrl } : {} });
-      } else {
-        // Care professionals use the provider portal, not the mother's onboarding/journey.
-        router.navigateByUrl(returnUrl || (isProfessionalUser(me) ? '/provider' : '/journey'));
+      const goOn = () => {
+        if (me.pendingConsents && me.pendingConsents.length > 0) {
+          router.navigate(['/auth/consent'], { queryParams: returnUrl ? { returnUrl } : {} });
+        } else {
+          // Care professionals use the provider portal, not the mother's onboarding/journey.
+          router.navigateByUrl(returnUrl || (isProfessionalUser(me) ? '/provider' : '/journey'));
+        }
+      };
+      if (isProfessionalUser(me)) {
+        goOn();
+        return;
       }
+      if (returnUrl?.startsWith('/provider/apply') || applications.isApplicant()) {
+        router.navigateByUrl('/provider/apply');
+        return;
+      }
+      // Nobody waits on this service: a mother goes straight on, and an applicant signing in on a new device is moved once it answers.
+      goOn();
+      applications.refreshEntry().subscribe(entry => {
+        if (entry?.hasApplication) router.navigateByUrl('/provider/apply');
+      });
     },
     error: () => {
       // 401/403 side effects are already handled by the auth interceptor; otherwise fall

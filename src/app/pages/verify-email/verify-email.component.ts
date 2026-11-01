@@ -4,6 +4,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { ApiService } from '../../services/api.service';
 import { FirebaseAuthService } from '../../services/firebase-auth.service';
 import { goToPostAuthDestination } from '../../services/post-auth-redirect';
+import { ProviderApplicationService } from '../../services/provider-application.service';
 
 const RESEND_COOLDOWN_SECONDS = 60;
 
@@ -125,6 +126,7 @@ export class VerifyEmailComponent implements OnDestroy {
   api = inject(ApiService);
   firebaseAuth = inject(FirebaseAuthService);
   router = inject(Router);
+  private applications = inject(ProviderApplicationService);
   route = inject(ActivatedRoute);
 
   checking = signal(false);
@@ -162,7 +164,7 @@ export class VerifyEmailComponent implements OnDestroy {
                 : 'Email verified! Welcome back.'
             );
             const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
-            goToPostAuthDestination(this.api, this.router, returnUrl);
+            goToPostAuthDestination(this.api, this.router, this.applications, returnUrl);
           } else {
             this.statusMsg.set("Still not verified — make sure you've clicked the link in the email, then try again.");
             this.isError.set(true);

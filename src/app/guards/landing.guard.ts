@@ -3,6 +3,7 @@ import { CanActivateFn, Router } from '@angular/router';
 import { map } from 'rxjs';
 import { ApiService } from '../services/api.service';
 import { OnboardingService } from '../services/onboarding.service';
+import { ProviderApplicationService } from '../services/provider-application.service';
 import { isProfessionalUser } from '../models/maternal.models';
 
 /**
@@ -16,6 +17,7 @@ export const landingGuard: CanActivateFn = () => {
 
   if (!api.currentUser()) return true;
   if (isProfessionalUser(api.currentUser())) return router.createUrlTree(['/provider']);
+  if (inject(ProviderApplicationService).isApplicant()) return router.createUrlTree(['/provider/apply']);
   return onboarding.ensureSynced().pipe(
     map(() => router.createUrlTree([onboarding.onboarded() ? '/journey' : '/onboarding']))
   );

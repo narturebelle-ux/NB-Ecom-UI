@@ -3,7 +3,8 @@ import { CanActivateFn, Router } from '@angular/router';
 import { catchError, map, of } from 'rxjs';
 import { ApiService } from '../services/api.service';
 import { CommerceService } from '../services/commerce.service';
-import { isVerifiedUser, isAdminUser, isProfessionalUser, isReviewerUser } from '../models/maternal.models';
+import { ProviderApplicationService } from '../services/provider-application.service';
+import { isApplicationReviewer, isVerifiedUser, isAdminUser, isProfessionalUser, isReviewerUser } from '../models/maternal.models';
 
 /** Requires any signed-in user. Redirects to login with a returnUrl otherwise. */
 export const authGuard: CanActivateFn = (_route, state) => {
@@ -54,7 +55,32 @@ export const providerGuard: CanActivateFn = (_route, state) => {
   const user = api.currentUser();
   if (!user) return router.createUrlTree(['/auth/login'], { queryParams: { returnUrl: state.url } });
   if (!isProfessionalUser(user)) {
+    // Applicants aren't professionals until they go live: their home is the application, which routes on from there.
+    if (inject(ProviderApplicationService).isApplicant()) return router.createUrlTree(['/provider/apply']);
     api.showToast('This area is for NartureBelle™ care professionals.');
+    return router.createUrlTree(['/']);
+  }
+  return true;
+};
+
+/** Pages a professional also uses during setup, before they hold a professional role. Each page handles "not approved yet". */
+export const providerAreaGuard: CanActivateFn = (_route, state) => {
+  const api = inject(ApiService);
+  const router = inject(Router);
+  const user = api.currentUser();
+  if (!user) return router.createUrlTree(['/auth/login'], { queryParams: { returnUrl: state.url } });
+  if (isProfessionalUser(user) || inject(ProviderApplicationService).isApplicant()) return true;
+  return router.createUrlTree(['/provider/join']);
+};
+
+/** Reviewing professional applications: Operations and Medical Reviewers only (customer-approved). */
+export const applicationReviewGuard: CanActivateFn = (_route, state) => {
+  const api = inject(ApiService);
+  const router = inject(Router);
+  const user = api.currentUser();
+  if (!user) return router.createUrlTree(['/auth/login'], { queryParams: { returnUrl: state.url } });
+  if (!isApplicationReviewer(user)) {
+    api.showToast('Only Operations and Medical Reviewers can review applications.');
     return router.createUrlTree(['/']);
   }
   return true;

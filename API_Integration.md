@@ -878,3 +878,14 @@ unpaid votes kept apart so paid requests take priority; `GET /ideas` stays publi
 4. Which is first in the build order: this story or the waiting validations and pricing-removal work (API branch `feature/pricing-and-validations`)? The owner has said this story is next, but upgrade and checkout depend on that pricing change. The UI and API agents both recommend merging it first.
 5. Refunds: a fully refunded order keeps its sessions today, and she can then buy again. Should a refund remove them?
 6. For the accountant: whether plan prices include GST (no tax fields exist yet), whether ₹0 referral rewards need a document, how long invoices are kept after an account deletion request, and whether each instalment gets its own document once real instalments exist (today one payment covers the whole total).
+
+## Care professional onboarding (2026-11-01, branch feature/provider-onboarding)
+
+Customer-approved flow, built against **NB-Ecom-Providers-API** (contract in that repo's `UI_INTEGRATION_GUIDE.md`). Sessions still come from NB-Ecom-API's `/provider/bookings`.
+
+- **New setting:** `PROVIDERS_API_URL` in `.env.staging`, `.env.production` and Vercel. `generate-env.js` fails the build without it. Local builds use `http://localhost:8086/api/v1`.
+- **Screens:** `/provider/join`, `/provider/apply` (adaptive form from the API), `/provider/setup`, `/provider` (dashboard, replaces the old sessions list), `/provider/availability`, `/provider/earnings`, `/provider/profile`, `/admin/provider-applications[/:id]`.
+- **Routing:** sign-in never waits on this API. A known applicant (remembered per account in localStorage as `nb_provider_applicants`) goes to their application; anyone else goes straight on while a background check runs, and an applicant on a new device is moved when it answers. Applicants skip the mother's consent and onboarding. An account that has applied stays in the professional area, even if rejected or withdrawn, as the approved document says: a member needs a separate account.
+- **Interceptor:** also attaches the token for `providersApiUrl`. Only the main API's 401 signs someone out, so a problem on the onboarding service can't end every session.
+- **Public profile:** `/care/:id` shows registration number, council and confirmed experience from `GET /public/providers/{id}/credentials`, and leaves them out if the call fails or the professional predates self-service.
+- **Roles:** the review screens need `OPERATIONS_ADMIN` or `MEDICAL_REVIEWER`; no other admin role can open them.

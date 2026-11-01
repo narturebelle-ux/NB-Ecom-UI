@@ -33,6 +33,7 @@ import { CommerceService } from '../../services/commerce.service';
             <li *appFeature="'joyCircle'"><a routerLink="/joy-circle">Joy Circle events</a></li>
             <li><a routerLink="/about">About us</a></li>
             <li><a routerLink="/careers">Careers</a></li>
+            <li><a routerLink="/provider/join">Join as a professional</a></li>
             @if (commerce.canShareIdeas()) { <li><a routerLink="/ideas">Share an Idea</a></li> }
             <li><a routerLink="/journey">My Journey</a></li>
             <li><a routerLink="/plans">Care Plans</a></li>

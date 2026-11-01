@@ -1,5 +1,6 @@
 import { Component, computed, effect, inject, untracked } from '@angular/core';
-import { isAdminUser, isProfessionalUser, isReviewerUser } from '../../models/maternal.models';
+import { isAdminUser, isApplicationReviewer, isProfessionalUser, isReviewerUser } from '../../models/maternal.models';
+import { ProviderApplicationService } from '../../services/provider-application.service';
 import { RouterLink, RouterLinkActive, Router } from '@angular/router';
 import { ApiService } from '../../services/api.service';
 import { FirebaseAuthService } from '../../services/firebase-auth.service';
@@ -44,9 +45,14 @@ import { FeatureDirective } from '../../directives/feature.directive';
             <a routerLink="/admin/ideas" routerLinkActive="active" class="nav-link"><mat-icon class="icon-sm">lightbulb</mat-icon> Ideas admin</a>
           </nav>
         }
+        @if (isApplicationReviewer()) {
+          <nav class="nav-links">
+            <a routerLink="/admin/provider-applications" routerLinkActive="active" class="nav-link"><mat-icon class="icon-sm">how_to_reg</mat-icon> Applications</a>
+          </nav>
+        }
         @if (isProfessional()) {
           <nav class="nav-links">
-            <a routerLink="/provider" routerLinkActive="active" class="nav-link">My sessions</a>
+            <a [routerLink]="applications.isApplicant() ? '/provider/apply' : '/provider'" routerLinkActive="active" class="nav-link">{{ applications.isApplicant() ? 'My application' : 'Dashboard' }}</a>
             @if (isReviewer()) { <a routerLink="/review/health-rules" routerLinkActive="active" class="nav-link">Rule review</a> }
           </nav>
         }
@@ -184,7 +190,7 @@ import { FeatureDirective } from '../../directives/feature.directive';
       @if (isMobileOpen && api.currentUser()) {
         <div class="mobile-menu glass">
           @if (isProfessional()) {
-            <a routerLink="/provider" (click)="isMobileOpen = false" class="mobile-nav-link"><mat-icon class="icon-sm">event_note</mat-icon> My sessions</a>
+            <a [routerLink]="applications.isApplicant() ? '/provider/apply' : '/provider'" (click)="isMobileOpen = false" class="mobile-nav-link"><mat-icon class="icon-sm">event_note</mat-icon> {{ applications.isApplicant() ? 'My application' : 'Dashboard' }}</a>
             @if (isReviewer()) { <a routerLink="/review/health-rules" (click)="isMobileOpen = false" class="mobile-nav-link"><mat-icon class="icon-sm">fact_check</mat-icon> Rule review</a> }
           } @else if (!onboarding.onboarded()) {
             <a routerLink="/onboarding" (click)="isMobileOpen = false" class="mobile-nav-link onboarding-link">
@@ -616,7 +622,10 @@ export class NavbarComponent {
   hasActivePlan = this.commerce.hasActivePlan;
   canShareIdeas = this.commerce.canShareIdeas;
   private planCheckedFor: number | null = null;
-  isProfessional = computed(() => isProfessionalUser(this.api.currentUser()));
+  applications = inject(ProviderApplicationService);
+  /** Applicants count here too, so they never see the mother's onboarding and journey links. */
+  isProfessional = computed(() => isProfessionalUser(this.api.currentUser()) || this.applications.isApplicant());
+  isApplicationReviewer = computed(() => isApplicationReviewer(this.api.currentUser()));
   /** Reviewers include MEDICAL_REVIEWER staff, who aren't professionals, so they get the link even outside the portal. */
   isReviewer = computed(() => isReviewerUser(this.api.currentUser()));
   isAdmin = computed(() => isAdminUser(this.api.currentUser()));

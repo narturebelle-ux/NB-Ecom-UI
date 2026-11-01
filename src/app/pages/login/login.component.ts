@@ -6,6 +6,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ApiService } from '../../services/api.service';
 import { FirebaseAuthService } from '../../services/firebase-auth.service';
 import { goToPostAuthDestination } from '../../services/post-auth-redirect';
+import { ProviderApplicationService } from '../../services/provider-application.service';
 import { User, isVerifiedUser } from '../../models/maternal.models';
 import { RecaptchaVerifier, GoogleAuthProvider, AuthCredential } from 'firebase/auth';
 
@@ -504,6 +505,7 @@ export class LoginComponent implements OnInit, OnDestroy {
   api = inject(ApiService);
   firebaseAuth = inject(FirebaseAuthService);
   router = inject(Router);
+  private applications = inject(ProviderApplicationService);
   route = inject(ActivatedRoute);
 
   activeTab: 'GOOGLE' | 'PHONE' | 'EMAIL' = 'GOOGLE';
@@ -539,7 +541,7 @@ export class LoginComponent implements OnInit, OnDestroy {
     if (this.isSignUp) this.emailMode = 'SIGN_UP';
     this.returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
     if (this.api.currentUser()) {
-      goToPostAuthDestination(this.api, this.router, this.returnUrl);
+      goToPostAuthDestination(this.api, this.router, this.applications, this.returnUrl);
     }
   }
 
@@ -769,7 +771,7 @@ export class LoginComponent implements OnInit, OnDestroy {
 
         if (isVerifiedUser(resolvedUser)) {
           this.api.showToast(`Welcome, ${resolvedUser.firstName || resolvedUser.name || resolvedUser.email || 'Mother'}!`);
-          goToPostAuthDestination(this.api, this.router, this.returnUrl);
+          goToPostAuthDestination(this.api, this.router, this.applications, this.returnUrl);
         } else {
           this.isSubmitting = false;
           const queryParams = this.returnUrl ? { returnUrl: this.returnUrl } : {};
