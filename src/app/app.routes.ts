@@ -14,13 +14,13 @@ export const routes: Routes = [
   // "Share an idea" is now the Idea pool; first match wins, so this takes over the old /feedback route below.
   { path: 'feedback', redirectTo: 'ideas', pathMatch: 'full' },
   // Public landing page for visitors; signed-in users are sent to My Journey (or onboarding).
-  { path: '', component: HomeComponent, title: 'NartureBelle™ | Professional-Led Care, Pregnancy to Postpartum', canActivate: [landingGuard] },
+  { path: '', component: HomeComponent, title: 'NartureBelle™ | Motherhood Care from Pregnancy to Age 7', data: { description: 'NartureBelle™ coordinates your care with verified gynecologists, nutritionists and pediatricians, from pregnancy to age seven, with records you control.' }, canActivate: [landingGuard] },
 
   // The Month 3/6/9 store pages are retired (Phase 6): old links land on personalised recommendations.
   { path: 'products/:stage', redirectTo: 'recommendations' },
 
-  { path: 'careers', title: 'Careers | NartureBelle™', loadComponent: () => import('./pages/careers/careers.component').then(m => m.CareersComponent) },
-  { path: 'careers/:id', title: 'Careers | NartureBelle™', loadComponent: () => import('./pages/career-detail/career-detail.component').then(m => m.CareerDetailComponent) },
+  { path: 'careers', title: 'Careers | NartureBelle™', data: { description: 'See open roles at NartureBelle™ and help mothers and young families get coordinated care, from pregnancy through early childhood.' }, loadComponent: () => import('./pages/careers/careers.component').then(m => m.CareersComponent) },
+  { path: 'careers/:id', title: 'Careers | NartureBelle™', data: { description: 'See this open role at NartureBelle™, the care coordination platform for mothers and young families.' }, loadComponent: () => import('./pages/career-detail/career-detail.component').then(m => m.CareerDetailComponent) },
   { path: 'feedback', title: 'Share an Idea | NartureBelle™', loadComponent: () => import('./pages/feedback/feedback.component').then(m => m.FeedbackComponent) },
   {
     path: 'admin/careers',
@@ -28,8 +28,8 @@ export const routes: Routes = [
     canActivate: [adminGuard],
     loadComponent: () => import('./pages/admin-careers/admin-careers.component').then(m => m.AdminCareersComponent)
   },
-  { path: 'about', title: 'About Us | NartureBelle™', loadComponent: () => import('./pages/about/about.component').then(m => m.AboutComponent) },
-  { path: 'checklists', component: ChecklistsComponent, title: 'Prenatal Checkup Checklists & Scan Labs | NartureBelle™' },
+  { path: 'about', title: 'About Us | NartureBelle™', data: { description: 'Learn how NartureBelle™ coordinates care for mothers and young families, from pregnancy through early childhood, with verified professionals.' }, loadComponent: () => import('./pages/about/about.component').then(m => m.AboutComponent) },
+  { path: 'checklists', component: ChecklistsComponent, title: 'Prenatal Checkup Checklists & Scan Labs | NartureBelle™', data: { description: 'Follow prenatal checkup and scan checklists for each stage of pregnancy, and explore maternity hospitals and scan labs with NartureBelle™.' } },
 
   // Legacy lead-gen flows — hidden behind legacyLeadForms (off) per the roadmap's
   // care-coordination pivot; retired for real after Phase 1 per the roadmap table.
@@ -46,8 +46,8 @@ export const routes: Routes = [
     canActivate: [featureGuard('legacyLeadForms')]
   },
 
-  { path: 'auth/login', component: LoginComponent, title: 'Sign In | NartureBelle™' },
-  { path: 'auth/signup', component: LoginComponent, title: 'Create Your Account | NartureBelle™', data: { mode: 'signup' } },
+  { path: 'auth/login', component: LoginComponent, title: 'Sign In | NartureBelle™', data: { description: 'Sign in to NartureBelle™ to see your plan, your care team and your records in one private place.' } },
+  { path: 'auth/signup', component: LoginComponent, title: 'Create Your Account | NartureBelle™', data: { mode: 'signup', description: 'Create your NartureBelle™ account and tell us your stage, so we can suggest the care plan that fits you.' } },
   { path: 'auth/verify-email', component: VerifyEmailComponent, title: 'Verify Your Email | NartureBelle™', canActivate: [authGuard] },
   {
     path: 'auth/consent',
@@ -84,6 +84,7 @@ export const routes: Routes = [
   {
     path: 'plans',
     title: 'Care Plans | NartureBelle™',
+    data: { description: 'Compare NartureBelle™ care plans. Each includes sessions with the professionals you need at your stage, tracked in a simple session wallet.' },
     loadComponent: () => import('./pages/plans/plans.component').then(m => m.PlansComponent)
   },
   {
@@ -116,6 +117,7 @@ export const routes: Routes = [
   {
     path: 'care',
     title: 'Find Your Care Team | NartureBelle™',
+    data: { description: 'Find credential-verified gynecologists, nutritionists, lactation consultants, pediatricians, physiotherapists and psychologists on NartureBelle™.' },
     loadComponent: () => import('./pages/care-directory/care-directory.component').then(m => m.CareDirectoryComponent)
   },
 

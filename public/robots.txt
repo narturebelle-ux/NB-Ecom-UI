@@ -1,0 +1,17 @@
+User-agent: *
+Disallow: /admin/
+Disallow: /provider
+Disallow: /review/
+Disallow: /checkout
+Disallow: /orders/
+Disallow: /onboarding
+Disallow: /profile
+Disallow: /journey
+Disallow: /records
+Disallow: /child
+Disallow: /invite
+Disallow: /care/bookings
+Disallow: /auth/verify-email
+Disallow: /auth/consent
+
+Sitemap: https://www.narturebelle.com/sitemap.xml
