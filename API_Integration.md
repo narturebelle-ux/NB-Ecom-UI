@@ -878,3 +878,11 @@ unpaid votes kept apart so paid requests take priority; `GET /ideas` stays publi
 4. Which is first in the build order: this story or the waiting validations and pricing-removal work (API branch `feature/pricing-and-validations`)? The owner has said this story is next, but upgrade and checkout depend on that pricing change. The UI and API agents both recommend merging it first.
 5. Refunds: a fully refunded order keeps its sessions today, and she can then buy again. Should a refund remove them?
 6. For the accountant: whether plan prices include GST (no tax fields exist yet), whether ₹0 referral rewards need a document, how long invoices are kept after an account deletion request, and whether each instalment gets its own document once real instalments exist (today one payment covers the whole total).
+
+## Reminders and notification preferences move to NB-Ecom-Mails-API (2026-11-01)
+
+The UI calls `GET /me/reminders`, `POST /me/reminders/{id}/dismiss`, `GET /me/notification-preferences` and `PUT /me/notification-preferences/{channel}` on `mailsApiUrl`, with the same paths, JSON and Firebase token.
+
+- **Setting:** `MAILS_API_URL`, `http://localhost:8082/api/v1` locally. Hosted builds without it stay on `API_URL`, so this is safe to release before Mails is deployed.
+- **Errors:** only the main API's 401 signs someone out. A Mails 401 or 503 fails that request only; the reminder list stays as it was. GET requests retry a 503 as they do for the main API.
+- **Merge:** on branch `feature/notifications-api-switch`, not until the Care API session confirms the move. The Mails API must allow the website's origin on these paths. Later this moves behind the single `api.narturebelle.com` address.

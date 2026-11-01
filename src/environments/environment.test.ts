@@ -4,6 +4,7 @@
 export const environment = {
   production: false,
   apiUrl: 'http://localhost:8080/api/v1',
+  mailsApiUrl: 'http://localhost:8082/api/v1',
   firebase: {
     apiKey: 'YOUR_FIREBASE_API_KEY',
     authDomain: 'narturebelle-app.firebaseapp.com',
