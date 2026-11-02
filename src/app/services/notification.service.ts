@@ -6,7 +6,7 @@ import { environment } from '../../environments/environment';
 import { ChannelPreference, NotificationChannel, Reminder } from '../models/notification.models';
 
 /**
- * Phase 5 — reminders and channel preferences from the API (UI_INTEGRATION_GUIDE.md §12).
+ * Phase 5 — reminders and channel preferences from NB-Ecom-Mails-API (same paths and JSON as UI_INTEGRATION_GUIDE.md §12).
  * The API has no "read" flag, so which reminders the user has opened is remembered per
  * browser (ids only, no content) purely to drive the unread badge.
  */
@@ -14,7 +14,7 @@ import { ChannelPreference, NotificationChannel, Reminder } from '../models/noti
 export class NotificationService {
   private http = inject(HttpClient);
   private api = inject(ApiService);
-  private readonly baseUrl = environment.apiUrl;
+  private readonly baseUrl = environment.mailsApiUrl;
 
   readonly reminders = signal<Reminder[]>([]);
   private readonly seen = signal<Set<number>>(new Set());

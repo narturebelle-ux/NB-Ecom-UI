@@ -1,3 +1,4 @@
+import { environment } from '../environments/environment';
 import { Routes } from '@angular/router';
 import { HomeComponent } from './pages/home/home.component';
 import { ChecklistsComponent } from './pages/checklists/checklists.component';
@@ -6,9 +7,12 @@ import { DoctorsLiveComponent } from './pages/doctors-live/doctors-live.componen
 import { LoginComponent } from './pages/login/login.component';
 import { VerifyEmailComponent } from './pages/verify-email/verify-email.component';
 import { featureGuard } from './guards/feature.guard';
-import { adminGuard, authGuard, paidMemberGuard, providerGuard, reviewerGuard, verifiedGuard } from './guards/auth.guard';
+import { adminGuard, apiCheckGuard, applicationReviewGuard, authGuard, motherProfileGuard, paidMemberGuard, providerAreaGuard, providerGuard, reviewerGuard, verifiedGuard } from './guards/auth.guard';
 import { onboardingGuard } from './guards/onboarding.guard';
 import { landingGuard } from './guards/landing.guard';
+
+/** A connection check needs an API with its own address, so hosted builds that fall back to the Care API have none. */
+const helloUrl = (apiUrl: string) => apiUrl && apiUrl !== environment.apiUrl ? `${apiUrl}/hello` : '';
 
 export const routes: Routes = [
   // "Share an idea" is now the Idea pool; first match wins, so this takes over the old /feedback route below.
@@ -29,7 +33,7 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/admin-careers/admin-careers.component').then(m => m.AdminCareersComponent)
   },
   { path: 'about', title: 'About Us | NartureBelle™', loadComponent: () => import('./pages/about/about.component').then(m => m.AboutComponent) },
-  { path: 'checklists', component: ChecklistsComponent, title: 'Prenatal Checkup Checklists & Scan Labs | NartureBelle™' },
+  { path: 'checklists', component: ChecklistsComponent, title: 'Prenatal Checkup Checklists & Scan Labs | NartureBelle™', canActivate: [authGuard] },
 
   // Legacy lead-gen flows — hidden behind legacyLeadForms (off) per the roadmap's
   // care-coordination pivot; retired for real after Phase 1 per the roadmap table.
@@ -61,7 +65,7 @@ export const routes: Routes = [
   {
     path: 'profile',
     title: 'Profile & Privacy | NartureBelle™',
-    canActivate: [authGuard],
+    canActivate: [motherProfileGuard],
     loadComponent: () => import('./pages/profile/profile.component').then(m => m.MyProfileComponent)
   },
   {
@@ -99,8 +103,8 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/order-confirmation/order-confirmation.component').then(m => m.OrderConfirmationComponent)
   },
 
-  // Phase 3 — Providers, booking & sessions, real API (UI_INTEGRATION_GUIDE.md §9). The
-  // directory is public; booking and the bookings list both require a verified user.
+  // Phase 3 — Providers, booking & sessions, real API (UI_INTEGRATION_GUIDE.md §9).
+  // The directory, booking and the bookings list all require a verified, onboarded user.
   {
     path: 'care/bookings',
     title: 'My Bookings | NartureBelle™',
@@ -116,6 +120,7 @@ export const routes: Routes = [
   {
     path: 'care',
     title: 'Find Your Care Team | NartureBelle™',
+    canActivate: [verifiedGuard, onboardingGuard],
     loadComponent: () => import('./pages/care-directory/care-directory.component').then(m => m.CareDirectoryComponent)
   },
 
@@ -162,6 +167,55 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/invite/invite.component').then(m => m.InviteComponent)
   },
 
+  // Care professional onboarding: anyone can apply; only approved, live professionals take sessions.
+  {
+    path: 'provider/join',
+    title: 'Join as a Professional | NartureBelle™',
+    loadComponent: () => import('./pages/provider-join/provider-join.component').then(m => m.ProviderJoinComponent)
+  },
+  {
+    path: 'provider/apply',
+    title: 'Your Application | NartureBelle™',
+    canActivate: [verifiedGuard],
+    loadComponent: () => import('./pages/provider-apply/provider-apply.component').then(m => m.ProviderApplyComponent)
+  },
+  {
+    path: 'provider/setup',
+    title: 'Finish Your Setup | NartureBelle™',
+    canActivate: [providerAreaGuard],
+    loadComponent: () => import('./pages/provider-setup/provider-setup.component').then(m => m.ProviderSetupComponent)
+  },
+  {
+    path: 'provider/availability',
+    title: 'Services and Availability | NartureBelle™',
+    canActivate: [providerAreaGuard],
+    loadComponent: () => import('./pages/provider-availability/provider-availability.component').then(m => m.ProviderAvailabilityComponent)
+  },
+  {
+    path: 'provider/earnings',
+    title: 'Earnings | NartureBelle™',
+    canActivate: [providerGuard],
+    loadComponent: () => import('./pages/provider-earnings/provider-earnings.component').then(m => m.ProviderEarningsComponent)
+  },
+  {
+    path: 'provider/profile',
+    title: 'Profile and Documents | NartureBelle™',
+    canActivate: [providerGuard],
+    loadComponent: () => import('./pages/provider-account/provider-account.component').then(m => m.ProviderAccountComponent)
+  },
+  {
+    path: 'admin/provider-applications',
+    title: 'Professional Applications | NartureBelle™',
+    canActivate: [applicationReviewGuard],
+    loadComponent: () => import('./pages/admin-provider-applications/admin-provider-applications.component').then(m => m.AdminProviderApplicationsComponent)
+  },
+  {
+    path: 'admin/provider-applications/:id',
+    title: 'Professional Application | NartureBelle™',
+    canActivate: [applicationReviewGuard],
+    loadComponent: () => import('./pages/admin-provider-application/admin-provider-application.component').then(m => m.AdminProviderApplicationComponent)
+  },
+
   // Professional portal: sessions, in-session product recommendations (Essential / Optional).
   {
     path: 'provider/sessions/:id',
@@ -171,9 +225,9 @@ export const routes: Routes = [
   },
   {
     path: 'provider',
-    title: 'Your Sessions | NartureBelle™',
+    title: 'Your Dashboard | NartureBelle™',
     canActivate: [providerGuard],
-    loadComponent: () => import('./pages/provider-sessions/provider-sessions.component').then(m => m.ProviderSessionsComponent)
+    loadComponent: () => import('./pages/provider-dashboard/provider-dashboard.component').then(m => m.ProviderDashboardComponent)
   },
   // Clinical review of product health rules (Part D).
   {
@@ -191,6 +245,22 @@ export const routes: Routes = [
     title: 'Ideas Admin | NartureBelle™',
     canActivate: [adminGuard],
     loadComponent: () => import('./pages/admin-ideas/admin-ideas.component').then(m => m.AdminIdeasComponent)
+  },
+
+  // Connection checks: each page shows the reply from its own API. Only where that API's address is set (local testing).
+  {
+    path: 'payments/hello',
+    title: 'Payments API check | NartureBelle™',
+    canActivate: [apiCheckGuard],
+    data: { apiName: 'Payments API', url: helloUrl(environment.paymentsApiUrl) },
+    loadComponent: () => import('./pages/api-hello/api-hello.component').then(m => m.ApiHelloComponent)
+  },
+  {
+    path: 'notifications/hello',
+    title: 'Notifications API check | NartureBelle™',
+    canActivate: [apiCheckGuard],
+    data: { apiName: 'Notifications API', url: helloUrl(environment.mailsApiUrl) },
+    loadComponent: () => import('./pages/api-hello/api-hello.component').then(m => m.ApiHelloComponent)
   },
 
   // No dedicated /cart route exists yet — cart is a navbar drawer, not a routed page.

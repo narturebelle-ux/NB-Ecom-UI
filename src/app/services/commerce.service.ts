@@ -4,11 +4,12 @@ import { Observable, catchError, map, tap, throwError } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { Entitlement, Order, Payment, PaymentMode, Plan, PlanQuote } from '../models/commerce.models';
 
-/** Phase 2 (Plans, checkout & entitlements) against the real API — UI_INTEGRATION_GUIDE.md §8. */
+/** Phase 2 against the real APIs (UI_INTEGRATION_GUIDE.md §8): plans, orders and payments on NB-Ecom-Payments-API, entitlements on the Care API. */
 @Injectable({ providedIn: 'root' })
 export class CommerceService {
   private http = inject(HttpClient);
   private readonly baseUrl = environment.apiUrl;
+  private readonly paymentsUrl = environment.paymentsApiUrl;
 
   readonly entitlements = signal<Entitlement[]>([]);
   /** A paying member: at least one unexpired entitlement. Filled by loadEntitlements() (the navbar loads it on sign-in). */
@@ -20,7 +21,7 @@ export class CommerceService {
   readonly canShareIdeas = computed(() => this.entitlements().some(e => e.usedSessions > 0));
 
   getPlans(): Observable<Plan[]> {
-    return this.http.get<Plan[]>(`${this.baseUrl}/plans`);
+    return this.http.get<Plan[]>(`${this.paymentsUrl}/plans`);
   }
 
   /**
@@ -28,7 +29,7 @@ export class CommerceService {
    * Falls back to the public 9-month list only if the API has no quote endpoint yet (404).
    */
   getQuote(): Observable<PlanQuote> {
-    return this.http.get<PlanQuote>(`${this.baseUrl}/me/plans/quote`).pipe(
+    return this.http.get<PlanQuote>(`${this.paymentsUrl}/me/plans/quote`).pipe(
       catchError(err => err?.status === 404
         ? this.getPlans().pipe(map(plans => ({ months: 9, basis: 'FULL_PLAN' as const, plans })))
         : throwError(() => err))
@@ -36,33 +37,33 @@ export class CommerceService {
   }
 
   getPlan(id: number): Observable<Plan> {
-    return this.http.get<Plan>(`${this.baseUrl}/plans/${id}`);
+    return this.http.get<Plan>(`${this.paymentsUrl}/plans/${id}`);
   }
 
   /** Reuse the same idempotencyKey when retrying the same attempt; the server returns the original order. */
   createOrder(planId: number, paymentMode: PaymentMode, idempotencyKey: string): Observable<Order> {
     return this.http.post<Order>(
-      `${this.baseUrl}/orders`,
+      `${this.paymentsUrl}/orders`,
       { planId, paymentMode },
       { headers: new HttpHeaders({ 'Idempotency-Key': idempotencyKey }) }
     );
   }
 
   getOrder(id: number): Observable<Order> {
-    return this.http.get<Order>(`${this.baseUrl}/orders/${id}`);
+    return this.http.get<Order>(`${this.paymentsUrl}/orders/${id}`);
   }
 
   getOrders(): Observable<Order[]> {
-    return this.http.get<Order[]>(`${this.baseUrl}/orders`);
+    return this.http.get<Order[]>(`${this.paymentsUrl}/orders`);
   }
 
   createPayment(orderId: number): Observable<Payment> {
-    return this.http.post<Payment>(`${this.baseUrl}/payments/create`, { orderId });
+    return this.http.post<Payment>(`${this.paymentsUrl}/payments/create`, { orderId });
   }
 
   /** Posts to the mockSucceedPath/mockFailPath the API handed back (temporary until Phase 7's real gateway). */
   completeMockPayment(apiPath: string): Observable<{ status: string }> {
-    const origin = this.baseUrl.replace(/\/api\/v1\/?$/, '');
+    const origin = this.paymentsUrl.replace(/\/api\/v1\/?$/, '');
     return this.http.post<{ status: string }>(`${origin}${apiPath}`, {});
   }
 
