@@ -160,6 +160,11 @@ export function isProfessionalUser(user: User | null | undefined): boolean {
   return !!user?.roles?.some(r => PROFESSIONAL_ROLES.includes(r));
 }
 
+/** Can review professional applications. */
+export function isApplicationReviewer(user: User | null | undefined): boolean {
+  return !!user?.roles?.some(r => r === 'OPERATIONS_ADMIN' || r === 'MEDICAL_REVIEWER');
+}
+
 /** Can open the product health-rule review queue: MEDICAL_REVIEWER, or a verified GYNECOLOGIST / NUTRITIONIST / REGISTERED_NURSE. */
 export function isReviewerUser(user: User | null | undefined): boolean {
   return !!user?.roles?.some(r => ['MEDICAL_REVIEWER', 'GYNECOLOGIST', 'NUTRITIONIST', 'REGISTERED_NURSE'].includes(r));

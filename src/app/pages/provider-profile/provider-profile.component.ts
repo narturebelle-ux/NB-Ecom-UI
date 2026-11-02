@@ -7,6 +7,8 @@ import { CommerceService } from '../../services/commerce.service';
 import { ApiService } from '../../services/api.service';
 import { PROFESSIONAL_TYPE_LABELS } from '../../models/maternal.models';
 import { Provider, ServiceOffering, Slot, providerInitials } from '../../models/provider.models';
+import { ProviderApplicationService } from '../../services/provider-application.service';
+import { PublicCredentials } from '../../models/provider-application.models';
 
 /**
  * Provider profile + slot picker against the real API (§9). Booking needs the user to hold
@@ -41,7 +43,11 @@ import { Provider, ServiceOffering, Slot, providerInitials } from '../../models/
               <div class="meta-row">
                 @if (provider()!.city) { <span><mat-icon class="icon-sm">location_on</mat-icon> {{ provider()!.city }}</span> }
                 @if (provider()!.languages.length) { <span><mat-icon class="icon-sm">translate</mat-icon> {{ provider()!.languages.join(', ') }}</span> }
+                @if (credentials()?.confirmedExperienceYears !== null && credentials()?.confirmedExperienceYears !== undefined) { <span><mat-icon class="icon-sm">workspace_premium</mat-icon> {{ credentials()?.confirmedExperienceYears }} years’ experience</span> }
               </div>
+              @if (credentials()?.registrationNumber) {
+                <p class="registration">Registration number {{ credentials()?.registrationNumber }}{{ credentials()?.council ? ', ' + credentials()?.council : '' }}</p>
+              }
             </div>
           </div>
 
@@ -107,6 +113,7 @@ import { Provider, ServiceOffering, Slot, providerInitials } from '../../models/
     .type-tag { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 700; color: var(--blush-700); text-transform: uppercase; letter-spacing: 0.03em; flex-wrap: wrap; }
     .verified-pill { display: inline-flex; align-items: center; gap: 0.2rem; text-transform: none; letter-spacing: 0; font-size: 0.72rem; color: var(--trust-900); background: var(--trust-100); border: 1px solid var(--trust-200); padding: 0.1rem 0.5rem; border-radius: var(--radius-full); }
     .bio { font-size: 0.9rem; color: var(--text-secondary); margin: 0.75rem 0; line-height: 1.55; }
+    .registration { font-size: 0.8rem; color: var(--text-muted); margin: 0.5rem 0 0; }
     .meta-row { display: flex; gap: 1rem; font-size: 0.82rem; color: var(--text-muted); flex-wrap: wrap; }
     .meta-row span { display: inline-flex; align-items: center; gap: 0.25rem; }
 
@@ -159,9 +166,12 @@ export class ProviderProfileComponent implements OnInit {
   });
 
   private providerId = 0;
+  private applications = inject(ProviderApplicationService);
+  credentials = signal<PublicCredentials | null>(null);
 
   ngOnInit() {
     this.providerId = Number(this.route.snapshot.paramMap.get('id'));
+    this.applications.publicCredentials(this.providerId).subscribe(credentials => this.credentials.set(credentials));
     this.commerce.loadEntitlements().subscribe({ error: () => {} });
     this.providerService.getProvider(this.providerId).subscribe({
       next: (p) => {

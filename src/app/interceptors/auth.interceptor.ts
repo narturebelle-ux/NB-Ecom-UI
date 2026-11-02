@@ -1,10 +1,13 @@
-import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
+import { HttpContextToken, HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { catchError, finalize, from, retry, switchMap, throwError, timer } from 'rxjs';
 import { FirebaseAuthService } from '../services/firebase-auth.service';
 import { ApiService } from '../services/api.service';
 import { environment } from '../../environments/environment';
+
+/** For calls where the page explains a 403 itself, such as a paused professional's sessions. */
+export const SILENT_FORBIDDEN = new HttpContextToken<boolean>(() => false);
 
 /** Cold-start handling: network failure (0) or gateway errors while the API container boots. */
 const WAKE_RETRY_STATUSES = [0, 502, 503, 504];
@@ -14,9 +17,9 @@ let lastWakeNotice = 0;
 
 /**
  * Per the AUTH CONTRACT: attaches "Authorization: Bearer <Firebase ID token>" to every
- * request to our own API (getIdToken() refreshes the token automatically when it's
+ * request to our own APIs (getIdToken() refreshes the token automatically when it's
  * close to expiry — no manual refresh logic needed here). Only touches calls to
- * environment.apiUrl; third-party requests (fonts, Firebase's own endpoints) pass through untouched.
+ * environment.apiUrl, mailsApiUrl and paymentsApiUrl; third-party requests (fonts, Firebase's own endpoints) pass through untouched.
  *
  * Handles the contract's three auth error codes centrally, then re-throws so each
  * caller's own error handling still runs —
@@ -27,7 +30,9 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const api = inject(ApiService);
   const router = inject(Router);
 
-  if (!req.url.startsWith(environment.apiUrl)) {
+  const isMainApi = req.url.startsWith(environment.apiUrl);
+  const isOtherApi = [environment.mailsApiUrl, environment.paymentsApiUrl].some(url => !!url && req.url.startsWith(url));
+  if (!isMainApi && !isOtherApi) {
     return next(req);
   }
 
@@ -42,7 +47,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
         ? req.clone({ setHeaders: { Authorization: `Bearer ${token}` } })
         : req;
       const slow = setTimeout(() => {
-        if (Date.now() - lastWakeNotice > WAKE_NOTICE_INTERVAL_MS) {
+        if (isMainApi && Date.now() - lastWakeNotice > WAKE_NOTICE_INTERVAL_MS) {
           lastWakeNotice = Date.now();
           api.showToast('Waking up our server. This can take up to 30 seconds the first time.');
         }
@@ -60,7 +65,8 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
       );
     }),
     catchError((err: HttpErrorResponse) => {
-      if (err.status === 401) {
+      // Only the Care API decides someone is signed out: a fault on another API, including its 503, mustn't end a session.
+      if (err.status === 401 && isMainApi) {
         firebaseAuth.logout().finally(() => {
           api.logout();
           router.navigate(['/auth/login'], { queryParams: { returnUrl: router.url } });
@@ -75,7 +81,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
           if (!pending.length || pending.some(t => !optional.includes(t))) {
             router.navigate(['/auth/consent'], { queryParams: { returnUrl: router.url } });
           }
-        } else {
+        } else if (!req.context.get(SILENT_FORBIDDEN)) {
           api.showToast(err.error?.message || "You're not allowed to do that.");
         }
       }

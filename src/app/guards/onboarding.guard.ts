@@ -3,6 +3,7 @@ import { CanActivateFn, Router } from '@angular/router';
 import { map } from 'rxjs';
 import { ApiService } from '../services/api.service';
 import { OnboardingService } from '../services/onboarding.service';
+import { ProviderApplicationService } from '../services/provider-application.service';
 import { isProfessionalUser } from '../models/maternal.models';
 
 /** App areas (journey, care, records, child) unlock only after onboarding is complete. */
@@ -16,6 +17,7 @@ export const onboardingGuard: CanActivateFn = (_route, state) => {
   }
   // Professionals don't go through the mother's onboarding.
   if (isProfessionalUser(api.currentUser())) return router.createUrlTree(['/provider']);
+  if (inject(ProviderApplicationService).isApplicant()) return router.createUrlTree(['/provider/apply']);
   // First guarded navigation of a session confirms completedAt with the server.
   return onboarding.ensureSynced().pipe(
     map(() => (onboarding.onboarded() ? true : router.createUrlTree(['/onboarding'])))
