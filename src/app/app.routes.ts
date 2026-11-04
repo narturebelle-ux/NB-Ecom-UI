@@ -240,6 +240,13 @@ export const routes: Routes = [
   // Idea pool: members who have paid and used a session. /ideas/:id stays public because it's the share link friends sign up and buy through.
   { path: 'ideas', title: 'Idea Pool | NartureBelle™', canActivate: [paidMemberGuard], loadComponent: () => import('./pages/ideas/ideas.component').then(m => m.IdeasComponent) },
   { path: 'ideas/:id', title: 'An Idea for Moms | NartureBelle™', loadComponent: () => import('./pages/idea-detail/idea-detail.component').then(m => m.IdeaDetailComponent) },
+  // The maintenance screen switch. src/app/startup/maintenance.ts lets this page and its sign-in through while the screen is on.
+  {
+    path: 'admin/site-status',
+    title: 'Maintenance Screen | NartureBelle™',
+    canActivate: [adminGuard],
+    loadComponent: () => import('./pages/admin-site-status/admin-site-status.component').then(m => m.AdminSiteStatusComponent)
+  },
   {
     path: 'admin/ideas',
     title: 'Ideas Admin | NartureBelle™',

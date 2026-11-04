@@ -12,6 +12,7 @@ export interface FeatureFlags {
   childTracker: boolean; // Phase 6: child profile + vaccination tracker
   aiAssistant: boolean; // Phase 6: AI record plan
   joyCircle: boolean; // Phase 6: non-clinical group events (repurposed doctor-sessions/RSVP code)
+  maintenanceMode: boolean; // Release screen for every visitor except admins (src/app/startup/maintenance.ts)
   [key: string]: boolean;
 }
 
@@ -27,5 +28,6 @@ export const DEFAULT_FEATURES: FeatureFlags = {
   recordsVault: true,
   childTracker: false,
   aiAssistant: false,
-  joyCircle: false
+  joyCircle: false,
+  maintenanceMode: false
 };
