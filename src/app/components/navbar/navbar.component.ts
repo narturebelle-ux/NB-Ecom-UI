@@ -43,6 +43,7 @@ import { FeatureDirective } from '../../directives/feature.directive';
           <nav class="nav-links">
             <a routerLink="/admin/careers" routerLinkActive="active" class="nav-link"><mat-icon class="icon-sm">admin_panel_settings</mat-icon> Careers admin</a>
             <a routerLink="/admin/ideas" routerLinkActive="active" class="nav-link"><mat-icon class="icon-sm">lightbulb</mat-icon> Ideas admin</a>
+            <a routerLink="/admin/site-status" routerLinkActive="active" class="nav-link"><mat-icon class="icon-sm">construction</mat-icon> Maintenance</a>
           </nav>
         }
         @if (isApplicationReviewer()) {

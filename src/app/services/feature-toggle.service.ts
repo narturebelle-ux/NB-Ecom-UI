@@ -2,7 +2,7 @@ import { Injectable, signal, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { FeatureFlags, DEFAULT_FEATURES } from '../models/feature-toggle.model';
 import { environment } from '../../environments/environment';
-import { catchError, of, tap } from 'rxjs';
+import { Observable, catchError, of, tap } from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
@@ -33,6 +33,16 @@ export class FeatureToggleService {
   isEnabled(feature: keyof FeatureFlags): boolean {
     const current = this.flags();
     return current[feature] ?? false;
+  }
+
+  /** The flags as the API has them now, for admin pages. */
+  current(): Observable<FeatureFlags> {
+    return this.http.get<FeatureFlags>(this.apiUrl);
+  }
+
+  /** Admin: turn a flag on or off. The API requires a reason and keeps it in the audit log. */
+  setFlag(key: string, enabled: boolean, reason: string): Observable<unknown> {
+    return this.http.patch(`${environment.apiUrl}/admin/feature-flags/${key}`, { enabled, reason });
   }
 
   // Helper for manual developer override (e.g. testing in browser console)
