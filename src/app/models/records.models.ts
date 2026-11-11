@@ -1,6 +1,7 @@
 /**
  * Phase 4 (Records vault & sharing) — real contract, NB-Ecomm-API UI_INTEGRATION_GUIDE.md §10.
- * Files go to Supabase Storage via short-lived signed URLs; no permanent public URLs exist.
+ * Files go to private storage (Supabase today, AWS S3 in Mumbai per D48) via short-lived signed links only;
+ * no permanent or public file URLs exist, and the UI never knows the bucket or any storage key.
  */
 
 export type RecordCategory = 'SCAN' | 'LAB_REPORT' | 'PRESCRIPTION' | 'DISCHARGE_SUMMARY' | 'OTHER';
@@ -21,18 +22,52 @@ export interface HealthRecord {
   mimeType: string;
   sizeBytes: number;
   status: string;
-  /** Always NOT_SCANNED today — the API has no real malware scanning yet. */
+  /**
+   * NOT_SCANNED for files without a scanner (Supabase). With S3 (Care API §10a): PENDING until the malware
+   * scan finishes, then CLEAN, INFECTED or SCAN_FAILED (the last two are blocked).
+   */
   scanStatus: string;
   createdAt: string;
   updatedAt: string;
+  /** F9-S19 fields, optional until the Care API's S3 storage ships. */
+  kind?: 'DOCUMENT' | 'VIDEO';
+  /** False while the file can't be opened yet, e.g. until the malware scan clears it. */
+  available?: boolean;
+  /** Videos only: when the video moves to trash (D49: kept 30 days). */
+  removalAt?: string | null;
+  /** Videos only: show the removal warning from here (day 23). */
+  warnFrom?: string | null;
+  /** Set once the video is in trash (it stays in the list, `available: false`). */
+  trashedAt?: string | null;
+  /** Set while in trash: support can restore it until then; after that it leaves the list. */
+  permanentDeletionAt?: string | null;
 }
 
+/**
+ * POST /records/upload-url. Today (Supabase) it has `uploadUrl` + `token` and no `mode`.
+ * With S3: `mode` SINGLE (one signed PUT) or MULTIPART (large videos, uploaded in parts).
+ */
 export interface RecordUploadUrl {
+  mode?: 'SINGLE' | 'MULTIPART';
   objectPath: string;
-  uploadUrl: string;
-  token: string;
+  uploadUrl?: string;
+  /** Supabase only. */
+  token?: string;
+  /** Extra headers the signed PUT must carry, if the API signed any. */
+  headers?: Record<string, string>;
+  uploadId?: string;
+  partSizeBytes?: number;
+  partCount?: number;
   expiresAt: string;
 }
+
+export interface RecordPartUrl {
+  partNumber: number;
+  url: string;
+  expiresAt?: string;
+}
+
+export type DownloadDisposition = 'inline' | 'attachment';
 
 export interface RecordDownloadUrl {
   downloadUrl: string;
