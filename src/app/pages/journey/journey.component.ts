@@ -1,5 +1,6 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { CareRecommendationsComponent } from '../../components/care-recommendations/care-recommendations.component';
+import { VideoRemovalNoticesComponent } from '../../components/video-removal-notices/video-removal-notices.component';
 import { MatIconModule } from '@angular/material/icon';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
@@ -35,7 +36,7 @@ interface QuickAction { icon: string; title: string; text: string; link: string;
 @Component({
   selector: 'app-journey',
   standalone: true,
-  imports: [MatIconModule, CommonModule, RouterLink, FormsModule, RevealDirective, CareRecommendationsComponent],
+  imports: [MatIconModule, CommonModule, RouterLink, FormsModule, RevealDirective, CareRecommendationsComponent, VideoRemovalNoticesComponent],
   template: `
     <div class="journey-page">
       <div class="container wide">
@@ -51,6 +52,9 @@ interface QuickAction { icon: string; title: string; text: string; link: string;
             <a routerLink="/care" class="btn btn-primary"><mat-icon class="icon-sm">calendar_add_on</mat-icon> Book a session</a>
           }
         </header>
+
+        <!-- Videos in their last 7 days before removal (D49) -->
+        @if (features.isEnabled('recordsVault')) { <app-video-removal-notices /> }
 
         @if (loading()) {
           <div class="grid">

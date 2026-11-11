@@ -27,6 +27,24 @@ const required = [
   'FIREBASE_APP_ID'
 ];
 
+// Storage secrets belong only on the API projects (RULES.md §3, F9-S19 / D48). The UI talks to storage only
+// through short-lived links from the API, so it never needs these. On a hosted build, stop if any is set on the
+// UI project. Only the names are printed, never the values.
+if (process.env.VERCEL) {
+  const storageSecret = name =>
+    ['AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY', 'AWS_SESSION_TOKEN', 'SUPABASE_SERVICE_ROLE_KEY', 'SUPABASE_URL'].includes(name)
+    || /(^|_)S3(_|$)/.test(name);
+  const found = Object.keys(process.env).filter(storageSecret);
+  if (found.length) {
+    console.error(
+      `These storage settings are on the UI's Vercel project: ${found.join(', ')}.\n` +
+      `Everything in the UI build is public, and the UI never needs them. Remove them from the nb-ecom-ui project ` +
+      `(Settings → Environment Variables); they belong only on the Care API project. Then redeploy.`
+    );
+    process.exit(1);
+  }
+}
+
 const missing = required.filter(key => !process.env[key]);
 if (missing.length) {
   console.error(
