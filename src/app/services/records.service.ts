@@ -1,14 +1,14 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { Observable, forkJoin, map, of, switchMap } from 'rxjs';
 import { environment } from '../../environments/environment';
 import {
   AccessLogEntry,
+  DownloadDisposition,
   HealthRecord,
   RecordCategory,
   RecordDownloadUrl,
   RecordShare,
-  RecordUploadUrl,
   ShareTargetType
 } from '../models/records.models';
 
@@ -27,29 +27,7 @@ export class RecordsService {
     return this.http.get<HealthRecord>(`${this.baseUrl}/records/${id}`);
   }
 
-  /**
-   * Two-call upload: get a signed Supabase Storage URL, PUT the raw bytes there (straight to
-   * storage — never through our API, and without our Firebase token, since the URL isn't under
-   * environment.apiUrl), then confirm so the API creates the record after verifying the object.
-   */
-  upload(file: File, category: RecordCategory): Observable<HealthRecord> {
-    const mimeType = file.type || 'application/octet-stream';
-    return this.http.post<RecordUploadUrl>(`${this.baseUrl}/records/upload-url`, {
-      category, fileName: file.name, mimeType, sizeBytes: file.size
-    }).pipe(
-      switchMap(signed => {
-        const url = signed.uploadUrl.includes('token=')
-          ? signed.uploadUrl
-          : `${signed.uploadUrl}${signed.uploadUrl.includes('?') ? '&' : '?'}token=${encodeURIComponent(signed.token)}`;
-        return this.http.put(url, file, { headers: new HttpHeaders({ 'Content-Type': mimeType }) }).pipe(
-          map(() => signed)
-        );
-      }),
-      switchMap(signed => this.http.post<HealthRecord>(`${this.baseUrl}/records`, {
-        category, objectPath: signed.objectPath, originalFileName: file.name, mimeType, sizeBytes: file.size
-      }))
-    );
-  }
+  // Uploads live in RecordUploadService: progress, cancel, retry, and multipart for videos (F9-S19).
 
   updateCategory(id: number, category: RecordCategory): Observable<HealthRecord> {
     return this.http.patch<HealthRecord>(`${this.baseUrl}/records/${id}`, { category });
@@ -60,8 +38,12 @@ export class RecordsService {
     return this.http.delete(`${this.baseUrl}/records/${id}`);
   }
 
-  getDownloadUrl(id: number): Observable<RecordDownloadUrl> {
-    return this.http.post<RecordDownloadUrl>(`${this.baseUrl}/records/${id}/download-url`, {});
+  /**
+   * A short-lived link to the file. `inline` is for playing a video on the page; `attachment` asks storage
+   * to send it as a download, which is what makes phones save it. Older APIs ignore the body.
+   */
+  getDownloadUrl(id: number, disposition?: DownloadDisposition): Observable<RecordDownloadUrl> {
+    return this.http.post<RecordDownloadUrl>(`${this.baseUrl}/records/${id}/download-url`, disposition ? { disposition } : {});
   }
 
   getShares(recordId: number): Observable<RecordShare[]> {
