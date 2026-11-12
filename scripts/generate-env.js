@@ -30,9 +30,11 @@ const required = [
 // Storage secrets belong only on the API projects (RULES.md §3, F9-S19 / D48). The UI talks to storage only
 // through short-lived links from the API, so it never needs these. On a hosted build, stop if any is set on the
 // UI project. Only the names are printed, never the values.
+// AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY / AWS_SESSION_TOKEN are not checked: Vercel's build machines run on
+// AWS and reserve those names, so they can be present on every build even when the project doesn't set them.
 if (process.env.VERCEL) {
   const storageSecret = name =>
-    ['AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY', 'AWS_SESSION_TOKEN', 'SUPABASE_SERVICE_ROLE_KEY', 'SUPABASE_URL'].includes(name)
+    ['SUPABASE_SERVICE_ROLE_KEY', 'SUPABASE_URL'].includes(name)
     || /(^|_)S3(_|$)/.test(name);
   const found = Object.keys(process.env).filter(storageSecret);
   if (found.length) {
