@@ -42,12 +42,11 @@ __screenshots__/
 .DS_Store
 Thumbs.db
 
-# Real secrets — never commit these. Use the committed .env.*.example files
-# as templates; scripts/generate-env.js turns them into the environment
-# files below right before a staging/production build.
+# Real secrets — never commit these. scripts/generate-env.js turns
+# .env.staging / .env.production into the environment files below right
+# before a staging/production build.
 .env
 .env.*
-!.env.*.example
 
 # Generated at build time from .env.staging / .env.production by
 # scripts/generate-env.js — contains real Firebase/API values, must not be
