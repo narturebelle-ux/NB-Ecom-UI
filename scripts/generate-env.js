@@ -2,7 +2,7 @@
 // dotenv-cli has already populated from .env.staging / .env.production.
 // Run via `npm run build:staging` / `npm run build:prod` — not meant to be
 // called directly. The output file is gitignored and never committed; the
-// required shape/keys are documented in .env.staging.example / .env.production.example.
+// required keys are listed in `required` below (MAILS_API_URL / PAYMENTS_API_URL are optional).
 const fs = require('fs');
 const path = require('path');
 
@@ -30,9 +30,11 @@ const required = [
 // Storage secrets belong only on the API projects (RULES.md §3, F9-S19 / D48). The UI talks to storage only
 // through short-lived links from the API, so it never needs these. On a hosted build, stop if any is set on the
 // UI project. Only the names are printed, never the values.
+// AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY / AWS_SESSION_TOKEN are not checked: Vercel's build machines run on
+// AWS and reserve those names, so they can be present on every build even when the project doesn't set them.
 if (process.env.VERCEL) {
   const storageSecret = name =>
-    ['AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY', 'AWS_SESSION_TOKEN', 'SUPABASE_SERVICE_ROLE_KEY', 'SUPABASE_URL'].includes(name)
+    ['SUPABASE_SERVICE_ROLE_KEY', 'SUPABASE_URL'].includes(name)
     || /(^|_)S3(_|$)/.test(name);
   const found = Object.keys(process.env).filter(storageSecret);
   if (found.length) {
@@ -49,7 +51,7 @@ const missing = required.filter(key => !process.env[key]);
 if (missing.length) {
   console.error(
     `Missing env vars for "${target}" build: ${missing.join(', ')}\n` +
-    `Copy ${files.envFile}.example to ${files.envFile} and fill them in.`
+    `Add them to ${files.envFile} (or, on Vercel, to the project's Environment Variables).`
   );
   process.exit(1);
 }
@@ -61,7 +63,7 @@ const KNOWN_PLACEHOLDER_KEYS = ['YOUR_FIREBASE_API_KEY'];
 if (target === 'production' && KNOWN_PLACEHOLDER_KEYS.includes(process.env.FIREBASE_API_KEY)) {
   console.error(
     `FIREBASE_API_KEY in .env.production is still the placeholder value ("${process.env.FIREBASE_API_KEY}").\n` +
-    `Production builds must use a real Firebase project's Web SDK config — see .env.production.example.`
+    `Production builds must use a real Firebase project's Web SDK config (Firebase Console → Project Settings → General → Your apps → Web app).`
   );
   process.exit(1);
 }
