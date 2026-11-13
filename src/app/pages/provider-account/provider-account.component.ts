@@ -185,9 +185,8 @@ export class ProviderAccountComponent implements OnInit, OnDestroy {
         this.profile.set(profile);
         this.requests.set(requests);
         this.loading.set(false);
-        // The API's rules are per change request; any pending one gives the limits shown in the form (§37).
-        const pending = requests.find(r => r.status === 'PENDING');
-        this.applications.changeDocumentRules(pending?.id).subscribe(rules => this.rules.set(rules));
+        // The general change-document limits, for checking a file before its request exists (§37).
+        this.applications.changeDocumentRules().subscribe(rules => this.rules.set(rules));
       },
       error: err => {
         this.loading.set(false);
