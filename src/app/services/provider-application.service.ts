@@ -1,9 +1,11 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { HttpClient, HttpContext } from '@angular/common/http';
-import { Observable, catchError, map, of, tap, timeout } from 'rxjs';
+import { Observable, catchError, map, of, tap, throwError, timeout } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { SILENT_FORBIDDEN } from '../interceptors/auth.interceptor';
 import { ApiService } from './api.service';
+import { FileUpload, StorageTransport, fetchUploadRules, useOldDownload } from './file-upload';
+import { FORM_UPLOAD_RULES, UploadRules } from '../models/storage.models';
 import { User, isProfessionalUser } from '../models/maternal.models';
 import {
   Agreement,
@@ -43,7 +45,10 @@ const BACKGROUND_TIMEOUT_MS = 45000;
 export class ProviderApplicationService {
   private http = inject(HttpClient);
   private api = inject(ApiService);
+  private transport = inject(StorageTransport);
   private readonly baseUrl = environment.apiUrl;
+  /** Base wait between upload part retries; tests set it to 0. */
+  retryBaseMs = 1000;
 
   /** Accounts on this device known to have an application, so routing works on reload without a network call. */
   private applicantIds = signal<number[]>(this.readApplicants());
@@ -127,6 +132,32 @@ export class ProviderApplicationService {
     const data = new FormData();
     data.append('file', file, file.name);
     return this.http.post<ApplicationDocument>(`${this.baseUrl}/provider-application/documents/${questionKey}`, data);
+  }
+
+  /** What this file question accepts. FORM_UPLOAD_RULES means the API hasn't moved it to S3 yet (§37). */
+  documentRules(questionKey: string): Observable<UploadRules> {
+    return fetchUploadRules(this.http, `${this.baseUrl}/provider-application/files/upload-rules`, FORM_UPLOAD_RULES, { questionKey });
+  }
+
+  /** Sends the file straight to S3, then attaches it to the question. */
+  startDocumentUpload(questionKey: string, file: File): FileUpload<ApplicationDocument> {
+    return new FileUpload<ApplicationDocument>(file, {
+      base: `${this.baseUrl}/provider-application/files`,
+      context: { questionKey },
+      save: stored => this.http.post<ApplicationDocument>(`${this.baseUrl}/provider-application/documents/${questionKey}`, stored)
+    }, this.http, this.transport, this.retryBaseMs);
+  }
+
+  /**
+   * A short-lived link to the applicant's own file on S3, or null for an older file kept in Postgres
+   * (or an API without S3), which has no link to open from the browser.
+   */
+  ownDocumentUrl(documentId: number): Observable<string | null> {
+    return this.http.post<{ downloadUrl: string }>(`${this.baseUrl}/provider-application/documents/${documentId}/download-url`,
+      { disposition: 'attachment' }).pipe(
+      map(res => res.downloadUrl),
+      catchError(err => useOldDownload(err) ? of(null) : throwError(() => err))
+    );
   }
 
   removeDocument(questionKey: string): Observable<void> {
@@ -225,6 +256,20 @@ export class ProviderApplicationService {
     return this.http.post<ChangeRequest>(`${this.baseUrl}/provider-workspace/change-requests`, { type, values });
   }
 
+  /** What a change request's document may be. FORM_UPLOAD_RULES means the old 4 MB form upload (§37). */
+  changeDocumentRules(changeRequestId?: number): Observable<UploadRules> {
+    return fetchUploadRules(this.http, `${this.baseUrl}/provider-workspace/files/upload-rules`, FORM_UPLOAD_RULES,
+      changeRequestId != null ? { changeRequestId } : undefined);
+  }
+
+  startChangeDocumentUpload(changeRequestId: number, file: File): FileUpload<ChangeRequest> {
+    return new FileUpload<ChangeRequest>(file, {
+      base: `${this.baseUrl}/provider-workspace/files`,
+      context: { changeRequestId },
+      save: stored => this.http.post<ChangeRequest>(`${this.baseUrl}/provider-workspace/change-requests/${changeRequestId}/document`, stored)
+    }, this.http, this.transport, this.retryBaseMs);
+  }
+
   attachChangeDocument(id: number, file: File): Observable<ChangeRequest> {
     const data = new FormData();
     data.append('file', file, file.name);
@@ -281,8 +326,19 @@ export class ProviderApplicationService {
     return this.http.post<ChangeRequestForReview>(`${this.baseUrl}/admin/provider-applications/change-requests/${id}/decision`, { approve, reason });
   }
 
-  /** The file itself; every staff download is audited by the API. */
-  downloadDocument(documentId: number, fallbackName: string): Observable<{ blob: Blob; filename: string }> {
+  /**
+   * A staff download, audited by the API. Files on S3 come back as a short-lived signed link (§37). Older files
+   * kept in Postgres, or an API without the link call, still come through the API as before.
+   */
+  downloadDocument(documentId: number, fallbackName: string): Observable<{ url: string } | { blob: Blob; filename: string }> {
+    return this.http.post<{ downloadUrl: string }>(`${this.baseUrl}/admin/provider-applications/documents/${documentId}/download-url`,
+      { disposition: 'attachment' }).pipe(
+      map(res => ({ url: res.downloadUrl })),
+      catchError(err => useOldDownload(err) ? this.documentBlob(documentId, fallbackName) : throwError(() => err))
+    );
+  }
+
+  private documentBlob(documentId: number, fallbackName: string): Observable<{ blob: Blob; filename: string }> {
     return this.http.get(`${this.baseUrl}/admin/provider-applications/documents/${documentId}/file`, { responseType: 'blob', observe: 'response' }).pipe(
       map(res => {
         const cd = res.headers.get('Content-Disposition') ?? '';

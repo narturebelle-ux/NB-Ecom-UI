@@ -76,7 +76,29 @@ export interface ApplicationEntry {
   phoneVerified: boolean;
 }
 
-export interface ApplicationDocument { id: number; questionKey: string; fileName: string; sizeBytes: number; uploadedAt: string; }
+export interface ApplicationDocument {
+  id: number;
+  questionKey: string;
+  fileName: string;
+  sizeBytes: number;
+  uploadedAt: string;
+  /** Files stored on S3 (§37) also say what they are and whether the virus check has cleared them. */
+  kind?: 'DOCUMENT' | 'VIDEO';
+  mimeType?: string;
+  scanStatus?: 'NOT_SCANNED' | 'PENDING' | 'CLEAN' | 'INFECTED' | 'SCAN_FAILED';
+  available?: boolean;
+}
+
+/** 'READY' unless an S3 file is still being checked or failed the check. Older Postgres files are always ready. */
+export function documentReadiness(d: ApplicationDocument): 'READY' | 'CHECKING' | 'BLOCKED' {
+  if (d.scanStatus === 'INFECTED' || d.scanStatus === 'SCAN_FAILED') return 'BLOCKED';
+  if (d.available === false || d.scanStatus === 'PENDING') return 'CHECKING';
+  return 'READY';
+}
+
+export function isVideoDocument(d: ApplicationDocument): boolean {
+  return d.kind === 'VIDEO' || !!d.mimeType?.startsWith('video/');
+}
 
 export interface RequestedChange { questionKey: string; note: string | null; }
 
@@ -277,7 +299,3 @@ export const CARE_STAGE_OPTIONS: FormOption[] = [
   { value: 'POSTPARTUM', label: 'Postpartum' },
   { value: 'CHILD', label: 'Child 0-7' }
 ];
-
-/** 4 MB: the API is hosted on Vercel, which rejects request bodies over 4.5 MB. */
-export const DOCUMENT_MAX_BYTES = 4 * 1024 * 1024;
-export const DOCUMENT_ACCEPT = '.pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png';

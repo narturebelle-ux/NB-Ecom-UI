@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, HostListener, OnDestroy, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -6,11 +6,12 @@ import { MatIconModule } from '@angular/material/icon';
 import { forkJoin } from 'rxjs';
 import { ApiService } from '../../services/api.service';
 import { ProviderApplicationService } from '../../services/provider-application.service';
+import { FileUpload } from '../../services/file-upload';
+import { FORM_UPLOAD_RULES, UploadRules, acceptAttribute, rulesHint, uploadProblem } from '../../models/storage.models';
+import { UploadProgressComponent, anyUploadRunning } from '../../components/upload-progress/upload-progress.component';
 import {
   ChangeRequest,
   ChangeType,
-  DOCUMENT_ACCEPT,
-  DOCUMENT_MAX_BYTES,
   PROFESSION_LABELS,
   ProviderProfile
 } from '../../models/provider-application.models';
@@ -22,7 +23,7 @@ const CHANGE_LABELS: Record<ChangeType, string> = { PROFILE: 'Public profile', N
 @Component({
   selector: 'app-provider-account',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, MatIconModule],
+  imports: [CommonModule, FormsModule, RouterLink, MatIconModule, UploadProgressComponent],
   template: `
     <div class="provider-page">
       <div class="container narrow">
@@ -114,8 +115,8 @@ const CHANGE_LABELS: Record<ChangeType, string> = { PROFILE: 'Public profile', N
               @if (needsDocument(type)) {
                 <div class="field">
                   <label>{{ type === 'NAME' ? 'Proof of the name change' : 'Your renewed certificate' }} <span class="req">*</span></label>
-                  <input type="file" [accept]="documentAccept" (change)="chooseFile($event)" />
-                  <span class="hint">PDF, JPG or PNG, up to 4 MB.</span>
+                  <input type="file" [accept]="accept()" (change)="chooseFile($event)" />
+                  <span class="hint">{{ hint() }}</span>
                 </div>
               }
               @if (errorMsg()) { <div class="error"><mat-icon class="icon-sm">error</mat-icon> {{ errorMsg() }}</div> }
@@ -133,10 +134,13 @@ const CHANGE_LABELS: Record<ChangeType, string> = { PROFILE: 'Public profile', N
                 <div class="row-item">
                   <span class="row-main"><strong>{{ changeLabel(r.type) }}</strong><span>{{ r.createdAt | date:'d MMM y' }}@if (r.decisionReason) { · {{ r.decisionReason }} }</span></span>
                   <span class="badge-pill" [class.warn]="r.status === 'PENDING'" [class.danger]="r.status === 'REJECTED'">{{ statusLabel(r.status) }}</span>
-                  @if (r.status === 'PENDING' && r.documentRequired && !r.documentAttached) {
-                    <label class="btn btn-outline btn-sm file-btn">Upload document<input type="file" [accept]="documentAccept" (change)="uploadFor(r, $event)" /></label>
+                  @if (r.status === 'PENDING' && r.documentRequired && !r.documentAttached && !uploads()[r.id]) {
+                    <label class="btn btn-outline btn-sm file-btn">Upload document<input type="file" [accept]="accept()" (change)="uploadFor(r, $event)" /></label>
                   }
                 </div>
+                @if (uploads()[r.id]; as up) {
+                  <app-upload-progress [upload]="up" (retry)="retryUpload(r.id, up)" (cancel)="cancelUpload(r.id, up)" />
+                }
               }
               @if (requestError()) { <div class="error"><mat-icon class="icon-sm">error</mat-icon> {{ requestError() }}</div> }
             </section>
@@ -156,11 +160,15 @@ const CHANGE_LABELS: Record<ChangeType, string> = { PROFILE: 'Public profile', N
     @media (max-width: 640px) { dl { grid-template-columns: 1fr; } dd { margin-bottom: 0.4rem; } }
   `]
 })
-export class ProviderAccountComponent implements OnInit {
+export class ProviderAccountComponent implements OnInit, OnDestroy {
   private applications = inject(ProviderApplicationService);
   private api = inject(ApiService);
 
-  documentAccept = DOCUMENT_ACCEPT;
+  /** The API's limits for change documents; FORM_UPLOAD_RULES means the old 4 MB upload through the API (§37). */
+  rules = signal<UploadRules>(FORM_UPLOAD_RULES);
+  /** Documents going straight to S3, by change request. A failed one stays here until Retry or Cancel. */
+  uploads = signal<Record<number, FileUpload<ChangeRequest>>>({});
+  private destroyed = false;
   loading = signal(true);
   busy = signal(false);
   errorMsg = signal<string | null>(null);
@@ -173,7 +181,14 @@ export class ProviderAccountComponent implements OnInit {
 
   ngOnInit() {
     forkJoin({ profile: this.applications.profile(), requests: this.applications.changeRequests() }).subscribe({
-      next: ({ profile, requests }) => { this.profile.set(profile); this.requests.set(requests); this.loading.set(false); },
+      next: ({ profile, requests }) => {
+        this.profile.set(profile);
+        this.requests.set(requests);
+        this.loading.set(false);
+        // The API's rules are per change request; any pending one gives the limits shown in the form (§37).
+        const pending = requests.find(r => r.status === 'PENDING');
+        this.applications.changeDocumentRules(pending?.id).subscribe(rules => this.rules.set(rules));
+      },
       error: err => {
         this.loading.set(false);
         this.errorMsg.set(err?.status === 404 || err?.status === 403
@@ -210,10 +225,21 @@ export class ProviderAccountComponent implements OnInit {
     this.editing.set(type);
   }
 
+  ngOnDestroy() {
+    this.destroyed = true;
+  }
+
+  accept(): string { return acceptAttribute(this.rules()); }
+  hint(): string {
+    const hint = rulesHint(this.rules()).replace(/ up to /g, ', up to ');
+    return hint.charAt(0).toUpperCase() + hint.slice(1) + '.';
+  }
+
   chooseFile(event: Event) {
     const file = (event.target as HTMLInputElement).files?.[0] ?? null;
-    if (file && file.size > DOCUMENT_MAX_BYTES) {
-      this.errorMsg.set('Please choose a file of 4 MB or less.');
+    const problem = file ? uploadProblem(file, this.rules()) : null;
+    if (problem) {
+      this.errorMsg.set(problem);
       this.file = null;
       return;
     }
@@ -258,16 +284,32 @@ export class ProviderAccountComponent implements OnInit {
     const file = input.files?.[0];
     input.value = '';
     if (!file) return;
-    if (file.size > DOCUMENT_MAX_BYTES) {
-      this.requestError.set('Please choose a file of 4 MB or less.');
+    const problem = uploadProblem(file, this.rules());
+    if (problem) {
+      this.requestError.set(problem);
       return;
     }
     this.attach(request, file);
   }
 
   /** The request is already saved, so a failed upload is retried from its row in the list. */
+  /** Asks for this request's rules first: they decide between S3 and the old 4 MB upload (§37). */
   private attach(request: ChangeRequest, file: File) {
     this.requestError.set(null);
+    this.applications.changeDocumentRules(request.id).subscribe(rules => {
+      if (rules === FORM_UPLOAD_RULES) { this.attachThroughApi(request, file); return; }
+      this.rules.set(rules);
+      const problem = uploadProblem(file, rules);
+      if (problem) { this.requestError.set(`Your request is saved, but ${problem.charAt(0).toLowerCase()}${problem.slice(1)}`); return; }
+      const up = this.applications.startChangeDocumentUpload(request.id, file);
+      this.uploads.update(all => ({ ...all, [request.id]: up }));
+      this.follow(request.id, up, up.start());
+    });
+  }
+
+  private attachThroughApi(request: ChangeRequest, file: File) {
+    const problem = uploadProblem(file, FORM_UPLOAD_RULES);
+    if (problem) { this.requestError.set(`Your request is saved, but ${problem.charAt(0).toLowerCase()}${problem.slice(1)}`); return; }
     this.applications.attachChangeDocument(request.id, file).subscribe({
       next: updated => {
         this.requests.set(this.requests().map(r => r.id === updated.id ? updated : r));
@@ -275,6 +317,41 @@ export class ProviderAccountComponent implements OnInit {
       },
       error: err => this.requestError.set(err?.error?.message || 'Your request is saved, but the document didn’t upload. Please try uploading it again below.')
     });
+  }
+
+  retryUpload(id: number, up: FileUpload<ChangeRequest>) {
+    this.follow(id, up, up.retry());
+  }
+
+  /** The request stays saved; the document can be uploaded again from its row. */
+  cancelUpload(id: number, up: FileUpload<ChangeRequest>) {
+    up.cancel();
+    this.forgetUpload(id, up);
+  }
+
+  private follow(id: number, up: FileUpload<ChangeRequest>, result: Promise<ChangeRequest | null>) {
+    result.then(updated => {
+      if (this.destroyed || !updated) return;
+      this.forgetUpload(id, up);
+      this.requests.set(this.requests().map(r => r.id === updated.id ? updated : r));
+      this.api.showToast('Your request has been sent for review.');
+    });
+  }
+
+  private forgetUpload(id: number, up: FileUpload<ChangeRequest>) {
+    if (this.uploads()[id] !== up) return;
+    const rest = { ...this.uploads() };
+    delete rest[id];
+    this.uploads.set(rest);
+  }
+
+  /** Warn before closing the tab while a document is still going up. */
+  @HostListener('window:beforeunload', ['$event'])
+  onBeforeUnload(event: BeforeUnloadEvent) {
+    if (anyUploadRunning(Object.values(this.uploads()))) {
+      event.preventDefault();
+      event.returnValue = '';
+    }
   }
 
   private fail(err: any, fallback: string) {
