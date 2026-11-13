@@ -10,6 +10,7 @@ import { featureGuard } from './guards/feature.guard';
 import { adminGuard, apiCheckGuard, applicationReviewGuard, authGuard, motherProfileGuard, paidMemberGuard, providerAreaGuard, providerGuard, reviewerGuard, verifiedGuard } from './guards/auth.guard';
 import { onboardingGuard } from './guards/onboarding.guard';
 import { landingGuard } from './guards/landing.guard';
+import { LEGAL_DOCUMENTS, LEGAL_HUB_TITLE } from './legal/legal-documents';
 
 /** A connection check needs an API with its own address, so hosted builds that fall back to the Care API have none. */
 const helloUrl = (apiUrl: string) => apiUrl && apiUrl !== environment.apiUrl ? `${apiUrl}/hello` : '';
@@ -269,6 +270,16 @@ export const routes: Routes = [
     data: { apiName: 'Notifications API', url: helloUrl(environment.mailsApiUrl) },
     loadComponent: () => import('./pages/api-hello/api-hello.component').then(m => m.ApiHelloComponent)
   },
+
+  // Terms & Privacy (F27-S2): public, no sign-in. The hub, one page per document, and the short footer paths.
+  { path: 'legal', title: `${LEGAL_HUB_TITLE} | NartureBelle™`, loadComponent: () => import('./legal/legal-hub.component').then(m => m.LegalHubComponent) },
+  ...LEGAL_DOCUMENTS.map(d => ({
+    path: `legal/${d.slug}`,
+    title: `${d.title} | NartureBelle™`,
+    data: { slug: d.slug },
+    loadComponent: () => import('./legal/legal-page.component').then(m => m.LegalPageComponent)
+  })),
+  ...LEGAL_DOCUMENTS.filter(d => d.shortPath).map(d => ({ path: d.shortPath!, redirectTo: `legal/${d.slug}`, pathMatch: 'full' as const })),
 
   // No dedicated /cart route exists yet — cart is a navbar drawer, not a routed page.
   { path: '**', redirectTo: '' }
