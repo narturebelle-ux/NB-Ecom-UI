@@ -59,6 +59,8 @@ export interface RecordUploadUrl {
   partSizeBytes?: number;
   partCount?: number;
   expiresAt: string;
+  /** Provider and careers uploads only: sent back on the save call if the API gives one (§37). */
+  uploadToken?: string;
 }
 
 export interface RecordPartUrl {

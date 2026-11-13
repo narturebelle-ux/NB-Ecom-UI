@@ -5,6 +5,8 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { Observable } from 'rxjs';
 import { ApiService } from '../../services/api.service';
+import { saveFromSignedLink } from '../../services/signed-link';
+import { openRefusalMessage } from '../../models/storage.models';
 import { ProviderApplicationService } from '../../services/provider-application.service';
 import {
   APPLICATION_STATUS_LABELS,
@@ -412,8 +414,8 @@ export class AdminProviderApplicationComponent implements OnInit {
 
   downloadById(id: number, fallback: string) {
     this.applications.downloadDocument(id, fallback).subscribe({
-      next: ({ blob, filename }) => saveBlob(blob, filename),
-      error: () => this.api.showToast('We couldn’t download that document.')
+      next: res => 'url' in res ? saveFromSignedLink(res.url) : saveBlob(res.blob, res.filename),
+      error: err => this.api.showToast(err?.status === 409 ? openRefusalMessage(err?.error?.code) : 'We couldn’t download that document.')
     });
   }
 }
