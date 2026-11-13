@@ -14,6 +14,8 @@ import {
   WORK_MODE_LABELS,
   WorkMode
 } from '../../services/careers.service';
+import { saveFromSignedLink } from '../../services/signed-link';
+import { openRefusalMessage } from '../../models/storage.models';
 
 /** Admin: post, edit, close and reopen roles, and see who applied. */
 @Component({
@@ -273,7 +275,9 @@ export class AdminCareersComponent implements OnInit {
   /** Downloads the résumé with the admin token and saves it (each download is audited by the API). */
   openResume(a: JobApplication) {
     this.careers.downloadResume(a.id, a.resumeFileName).subscribe({
-      next: ({ blob, filename }) => {
+      next: res => {
+        if ('url' in res) { saveFromSignedLink(res.url); return; }
+        const { blob, filename } = res;
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
@@ -281,7 +285,8 @@ export class AdminCareersComponent implements OnInit {
         link.click();
         URL.revokeObjectURL(url);
       },
-      error: err => this.api.showToast(err?.status === 404 ? 'That résumé no longer exists.' : 'Couldn’t download the résumé.')
+      error: err => this.api.showToast(err?.status === 404 ? 'That résumé no longer exists.'
+        : err?.status === 409 ? openRefusalMessage(err?.error?.code) : 'Couldn’t download the résumé.')
     });
   }
 

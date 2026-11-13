@@ -41,9 +41,25 @@ export const FALLBACK_UPLOAD_RULES: UploadRules = {
   usedBytes: null
 };
 
+/**
+ * The provider and careers flows before the API moves them to S3 (§37): one form POST through the API,
+ * 4 MB, PDF/JPG/PNG. Pages compare by reference (`rules === FORM_UPLOAD_RULES`) to pick the old upload.
+ */
+export const FORM_UPLOAD_RULES: UploadRules = {
+  kinds: [{
+    kind: 'DOCUMENT',
+    mimeTypes: ['application/pdf', 'image/jpeg', 'image/png'],
+    extensions: ['pdf', 'jpg', 'jpeg', 'png'],
+    maxBytes: 4 * 1024 * 1024
+  }],
+  quotaBytes: null,
+  usedBytes: null
+};
+
 /** For files whose type the browser leaves empty (HEIC on Windows, some phone videos). */
 const MIME_BY_EXTENSION: Record<string, string> = {
-  pdf: 'application/pdf', jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', heic: 'image/heic', heif: 'image/heif',
+  pdf: 'application/pdf', doc: 'application/msword',
+  docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', heic: 'image/heic', heif: 'image/heif',
   mp4: 'video/mp4', m4v: 'video/x-m4v', mov: 'video/quicktime', webm: 'video/webm', '3gp': 'video/3gpp'
 };
 

@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, HostListener, OnDestroy, OnInit, computed, effect, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -9,19 +9,24 @@ import { ApiService } from '../../services/api.service';
 import { FirebaseAuthService } from '../../services/firebase-auth.service';
 import { ProviderApplicationService, fieldErrors } from '../../services/provider-application.service';
 import { isProfessionalUser } from '../../models/maternal.models';
+import { FORM_UPLOAD_RULES, UploadRules, acceptAttribute, formatBytes, openRefusalMessage, rulesHint, uploadProblem } from '../../models/storage.models';
+import { FileUpload } from '../../services/file-upload';
+import { saveFromSignedLink } from '../../services/signed-link';
+import { UploadProgressComponent, anyUploadRunning } from '../../components/upload-progress/upload-progress.component';
 import {
   APPLICATION_STATUS_LABELS,
   AnswerValue,
   ApplicationEntry,
   ApplyInfo,
-  DOCUMENT_ACCEPT,
-  DOCUMENT_MAX_BYTES,
+  ApplicationDocument,
   FormQuestion,
   FormSection,
   MissingAnswer,
   ProfessionRole,
   ProviderApplication,
-  isApprovedStatus
+  documentReadiness,
+  isApprovedStatus,
+  isVideoDocument
 } from '../../models/provider-application.models';
 import { PROVIDER_PAGE_STYLES } from '../provider-shared/provider-page.styles';
 
@@ -34,7 +39,7 @@ const AUTOSAVE_MS = 900;
 @Component({
   selector: 'app-provider-apply',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule],
+  imports: [CommonModule, FormsModule, MatIconModule, UploadProgressComponent],
   template: `
     <div class="provider-page">
       <div class="container narrow">
@@ -274,20 +279,29 @@ const AUTOSAVE_MS = 900;
         @case ('FILE') {
           <div class="field">
             <label>{{ q.label }} @if (q.required) { <span class="req">*</span> }</label>
-            @if (documentFor(q.key); as doc) {
+            @if (uploads()[q.key]; as up) {
+              <app-upload-progress [upload]="up" (retry)="retryUpload(q.key, up)" (cancel)="cancelUpload(q.key, up)" />
+            } @else if (documentFor(q.key); as doc) {
               <div class="row-item">
-                <mat-icon class="doc-icon">description</mat-icon>
-                <span class="row-main"><strong>{{ doc.fileName }}</strong><span>{{ doc.sizeBytes / 1024 | number:'1.0-0' }} KB</span></span>
-                <label class="btn btn-outline btn-sm file-btn">Replace<input type="file" [accept]="documentAccept" (change)="upload(q.key, $event)" /></label>
+                <mat-icon class="doc-icon">{{ isVideo(doc) ? 'movie' : 'description' }}</mat-icon>
+                <span class="row-main"><strong>{{ doc.fileName }}</strong><span>{{ formatSize(doc.sizeBytes) }}
+                  @switch (readiness(doc)) {
+                    @case ('CHECKING') { · Being checked for viruses }
+                    @case ('BLOCKED') { · Didn’t pass our virus check. Please remove it and upload a clean copy. }
+                  }</span></span>
+                <label class="btn btn-outline btn-sm file-btn">Replace<input type="file" [accept]="acceptFor(q.key)" (change)="upload(q.key, $event)" /></label>
+                @if (doc.scanStatus && readiness(doc) === 'READY') {
+                  <button type="button" class="btn-link" (click)="downloadOwn(doc)">Download</button>
+                }
                 <button type="button" class="btn-link" (click)="removeDocument(q.key)">Remove</button>
               </div>
             } @else {
               <label class="btn btn-outline btn-sm file-btn" [class.is-busy]="uploading() === q.key">
                 <mat-icon class="icon-sm">upload</mat-icon> {{ uploading() === q.key ? 'Uploading…' : 'Choose a file' }}
-                <input type="file" [accept]="documentAccept" [disabled]="uploading() === q.key" (change)="upload(q.key, $event)" />
+                <input type="file" [accept]="acceptFor(q.key)" [disabled]="uploading() === q.key" (change)="upload(q.key, $event)" />
               </label>
             }
-            <span class="hint">{{ q.hint || 'PDF, JPG or PNG, up to 4 MB.' }}</span>
+            <span class="hint">{{ q.hint || hintFor(q.key) }}</span>
             @if (errors()[q.key]; as e) { <span class="field-error">{{ e }}</span> }
           </div>
         }
@@ -342,7 +356,22 @@ export class ProviderApplyComponent implements OnInit, OnDestroy {
   private firebaseAuth = inject(FirebaseAuthService);
   private router = inject(Router);
 
-  documentAccept = DOCUMENT_ACCEPT;
+  /** Each file question's limits from the API; missing means FORM_UPLOAD_RULES (the old 4 MB upload). */
+  fileRules = signal<Record<string, UploadRules>>({});
+  /** Uploads going straight to S3, by question. A failed one stays here until Retry or Cancel. */
+  uploads = signal<Record<string, FileUpload<ApplicationDocument>>>({});
+  private destroyed = false;
+  private requestedRules = new Set<string>();
+
+  /** Asks the API what each file question takes, once per question, whenever the form's sections change. */
+  private readonly loadFileRules = effect(() => {
+    const keys = this.sections().flatMap(section => section.questions).filter(q => q.type === 'FILE').map(q => q.key);
+    for (const key of keys) {
+      if (this.requestedRules.has(key)) continue;
+      this.requestedRules.add(key);
+      this.applications.documentRules(key).subscribe(rules => this.fileRules.update(all => ({ ...all, [key]: rules })));
+    }
+  });
 
   loading = signal(true);
   loadFailed = signal(false);
@@ -407,6 +436,7 @@ export class ProviderApplyComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
+    this.destroyed = true;
     if (this.saveTimer) clearTimeout(this.saveTimer);
     this.flush().subscribe({ error: () => {} });
   }
@@ -647,17 +677,66 @@ export class ProviderApplyComponent implements OnInit, OnDestroy {
     return this.application()?.documents.find(d => d.questionKey === key) ?? null;
   }
 
+  rulesFor(key: string): UploadRules { return this.fileRules()[key] ?? FORM_UPLOAD_RULES; }
+  acceptFor(key: string): string { return acceptAttribute(this.rulesFor(key)); }
+  hintFor(key: string): string {
+    const hint = rulesHint(this.rulesFor(key)).replace(/ up to /g, ', up to ');
+    return hint.charAt(0).toUpperCase() + hint.slice(1) + '.';
+  }
+  isVideo(doc: ApplicationDocument): boolean { return isVideoDocument(doc); }
+  readiness(doc: ApplicationDocument) { return documentReadiness(doc); }
+  formatSize(bytes: number): string { return formatBytes(bytes); }
+
   upload(key: string, event: Event) {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
     input.value = '';
     if (!file) return;
-    if (file.size > DOCUMENT_MAX_BYTES) {
-      this.errors.set({ ...this.errors(), [key]: 'Please choose a file of 4 MB or less.' });
+    const rules = this.rulesFor(key);
+    const problem = uploadProblem(file, rules);
+    if (problem) {
+      this.errors.set({ ...this.errors(), [key]: problem });
       return;
     }
-    this.uploading.set(key);
     this.clearError(key);
+    if (rules === FORM_UPLOAD_RULES) {
+      this.uploadThroughApi(key, file);
+      return;
+    }
+    const up = this.applications.startDocumentUpload(key, file);
+    this.uploads.update(all => ({ ...all, [key]: up }));
+    this.follow(key, up, up.start());
+  }
+
+  retryUpload(key: string, up: FileUpload<ApplicationDocument>) {
+    this.follow(key, up, up.retry());
+  }
+
+  cancelUpload(key: string, up: FileUpload<ApplicationDocument>) {
+    up.cancel();
+    this.forgetUpload(key, up);
+  }
+
+  private follow(key: string, up: FileUpload<ApplicationDocument>, result: Promise<ApplicationDocument | null>) {
+    result.then(document => {
+      if (this.destroyed || !document) return;
+      this.forgetUpload(key, up);
+      this.application.update(current => current
+        ? { ...current, documents: [...current.documents.filter(d => d.questionKey !== key), document] }
+        : current);
+    });
+  }
+
+  private forgetUpload(key: string, up: FileUpload<ApplicationDocument>) {
+    if (this.uploads()[key] !== up) return;
+    const rest = { ...this.uploads() };
+    delete rest[key];
+    this.uploads.set(rest);
+  }
+
+  /** Before the API moves provider files to S3 (§37): the old 4 MB form upload through the API. */
+  private uploadThroughApi(key: string, file: File) {
+    this.uploading.set(key);
     this.applications.uploadDocument(key, file).subscribe({
       next: document => {
         this.uploading.set(null);
@@ -669,6 +748,23 @@ export class ProviderApplyComponent implements OnInit, OnDestroy {
         this.uploading.set(null);
         this.errors.set({ ...this.errors(), [key]: err?.error?.message || 'We couldn’t upload that file. Please try again.' });
       }
+    });
+  }
+
+  /** Warn before closing the tab while a file is still going up; a video would have to start again. */
+  @HostListener('window:beforeunload', ['$event'])
+  onBeforeUnload(event: BeforeUnloadEvent) {
+    if (anyUploadRunning(Object.values(this.uploads()))) {
+      event.preventDefault();
+      event.returnValue = '';
+    }
+  }
+
+  /** Files on S3 only (they have a scanStatus); older ones have no link the browser can follow. */
+  downloadOwn(doc: ApplicationDocument) {
+    this.applications.ownDocumentUrl(doc.id).subscribe({
+      next: url => url ? saveFromSignedLink(url) : this.api.showToast('This file can’t be downloaded here.'),
+      error: err => this.api.showToast(err?.status === 409 ? openRefusalMessage(err?.error?.code) : 'We couldn’t download that file.')
     });
   }
 

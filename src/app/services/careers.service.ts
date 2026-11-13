@@ -1,7 +1,9 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, map } from 'rxjs';
+import { Observable, catchError, map, throwError } from 'rxjs';
 import { environment } from '../../environments/environment';
+import { UploadRules } from '../models/storage.models';
+import { FileUpload, StorageTransport, fetchUploadRules, useOldDownload } from './file-upload';
 
 /**
  * Careers + ideas/feedback — API 2366d6c (UI_INTEGRATION_GUIDE.md §14). Applications and feedback are stored by
@@ -72,13 +74,45 @@ export interface ApplicationForm {
 }
 
 /** 4 MB: the API is hosted on Vercel, which rejects request bodies over 4.5 MB. */
-export const RESUME_MAX_BYTES = 4 * 1024 * 1024;
-export const RESUME_ACCEPT = '.pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+/**
+ * Résumés before the API moves them to S3 (§37): PDF or Word, 4 MB, sent through the API. Pages compare by
+ * reference (`rules === RESUME_FORM_RULES`) to pick the old upload.
+ */
+export const RESUME_FORM_RULES: UploadRules = {
+  kinds: [{
+    kind: 'DOCUMENT',
+    mimeTypes: ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
+    extensions: ['pdf', 'doc', 'docx'],
+    maxBytes: 4 * 1024 * 1024
+  }],
+  quotaBytes: null,
+  usedBytes: null
+};
+
+export interface ApplicationReceipt { id: number; submittedAt: string; }
+
+/** The form's fields as the API takes them, trimmed, with empty optional ones left out. */
+function applicationFields(form: ApplicationForm): Record<string, string | number | boolean> {
+  const fields: Record<string, string | number | boolean> = {
+    fullName: form.fullName.trim(), email: form.email.trim(), phone: form.phone.trim()
+  };
+  if (form.location.trim()) fields['location'] = form.location.trim();
+  if (form.linkedinUrl.trim()) fields['linkedinUrl'] = form.linkedinUrl.trim();
+  if (form.portfolioUrl.trim()) fields['portfolioUrl'] = form.portfolioUrl.trim();
+  if (form.yearsExperience !== null && form.yearsExperience !== undefined) fields['yearsExperience'] = form.yearsExperience;
+  if (form.coverNote.trim()) fields['coverNote'] = form.coverNote.trim();
+  fields['privacyConsent'] = form.privacyConsent;
+  fields['website'] = form.website;
+  return fields;
+}
 
 @Injectable({ providedIn: 'root' })
 export class CareersService {
   private http = inject(HttpClient);
+  private transport = inject(StorageTransport);
   private readonly baseUrl = environment.apiUrl;
+  /** Base wait between upload retries; tests set it to 0. */
+  retryBaseMs = 1000;
 
   // ---------- public ----------
 
@@ -90,20 +124,30 @@ export class CareersService {
     return this.http.get<Job>(`${this.baseUrl}/careers/jobs/${id}`);
   }
 
-  apply(jobId: number, form: ApplicationForm, resume: File): Observable<{ id: number; submittedAt: string }> {
+  /** What a résumé may be. RESUME_FORM_RULES means the old 4 MB form upload through the API (§37). */
+  resumeRules(jobId: number): Observable<UploadRules> {
+    return fetchUploadRules(this.http, `${this.baseUrl}/careers/jobs/${jobId}/files/upload-rules`, RESUME_FORM_RULES);
+  }
+
+  /**
+   * Sends the résumé straight to S3, then the application with a pointer to it (§37). Saving the stored
+   * file *is* the application, so Retry after a failed send doesn't upload the résumé again.
+   */
+  startApplication(jobId: number, form: ApplicationForm, resume: File): FileUpload<ApplicationReceipt> {
+    return new FileUpload<ApplicationReceipt>(resume, {
+      base: `${this.baseUrl}/careers/jobs/${jobId}/files`,
+      context: {},
+      save: stored => this.http.post<ApplicationReceipt>(`${this.baseUrl}/careers/jobs/${jobId}/applications`,
+        { ...applicationFields(form), resume: stored })
+    }, this.http, this.transport, this.retryBaseMs);
+  }
+
+  /** Before the API moves résumés to S3: the whole application as one form POST, résumé included. */
+  apply(jobId: number, form: ApplicationForm, resume: File): Observable<ApplicationReceipt> {
     const data = new FormData();
-    data.append('fullName', form.fullName.trim());
-    data.append('email', form.email.trim());
-    data.append('phone', form.phone.trim());
-    if (form.location.trim()) data.append('location', form.location.trim());
-    if (form.linkedinUrl.trim()) data.append('linkedinUrl', form.linkedinUrl.trim());
-    if (form.portfolioUrl.trim()) data.append('portfolioUrl', form.portfolioUrl.trim());
-    if (form.yearsExperience !== null && form.yearsExperience !== undefined) data.append('yearsExperience', String(form.yearsExperience));
-    if (form.coverNote.trim()) data.append('coverNote', form.coverNote.trim());
-    data.append('privacyConsent', String(form.privacyConsent));
-    data.append('website', form.website);
+    Object.entries(applicationFields(form)).forEach(([key, value]) => data.append(key, String(value)));
     data.append('resume', resume, resume.name);
-    return this.http.post<{ id: number; submittedAt: string }>(`${this.baseUrl}/careers/jobs/${jobId}/applications`, data);
+    return this.http.post<ApplicationReceipt>(`${this.baseUrl}/careers/jobs/${jobId}/applications`, data);
   }
 
   sendFeedback(body: { name?: string; email?: string; message: string; rating?: number | null; page?: string; website: string }): Observable<{ id: number }> {
@@ -136,8 +180,19 @@ export class CareersService {
     return this.http.get<JobApplication[]>(`${this.baseUrl}/admin/careers/jobs/${jobId}/applications`);
   }
 
-  /** The file itself (Content-Disposition: attachment); every download is audited by the API. */
-  downloadResume(applicationId: number, fallbackName: string): Observable<{ blob: Blob; filename: string }> {
+  /**
+   * A staff download, audited by the API. Résumés on S3 come back as a short-lived signed link (§37); while
+   * the API doesn't have the link call yet, or the résumé is an older one in Postgres, it comes through the API as before.
+   */
+  downloadResume(applicationId: number, fallbackName: string): Observable<{ url: string } | { blob: Blob; filename: string }> {
+    return this.http.post<{ downloadUrl: string }>(`${this.baseUrl}/admin/careers/applications/${applicationId}/resume/download-url`,
+      { disposition: 'attachment' }).pipe(
+      map(res => ({ url: res.downloadUrl }) as { url: string }),
+      catchError(err => useOldDownload(err) ? this.resumeBlob(applicationId, fallbackName) : throwError(() => err))
+    );
+  }
+
+  private resumeBlob(applicationId: number, fallbackName: string): Observable<{ blob: Blob; filename: string }> {
     return this.http.get(`${this.baseUrl}/admin/careers/applications/${applicationId}/resume`, { responseType: 'blob', observe: 'response' }).pipe(
       map(res => {
         const cd = res.headers.get('Content-Disposition') ?? '';

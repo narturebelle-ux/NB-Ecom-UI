@@ -1,25 +1,28 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, HostListener, OnDestroy, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import {
   ApplicationForm,
+  ApplicationReceipt,
   CareersService,
   EMPLOYMENT_TYPE_LABELS,
   Job,
-  RESUME_ACCEPT,
   PHONE_PATTERN,
-  RESUME_MAX_BYTES,
+  RESUME_FORM_RULES,
   URL_PATTERN,
   WORK_MODE_LABELS
 } from '../../services/careers.service';
+import { FileUpload } from '../../services/file-upload';
+import { UploadRules, acceptAttribute, rulesHint, uploadProblem } from '../../models/storage.models';
+import { UploadProgressComponent, anyUploadRunning } from '../../components/upload-progress/upload-progress.component';
 
 /** One open role, with the application form (résumé upload). Applications are emailed to hello@narturebelle.com by the API. */
 @Component({
   selector: 'app-career-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, MatIconModule],
+  imports: [CommonModule, FormsModule, RouterLink, MatIconModule, UploadProgressComponent],
   template: `
     <div class="job-page">
       <div class="container narrow">
@@ -92,8 +95,8 @@ import {
                     </div>
                     <div class="field">
                       <label for="resume">Résumé <span class="req">*</span></label>
-                      <input id="resume" type="file" class="form-control" [accept]="resumeAccept" (change)="pickResume($event)" />
-                      <span class="hint">PDF or Word, up to 4 MB.</span>
+                      <input id="resume" type="file" class="form-control" [accept]="resumeAccept()" [disabled]="!!upload()" (change)="pickResume($event)" />
+                      <span class="hint">{{ resumeHint() }}</span>
                     </div>
                   </div>
                   <div class="field">
@@ -109,7 +112,11 @@ import {
                   </label>
 
                   @if (formError()) { <p class="error-msg">{{ formError() }}</p> }
-                  <button type="submit" class="btn btn-primary btn-lg" [disabled]="sending()">{{ sending() ? 'Sending…' : 'Submit application' }}</button>
+                  @if (upload(); as up) {
+                    <app-upload-progress [upload]="up" (retry)="retryUpload(up)" (cancel)="cancelUpload(up)" />
+                  } @else {
+                    <button type="submit" class="btn btn-primary btn-lg" [disabled]="sending()">{{ sending() ? 'Sending…' : 'Submit application' }}</button>
+                  }
                 </form>
               </section>
             }
@@ -144,13 +151,17 @@ import {
     .empty { text-align: center; color: var(--text-secondary); }
   `]
 })
-export class CareerDetailComponent implements OnInit {
+export class CareerDetailComponent implements OnInit, OnDestroy {
   private route = inject(ActivatedRoute);
   private careers = inject(CareersService);
 
   typeLabels = EMPLOYMENT_TYPE_LABELS;
   modeLabels = WORK_MODE_LABELS;
-  resumeAccept = RESUME_ACCEPT;
+  /** The API's résumé limits; RESUME_FORM_RULES means the old form upload through the API (§37). */
+  rules = signal<UploadRules>(RESUME_FORM_RULES);
+  /** The résumé going straight to S3, then the application. Kept after a failure so Retry carries on. */
+  upload = signal<FileUpload<ApplicationReceipt> | null>(null);
+  private destroyed = false;
 
   job = signal<Job | null>(null);
   loading = signal(true);
@@ -167,6 +178,7 @@ export class CareerDetailComponent implements OnInit {
 
   ngOnInit() {
     const id = Number(this.route.snapshot.paramMap.get('id'));
+    this.careers.resumeRules(id).subscribe(rules => this.rules.set(rules));
     this.careers.getJob(id).subscribe({
       next: j => { this.job.set(j.status === 'OPEN' ? j : null); this.loading.set(false); },
       error: err => {
@@ -176,19 +188,24 @@ export class CareerDetailComponent implements OnInit {
     });
   }
 
+  ngOnDestroy() {
+    this.destroyed = true;
+  }
+
+  resumeAccept(): string { return acceptAttribute(this.rules()); }
+  resumeHint(): string {
+    const r = this.rules();
+    return r === RESUME_FORM_RULES ? 'PDF or Word, up to 4 MB.' : rulesHint(r).replace(/ up to /g, ', up to ') + '.';
+  }
+
   pickResume(e: Event) {
     const file = (e.target as HTMLInputElement).files?.[0] ?? null;
     this.formError.set(null);
-    if (file && file.size > RESUME_MAX_BYTES) {
+    const problem = file ? uploadProblem(file, this.rules()) : null;
+    if (problem) {
       this.resume = null;
       (e.target as HTMLInputElement).value = '';
-      this.formError.set('Your résumé is larger than 4 MB. Please upload a smaller file.');
-      return;
-    }
-    if (file && !/\.(pdf|docx?)$/i.test(file.name)) {
-      this.resume = null;
-      (e.target as HTMLInputElement).value = '';
-      this.formError.set('Please upload your résumé as a PDF or Word document.');
+      this.formError.set(problem.replace(/^Please choose a (.+) file\.$/, 'Please upload your résumé as a $1 file.'));
       return;
     }
     this.resume = file;
@@ -212,21 +229,77 @@ export class CareerDetailComponent implements OnInit {
     if (problem || !job) { this.formError.set(problem); return; }
     this.sending.set(true);
     this.formError.set(null);
+    if (this.rules() !== RESUME_FORM_RULES) {
+      const up = this.careers.startApplication(job.id, this.form, this.resume!);
+      this.upload.set(up);
+      this.follow(up, up.start());
+      return;
+    }
     this.careers.apply(job.id, this.form, this.resume!).subscribe({
-      next: () => { this.sending.set(false); this.submitted.set(true); window.scrollTo({ top: 0, behavior: 'smooth' }); },
+      next: () => this.sent(),
       error: err => {
         this.sending.set(false);
-        const code = err?.error?.code;
-        this.formError.set(
-          code === 'JOB_CLOSED' ? 'Sorry, this role has just closed.'
-          : code === 'RESUME_TOO_LARGE' || err?.status === 413 ? 'Your résumé is larger than 4 MB.'
-          : code === 'RESUME_TYPE_NOT_ALLOWED' ? 'Please upload your résumé as a PDF or Word document.'
-          : code === 'TOO_MANY_REQUESTS' || err?.status === 429 ? 'Too many attempts. Please wait a few minutes and try again.'
-          : code === 'VALIDATION_FAILED' ? (err?.error?.fields?.resume ? 'Please attach your résumé.' : err?.error?.message || 'Please check your details and try again.')
-          : err?.status === 404 ? 'Applications aren’t open on this server yet. Please email hello@narturebelle.com instead.'
-          : 'We couldn’t send your application. Please try again.'
-        );
+        this.formError.set(applyErrorMessage(err));
       }
     });
   }
+
+  retryUpload(up: FileUpload<ApplicationReceipt>) {
+    this.sending.set(true);
+    this.formError.set(null);
+    this.follow(up, up.retry());
+  }
+
+  /** Stops the upload; the form keeps its answers, so they can send again. */
+  cancelUpload(up: FileUpload<ApplicationReceipt>) {
+    up.cancel();
+    if (this.upload() === up) this.upload.set(null);
+    this.sending.set(false);
+  }
+
+  private follow(up: FileUpload<ApplicationReceipt>, result: Promise<ApplicationReceipt | null>) {
+    result.then(receipt => {
+      if (this.destroyed) return;
+      this.sending.set(false);
+      if (receipt) {
+        this.upload.set(null);
+        this.sent();
+        return;
+      }
+      const s = up.state();
+      if (s.phase !== 'failed') return;
+      // A refusal of the application itself (role closed, details wrong) won't be fixed by Retry: show it on the form.
+      if (s.code && !['UPLOAD_NOT_FOUND', 'UPLOAD_NOT_CONFIRMED', 'FILE_SIZE_MISMATCH'].includes(s.code)) {
+        this.upload.set(null);
+        this.formError.set(applyErrorMessage({ error: { code: s.code, message: s.error } }));
+      }
+    });
+  }
+
+  private sent() {
+    this.sending.set(false);
+    this.submitted.set(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  /** Warn before closing the tab while the résumé is still going up. */
+  @HostListener('window:beforeunload', ['$event'])
+  onBeforeUnload(event: BeforeUnloadEvent) {
+    if (anyUploadRunning([this.upload()])) {
+      event.preventDefault();
+      event.returnValue = '';
+    }
+  }
+}
+
+function applyErrorMessage(err: any): string {
+  const code = err?.error?.code;
+  return code === 'JOB_CLOSED' ? 'Sorry, this role has just closed.'
+    : code === 'RESUME_TOO_LARGE' || err?.status === 413 ? 'Your résumé is too large. Please upload a smaller file.'
+    : code === 'RESUME_TYPE_NOT_ALLOWED' ? 'Please upload your résumé as a PDF or Word document.'
+    : code === 'FILE_EMPTY' ? 'That file is empty. Please choose another one.'
+    : code === 'TOO_MANY_REQUESTS' || err?.status === 429 ? 'Too many attempts. Please wait a few minutes and try again.'
+    : code === 'VALIDATION_FAILED' ? (err?.error?.fields?.resume ? 'Please attach your résumé.' : err?.error?.message || 'Please check your details and try again.')
+    : err?.status === 404 ? 'Applications aren’t open on this server yet. Please email hello@narturebelle.com instead.'
+    : 'We couldn’t send your application. Please try again.';
 }
