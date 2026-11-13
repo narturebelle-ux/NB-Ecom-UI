@@ -39,6 +39,7 @@
           "builder": "@angular/build:application",
           "options": {
             "browser": "src/main.ts",
+            "allowedCommonJsDependencies": ["core-js", "raf", "rgbcolor", "html2canvas"],
             "polyfills": [
               "zone.js"
             ],

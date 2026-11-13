@@ -5,6 +5,7 @@ import { FeatureDirective } from '../../directives/feature.directive';
 import { isProfessionalUser } from '../../models/maternal.models';
 import { ApiService } from '../../services/api.service';
 import { CommerceService } from '../../services/commerce.service';
+import { COMPANY_LEGAL_NAME, FOOTER_LEGAL_LINKS, LEGAL_HUB_TITLE, SUPPORT_CONTACTS } from '../../legal/legal-documents';
 
 @Component({
   selector: 'app-footer',
@@ -79,14 +80,14 @@ import { CommerceService } from '../../services/commerce.service';
               <mat-icon class="icon">chat</mat-icon>
               <div>
                 <strong>WhatsApp Care Desk:</strong>
-                <span>+91 99880 12345</span>
+                <span>{{ contacts.whatsapp }}</span>
               </div>
             </div>
             <div class="contact-item">
               <mat-icon class="icon">mail</mat-icon>
               <div>
                 <strong>Care Team:</strong>
-                <span>support-care&#64;narturebelle.com</span>
+                <span>{{ contacts.email }}</span>
               </div>
             </div>
           </div>
@@ -101,12 +102,13 @@ import { CommerceService } from '../../services/commerce.service';
           </p>
         </div>
         <div class="bottom-links">
-          <span>&copy; {{ currentYear }} NartureBelle™ Pvt Ltd. All rights reserved.</span>
-          <div class="legal-anchors">
-            <a href="#">Privacy Policy</a>
-            <span>•</span>
-            <a href="#">Terms of Service</a>
-          </div>
+          <span>&copy; {{ currentYear }} {{ companyName }}. All rights reserved.</span>
+          <nav class="legal-anchors" aria-label="Terms and policies">
+            <a routerLink="/legal" class="hub-link">{{ hubTitle }}</a>
+            @for (link of legalLinks; track link.slug) {
+              <a [routerLink]="['/legal', link.slug]">{{ link.label }}</a>
+            }
+          </nav>
         </div>
       </div>
     </footer>
@@ -258,10 +260,18 @@ import { CommerceService } from '../../services/commerce.service';
     .legal-anchors {
       display: flex;
       align-items: center;
-      gap: 0.5rem;
+      flex-wrap: wrap;
+      gap: 0.25rem 1rem;
     }
     .legal-anchors a {
       color: #a4b8ac;
+      display: inline-flex;
+      align-items: center;
+      min-height: 44px;
+    }
+    .legal-anchors .hub-link {
+      color: #e2ede6;
+      font-weight: 600;
     }
     .legal-anchors a:hover {
       color: #fff;
@@ -274,4 +284,8 @@ export class FooterComponent {
   private api = inject(ApiService);
   isProfessional = computed(() => isProfessionalUser(this.api.currentUser()));
   currentYear = new Date().getFullYear();
+  readonly companyName = COMPANY_LEGAL_NAME;
+  readonly hubTitle = LEGAL_HUB_TITLE;
+  readonly legalLinks = FOOTER_LEGAL_LINKS;
+  readonly contacts = SUPPORT_CONTACTS;
 }
